@@ -74,7 +74,7 @@ Sửa `config.local.php`:
 | `default_project_id/name/domain/goal` | Dự án đầu tiên (ví dụ `chungauto`, `Chung Auto`, `chungauto.vn`) |
 | `token_key` | 64 ký tự hex ngẫu nhiên (`openssl rand -hex 32`) để mã hoá token kênh trong CSDL |
 | `google_client_id/secret` | App Google Cloud (Search Console, GA4, YouTube, Google Ads, Maps) — Redirect URI: `<app_url>/api/oauth_google_callback.php` |
-| `meta_app_id/secret` | App Meta (Fanpage, Instagram, Messenger, Ads) — Redirect URI: `<app_url>/api/oauth_meta_callback.php`; webhook `<app_url>/api/webhook_meta.php` |
+| `meta_app_id/secret` | App Meta (Fanpage, Instagram, Messenger, Ads) — Redirect URI: `<app_url>/api/oauth_facebook_callback.php`; webhook `<app_url>/api/webhook_meta.php` |
 | `tiktok_client_key/secret` | Hoặc nhập trên giao diện Kênh marketing → TikTok → Kết nối API; Redirect: `<app_url>/api/oauth_tiktok_callback.php` |
 | X (Twitter) | Nhập trên giao diện Kênh marketing → X → Kết nối API; Redirect: `<app_url>/api/oauth_x_callback.php` |
 | `anthropic_api_key` | Tuỳ chọn, cho Trợ lý dự án / AI soạn nội dung chạy trên máy chủ |

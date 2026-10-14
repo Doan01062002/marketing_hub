@@ -127,6 +127,7 @@ function sync_connection(array $CFG, array $conn): array {
         $auth = ['Authorization: Bearer ' . $token];
     }
     if (PROVIDERS[$p]['auth'] === 'meta' && $manual) $conn['access_token'] = tok_dec($CFG, $conn['secret']) ?? $conn['secret']; // 11/10/2026: token Meta Ads lưu mã hoá (enc1:)
+    elseif (PROVIDERS[$p]['auth'] === 'meta') $conn['access_token'] = meta_user_token($CFG, $conn); // token đăng nhập Facebook lưu mã hoá (enc1:)
 
     if ($p === 'ga4') {
         [$code, $d] = http_call('POST', 'https://analyticsdata.googleapis.com/v1beta/properties/' . rawurlencode($conn['external_account_id']) . ':runReport', [
@@ -357,6 +358,25 @@ function sync_connection(array $CFG, array $conn): array {
         $spend = (float)($r['spend'] ?? 0);
         $notes = [];
         if (!$pur && !$atc) $notes[] = 'Chưa có sự kiện Pixel (AddToCart/Purchase) trong 30 ngày — kiểm tra Pixel + Conversions API trên website';
+        // 14/10/2026: trạng thái tài khoản, chi tiêu theo ngày, bảng chiến dịch (30 ngày). Lỗi phần phụ chỉ ghi chú, không hỏng cả lần đồng bộ.
+        $acct = rawurlencode($conn['external_account_id']);
+        [$c, $ai] = http_get_json(graph_url($CFG, $acct, ['fields' => 'account_status,disable_reason,currency', 'access_token' => $conn['access_token']]));
+        if ($c === 200 && (int)($ai['account_status'] ?? 1) !== 1) $notes[] = 'Tài khoản quảng cáo không hoạt động (trạng thái ' . (int)$ai['account_status'] . ') — kiểm tra trong Trình quản lý quảng cáo';
+        $series = [];
+        [$c, $ds] = http_get_json(graph_url($CFG, $acct . '/insights', ['fields' => 'spend,impressions,clicks', 'date_preset' => 'last_30d', 'time_increment' => 1, 'limit' => 60, 'access_token' => $conn['access_token']]));
+        if ($c === 200) foreach ($ds['data'] ?? [] as $x) $series[] = ['d' => (string)$x['date_start'], 'sp' => (int)round((float)($x['spend'] ?? 0)), 'i' => (int)($x['impressions'] ?? 0), 'c' => (int)($x['clicks'] ?? 0)];
+        else $notes[] = 'Chi tiêu theo ngày: ' . ($ds['error']['message'] ?? "HTTP $c");
+        $top = [];
+        [$c, $cp] = http_get_json(graph_url($CFG, $acct . '/insights', ['level' => 'campaign', 'fields' => 'campaign_name,spend,impressions,clicks,ctr,actions',
+            'date_preset' => 'last_30d', 'sort' => 'spend_descending', 'limit' => 20, 'access_token' => $conn['access_token']]));
+        if ($c === 200 && !empty($cp['data'])) {
+            $rows = [];
+            foreach ($cp['data'] as $x) {
+                $res = 0; foreach ($x['actions'] ?? [] as $a) if (str_contains((string)$a['action_type'], 'lead') || in_array($a['action_type'], ['purchase', 'omni_purchase'], true)) $res += (int)$a['value'];
+                $rows[] = [(string)($x['campaign_name'] ?? ''), (int)round((float)($x['spend'] ?? 0)), (int)($x['impressions'] ?? 0), (int)($x['clicks'] ?? 0), round((float)($x['ctr'] ?? 0), 2) . '%', $res];
+            }
+            $top[] = ['label' => 'Chiến dịch (30 ngày)', 'cols' => ['Chiến dịch', 'Chi tiêu', 'Hiển thị', 'Click', 'CTR', 'Lead + mua'], 'rows' => $rows];
+        } elseif ($c !== 200) $notes[] = 'Bảng chiến dịch: ' . ($cp['error']['message'] ?? "HTTP $c");
         return metrics_save($conn, [
             mitem('Chi tiêu', (int)round($spend), 'money', 'spend'),
             mitem('Hiển thị', (int)($r['impressions'] ?? 0), 'num', 'impressions'),
@@ -370,7 +390,7 @@ function sync_connection(array $CFG, array $conn): array {
             mitem('CPA mua hàng', $pur ? (int)round($spend / $pur) : 0, 'money', 'cpa'),
             mitem('Lead', $leads, 'num', 'leads'),
             mitem('CPL', $leads ? (int)round($spend / $leads) : 0, 'money', 'cpl'),
-        ], $notes);
+        ], $notes, ['top' => $top, 'series' => $series, 'series_kind' => 'meta_ads']);
     }
 
     throw new SyncError('Loại kênh không hỗ trợ', 400);

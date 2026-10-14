@@ -95,7 +95,7 @@ lần đồng bộ.
 **Meta** — dùng chung cho Fanpage và quảng cáo Meta:
 1. https://developers.facebook.com/apps → tạo app loại *Business*.
 2. Thêm *Facebook Login for Business*, Valid OAuth Redirect URI
-   `http://localhost:8080/api/oauth_meta_callback.php`.
+   `http://localhost:8080/api/oauth_facebook_callback.php`.
 3. Điền `meta_app_id`, `meta_app_secret`.
 4. Chưa qua App Review thì chỉ Admin/Developer/Tester của app đăng nhập được —
    thêm tài khoản Facebook của người quản trị các Fanpage vào vai trò của app.

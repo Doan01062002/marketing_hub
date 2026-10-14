@@ -472,3 +472,19 @@ CREATE TABLE IF NOT EXISTS hl_jobs (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_hl_jobs_q ON hl_jobs(status, created_at);
+
+-- v17 (14/10/2026): Fanpage được cấp quyền qua đăng nhập Facebook. Page Access Token lưu mã hoá (enc1:), không trả về trình duyệt.
+CREATE TABLE IF NOT EXISTS meta_pages (
+  connection_id TEXT NOT NULL,               -- kết nối facebook_page (OAuth) đã lấy được Page này
+  project_id TEXT,
+  page_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  category TEXT,
+  tasks TEXT,                                -- JSON quyền của người đăng nhập trên Page: MANAGE, CREATE_CONTENT, MODERATE, ADVERTISE, ANALYZE…
+  page_token TEXT,                           -- Page Access Token mã hoá
+  ig_user_id TEXT,                           -- Instagram Business gắn với Page (nếu có)
+  ig_username TEXT,
+  synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (connection_id, page_id)
+);
+CREATE INDEX IF NOT EXISTS idx_meta_pages_page ON meta_pages(page_id);

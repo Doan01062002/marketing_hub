@@ -689,7 +689,7 @@ function notifyOauthResult(){
   toast('Đã kết nối',c?c.label:'');
   if(c&&!c.external_account_id)setTimeout(()=>pickAccounts(c.id),300);
  }
- if(p.get('conn_msg')){toast('TikTok',p.get('conn_msg'));}
+ if(p.get('conn_msg')){toast('Kết nối',p.get('conn_msg'));}
  if(p.get('conn_error')){toast('Kết nối lỗi',p.get('conn_error'));}
  if(p.get('conn_ok')||p.get('conn_error')){history.replaceState({},'',location.pathname+location.hash)}
 }
@@ -1765,6 +1765,7 @@ function channelDetail(c,hist){
  if(items.length)html+=`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${items.map((it,i)=>kpi(esc(it.label),fmtMetric(it),'chart',ST_COLORS[i%8])).join('')}</div>`;
  if(h&&h.points&&h.points.length>1)html+=`<h4 style="margin:14px 0 6px">${esc(h.key_label||'Chỉ số chính')} theo ngày</h4>${chLine(stThin(h.points.map(p=>stDay(p.day))),[{name:h.key_label||'',color:t.color,values:h.points.map(p=>p.value)}])}`;
  if(m.series_kind==='ga4'&&(m.series||[]).length>1)html+=`<h4 style="margin:14px 0 6px">Phiên & người dùng theo ngày</h4>${chLine(stThin(m.series.map(x=>stDay(x.d))),[{name:'Phiên',color:'#e8750a',values:m.series.map(x=>x.s)},{name:'Người dùng',color:'#2563eb',values:m.series.map(x=>x.u)}])}`;
+ if(m.series_kind==='meta_ads'&&(m.series||[]).length>1)html+=`<h4 style="margin:14px 0 6px">Chi tiêu & click quảng cáo theo ngày</h4>${chLine(stThin(m.series.map(x=>stDay(x.d))),[{name:'Chi tiêu',color:'#e8750a',values:m.series.map(x=>x.sp)},{name:'Click',color:'#2563eb',values:m.series.map(x=>x.c)}])}`;
  if(c.provider==='gsc'&&(m.series||[]).length>1)html+=`<h4 style="margin:14px 0 6px">Click & hiển thị theo ngày</h4>${chLine(stThin(m.series.map(x=>stDay(x.d))),[{name:'Hiển thị',color:'#7c3aed',values:m.series.map(x=>x.i)},{name:'Click',color:'#2563eb',values:m.series.map(x=>x.c)}])}`;
  if(list.length){
   const since=Date.now()-30*86400000,recent=list.filter(v=>utcDate(v.at)>since);
@@ -3370,7 +3371,7 @@ function connRow(c){
  let acts;
  if(manual)acts=`<button class="btn sm" onclick="syncChannel('${c.id}')">${ic('trend')} Đồng bộ</button><button class="iconbtn" title="Sửa" onclick="openConnForm('${c.provider}','${c.id}')">${ic('edit')}</button>`;
  else if(c.status!=='connected')acts=c.provider==='tiktok'?`<button class="btn sm primary" onclick="ttConnectModal('${c.id}')">${ic('link')} Kết nối</button>`:`<a class="btn sm primary" style="text-decoration:none" href="${connStartUrl(c)}">${ic('link')} Kết nối</a><button class="iconbtn" title="Đổi tên" onclick="renameChannel('${c.id}')">${ic('edit')}</button>`;
- else acts=`${!c.external_account_id?`<button class="btn sm primary" onclick="pickAccounts('${c.id}')">${ic('check')} Chọn tài khoản</button>`:`<button class="btn sm" onclick="syncChannel('${c.id}')">${ic('trend')} Đồng bộ</button>${c.provider==='tiktok'?`<button class="btn sm ${c.last_error?'primary':''}" onclick="ttConnectModal('${c.id}')" title="Đăng nhập lại để cấp thêm quyền (vd đăng video)">${ic('link')} Kết nối lại</button>`:`<button class="btn sm" onclick="pickAccounts('${c.id}')">${ic('plus')} Thêm từ tài khoản này</button>`}`}<button class="iconbtn" title="Đổi tên" onclick="renameChannel('${c.id}')">${ic('edit')}</button><button class="iconbtn" title="Ngắt kết nối" onclick="disconnectChannel('${c.id}')">${ic('x')}</button>`;
+ else acts=`${!c.external_account_id?`<button class="btn sm primary" onclick="pickAccounts('${c.id}')">${ic('check')} Chọn tài khoản</button>`:`<button class="btn sm" onclick="syncChannel('${c.id}')">${ic('trend')} Đồng bộ</button>${c.provider==='tiktok'?`<button class="btn sm ${c.last_error?'primary':''}" onclick="ttConnectModal('${c.id}')" title="Đăng nhập lại để cấp thêm quyền (vd đăng video)">${ic('link')} Kết nối lại</button>`:`<button class="btn sm" onclick="pickAccounts('${c.id}')">${ic('plus')} Thêm từ tài khoản này</button>${chType(c.provider).auth==='meta'?`<button class="btn sm" onclick="metaSyncPerms('${c.id}')" title="Đọc lại quyền đã cấp và danh sách Fanpage (Page token lưu mã hoá trên máy chủ)">${ic('check')} Đồng bộ quyền</button><a class="btn sm ${c.last_error?'primary':''}" style="text-decoration:none" href="${connStartUrl(c)}" title="Đăng nhập Facebook lại để cấp thêm quyền / Page">${ic('link')} Kết nối lại</a>`:''}`}`}<button class="iconbtn" title="Đổi tên" onclick="renameChannel('${c.id}')">${ic('edit')}</button><button class="iconbtn" title="Ngắt kết nối" onclick="disconnectChannel('${c.id}')">${ic('x')}</button>`;
  return `<tr>
   <td><b>${esc(c.label)}</b><div class="r-mut">${manual?(c.has_refresh?'OAuth riêng · '+esc(c.client_id_hint||''):'Nhập tay · '+esc(c.secret_hint||'')):'Đăng nhập '+(AUTH_NAME[chType(c.provider).auth]||'Google')}</div>${c.last_error?`<div class="r-mut" style="color:var(--bad);max-width:340px">${esc(c.last_error)}</div>`:''}${c.metrics&&c.metrics.notes&&c.metrics.notes.length?`<div class="r-mut" style="color:var(--warn);max-width:340px" title="${esc(c.metrics.notes.join('\n'))}">${c.metrics.notes.length} ghi chú về chỉ số</div>`:''}</td>
   <td class="mono r-mut">${esc(c.external_account_id||'—')}</td>
@@ -3441,7 +3442,7 @@ window.addEventListener('message',e=>{
  refreshData().then(()=>{if(S.page==='settings'||S.page==='channels')render()});
 });
 function metaClientModal(retryProvider){
- const m=(DSET.d&&DSET.d.meta)||{};const redirect=m.redirect_uri||(location.origin+'/api/oauth_meta_callback.php');
+ const m=(DSET.d&&DSET.d.meta)||{};const redirect=m.redirect_uri||(location.origin+'/api/oauth_facebook_callback.php');
  openModal(`<div class="mh">${ic('settings')}<h3>Cài đăng nhập Facebook / Meta (làm một lần)</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
   <div class="mb"><ol class="mini" style="padding-left:18px;line-height:1.7">
    <li><a href="https://developers.facebook.com/apps" target="_blank" rel="noopener">developers.facebook.com/apps</a> → <b>Create app</b> → loại <b>Business</b>.</li>
@@ -3641,6 +3642,17 @@ async function submitPickAccounts(id,hasOwn){
  if(!d)return;
  toast('Đã cập nhật danh sách kênh',(d.created+(hasOwn?0:1))+' kênh');
  go('settings');
+}
+async function metaSyncPerms(id){
+ const c=DB.connections.find(x=>x.id===id);
+ toast('Đang đồng bộ quyền Facebook…',c?c.label:'');
+ try{
+  const d=await apiPost('/api/meta.php',{action:'sync',conn_id:id});
+  const pg=d.pages?` · ${d.pages.length} Page: ${d.pages.slice(0,5).map(p=>p.name).join(', ')}${d.pages.length>5?'…':''}`:'';
+  if(c){c.scopes=d.perms.granted;c.scopes_declined=d.perms.declined;c.last_error=d.warning||null}
+  toast(d.warning?'Cần kết nối lại':'Đã đồng bộ quyền',(d.warning||(d.perms.granted.length+' quyền'))+pg);
+ }catch(e){if(c)c.last_error=e.message;toast('Lỗi',e.message)}
+ render();
 }
 async function syncChannel(id,silent){
  const c=DB.connections.find(x=>x.id===id);
@@ -3971,10 +3983,115 @@ function pgAds(){
  const ch=chOf('ads',adsDefault());const a=ADS_TABS.find(x=>x[0]===ch)||ADS_TABS[0];
  const tabs=ADS_TABS.map(x=>[x[0],x[1],null,DB.campaigns.filter(c=>(c.channels||[]).some(k=>x[3].test(k))).length]);
  const acc=(DB.connections||[]).filter(c=>a[2].includes(c.provider));
- const accBox=acc.length?`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tài khoản quảng cáo ${esc(a[1])}</h3><span class="sub">${acc.length} tài khoản · số liệu 30 ngày tại lần đồng bộ gần nhất</span></div><div class="card-b" style="padding:0">${measureTable(a[2])}</div></div>`
+ const accBox=acc.length?(ch==='fbads'?adsReportPanel(acc):`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tài khoản quảng cáo ${esc(a[1])}</h3><span class="sub">${acc.length} tài khoản · số liệu 30 ngày tại lần đồng bộ gần nhất</span></div><div class="card-b" style="padding:0">${measureTable(a[2])}</div></div>`)
   :(ch==='fbads'?metaAdsCard():noData(`Chưa kết nối tài khoản ${esc(a[1])}`,'Chiến dịch bên dưới là bản ghi nội bộ (kế hoạch, ngân sách kế hoạch, duyệt). Chi tiêu thật, hiển thị, click chỉ hiện khi tài khoản quảng cáo được kết nối. Tạo/sửa chiến dịch trên nền tảng vẫn làm ở trình quản lý quảng cáo.',`<button class="btn" onclick="go('settings','integ')">${ic('link')} Kết nối tài khoản</button>`));
  const pxBox=(ch==='fbads'&&acc.length&&MA.pixel)?`<div class="mini" style="margin:-8px 0 12px">Pixel của dự án: <span class="mono">${esc(MA.pixel)}</span> · dùng cho mã đo trên website + Conversions API</div>`:'';
  return `<div class="menuhead"><h1>Chiến dịch quảng cáo</h1><div class="sub">${esc((proj()||{}).name||'')} · ngân sách kế hoạch tách riêng với chi tiêu thật trên nền tảng</div></div>${chBar('ads',tabs,ch)}${accBox}${pxBox}${pgCampaigns()}`;
+}
+/* ---- Báo cáo Facebook Ads (số liệu trực tiếp từ Meta Marketing API — api/ads_report.php) 14/10/2026 ---- */
+const AR={conn:'',range:'last_30d',since:'',until:'',level:'campaign',d:null,busy:false,err:'',key:'',sort:'spend',dir:-1,q:'',st:'all',cm:'spend',bt:'platform'};
+const AR_RANGES=[['today','Hôm nay'],['yesterday','Hôm qua'],['last_7d','7 ngày qua'],['last_14d','14 ngày qua'],['last_30d','30 ngày qua'],['this_month','Tháng này'],['last_month','Tháng trước'],['custom','Tuỳ chọn…']];
+const AR_ST={ACTIVE:{t:'Đang chạy',c:'ok'},PAUSED:{t:'Tạm dừng',c:'mut'},CAMPAIGN_PAUSED:{t:'Chiến dịch dừng',c:'mut'},ADSET_PAUSED:{t:'Nhóm dừng',c:'mut'},IN_PROCESS:{t:'Đang xử lý',c:'info'},WITH_ISSUES:{t:'Có lỗi',c:'bad'},DISAPPROVED:{t:'Bị từ chối',c:'bad'},PENDING_REVIEW:{t:'Chờ duyệt',c:'warn'},'':{t:'Đã kết thúc',c:'mut'}};
+const AR_COL=['#1877f2','#e1306c','#0d9488','#d97706','#7c3aed','#64748b'];
+function arCur(){return (AR.d&&AR.d.account&&AR.d.account.currency)||'VND'}
+function arMoney(v){return arCur()==='VND'?money(v):(Math.round((v||0)*100)/100).toLocaleString('vi-VN')+' '+esc(arCur())}
+function arPct(v){return (v||0).toLocaleString('vi-VN',{maximumFractionDigits:2})+'%'}
+function arDec(v){return (v||0).toLocaleString('vi-VN',{maximumFractionDigits:2})}
+function arUrl(refresh){const q={conn_id:AR.conn,range:AR.range,level:AR.level};if(AR.range==='custom'){q.since=AR.since;q.until=AR.until}if(refresh)q.refresh=1;return '/api/ads_report.php?'+new URLSearchParams(q)}
+async function arLoad(refresh){
+ if(!AR.conn)return;if(AR.range==='custom'&&(!AR.since||!AR.until)){AR.err='Chọn ngày bắt đầu và kết thúc';render();return}
+ const key=arUrl(false);AR.busy=true;AR.err='';AR.key=key;render();
+ try{const d=await apiGet(arUrl(refresh));if(AR.key===key)AR.d=d}
+ catch(e){if(AR.key===key){AR.err=e.message;AR.d=null}}
+ finally{if(AR.key===key){AR.busy=false;render()}}
+}
+function arSet(k,v){AR[k]=v;if(['conn','range','level','since','until'].includes(k)){if(k!=='level')AR.d=null;arLoad()}else render()}
+function arSort(k){if(AR.sort===k)AR.dir=-AR.dir;else{AR.sort=k;AR.dir=k==='name'?1:-1}render()}
+async function arPickAccount(connId,accId){
+ try{await apiPost('/api/connections.php',{action:'set_account',id:connId,external_account_id:accId});toast('Đã chọn tài khoản quảng cáo',accId);await refreshData();AR.d=null;arLoad(true);syncChannel(connId,true)}
+ catch(e){toast('Lỗi',e.message)}
+}
+/** Ô chỉ số có so sánh kỳ trước. inv=true: chỉ số chi phí (tăng là xấu). */
+function arKpi(lbl,cur,prev,fmt,icn,col,inv){
+ let dl='';if(prev>0&&cur!=null){const p=(cur-prev)/prev*100;const up=p>=0;const good=inv?!up:up;dl=`<div class="dl ${Math.abs(p)<1?'flat':good?'up':'down'}">${Math.abs(p)<1?'':up?'▲':'▼'} ${Math.abs(p).toLocaleString('vi-VN',{maximumFractionDigits:1})}% <span>so với kỳ trước</span></div>`}
+ else if(prev===0&&cur>0)dl=`<div class="dl flat"><span>kỳ trước: 0</span></div>`;
+ return `<div class="kpi"><div class="lbl"><span class="ki" style="background:${col}1a;color:${col}">${ic(icn)}</span>${lbl}</div><div class="val">${fmt(cur)}</div>${dl}</div>`;
+}
+function adsReportPanel(acc){
+ if(!acc.some(c=>c.id===AR.conn)){AR.conn=acc[0].id;AR.d=null}
+ const c=acc.find(x=>x.id===AR.conn);
+ if(c.status!=='connected')return `<div class="card" style="margin-bottom:14px">${noData('Tài khoản Meta Ads chưa kết nối',esc(c.last_error||'Đăng nhập Facebook để Hub đọc số liệu quảng cáo.'),`<a class="btn primary" style="text-decoration:none" href="${connStartUrl(c)}">${ic('link')} Kết nối lại</a>`)}</div>`;
+ if(!AR.d&&!AR.busy&&!AR.err)setTimeout(()=>arLoad(),0);
+ const D=AR.d;
+ const opts=AR_RANGES.map(r=>`<option value="${r[0]}" ${AR.range===r[0]?'selected':''}>${r[1]}</option>`).join('');
+ const bar=`<div class="card" style="margin-bottom:14px"><div class="card-b" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+  ${acc.length>1?`<select onchange="arSet('conn',this.value)" title="Tài khoản quảng cáo">${acc.map(x=>`<option value="${esc(x.id)}" ${x.id===AR.conn?'selected':''}>${esc(x.account_name||x.label)}</option>`).join('')}</select>`:''}
+  <select onchange="arSet('range',this.value)" title="Khoảng thời gian">${opts}</select>
+  ${AR.range==='custom'?`<input type="date" value="${esc(AR.since)}" onchange="AR.since=this.value"> → <input type="date" value="${esc(AR.until)}" onchange="AR.until=this.value"><button class="btn sm primary" onclick="AR.d=null;arLoad()">Xem</button>`:''}
+  ${D&&D.range?`<span class="mini">${esc(D.range.since)} → ${esc(D.range.until)} · so với ${esc(D.range.prev_since)} → ${esc(D.range.prev_until)}</span>`:''}
+  <div class="hact"><span class="mini">${AR.busy?'Đang lấy số liệu từ Meta…':D&&D.cached_at?'Cập nhật '+esc(D.cached_at.slice(11,16))+(D.from_cache?' (bộ nhớ đệm)':''):''}</span>
+  <button class="btn sm" onclick="arLoad(true)" ${AR.busy?'disabled':''}>${ic('trend')} Làm mới</button>${D&&D.rows?`<button class="btn sm" onclick="arCSV()">${ic('check')} Xuất Excel</button>`:''}<a class="btn sm" style="text-decoration:none" href="${connStartUrl(c)}" title="Đăng nhập Facebook lại để cấp thêm quyền / tài khoản">${ic('link')} Kết nối lại</a></div></div></div>`;
+ if(AR.err)return bar+`<div class="card" style="margin-bottom:14px">${noData('Chưa lấy được số liệu quảng cáo',esc(AR.err),`<button class="btn" onclick="arLoad(true)">Thử lại</button>`)}</div>`;
+ if(!D)return bar+`<div class="card" style="margin-bottom:14px"><div class="card-b"><div class="mini">Đang lấy số liệu từ Meta…</div></div></div>`;
+ if(D.need_account){
+  const L=D.accounts||[];
+  return bar+`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Chọn tài khoản quảng cáo</h3><span class="sub">Đã đăng nhập Facebook · ${L.length} tài khoản quảng cáo được cấp quyền</span></div><div class="card-b">${L.length?`<div class="doclist">${L.map(a=>`<div class="docrow" style="align-items:center"><div class="dm"><div class="t1">${esc(a.name)} <span class="mono r-mut">${esc(a.id)}</span> ${a.status===1?'<span class="badge b-ok">hoạt động</span>':'<span class="badge b-warn">trạng thái '+a.status+'</span>'}</div><div class="t2">${esc(a.business||'—')} · ${esc(a.currency)}</div></div>${projAdmin()?`<button class="btn sm primary" onclick="arPickAccount('${esc(c.id)}','${esc(a.id)}')">${ic('check')} Dùng tài khoản này</button>`:''}</div>`).join('')}</div>`:noData('Không thấy tài khoản quảng cáo','Tài khoản Facebook đã đăng nhập chưa được cấp quyền tài khoản quảng cáo nào. Bấm Kết nối lại và tick tài khoản quảng cáo ở bước chọn tài sản.')}</div></div>`;
+ }
+ const A=D.account,s=D.summary.cur,p=D.summary.prev;
+ const head=`<div class="mini" style="margin:-4px 0 12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><b style="color:var(--ink)">${esc(A.name)}</b><span class="mono">${esc(A.id)}</span>${A.status===1?'<span class="badge b-ok"><span class="dot"></span>Hoạt động</span>':`<span class="badge b-bad"><span class="dot"></span>${esc(A.status_label||'Trạng thái '+A.status)}</span>`}<span>${esc(A.currency)} · ${esc(A.timezone)}</span>${A.business?`<span>BM: ${esc(A.business)}</span>`:''}<span>Tổng đã chi từ trước tới nay: <b>${arMoney(A.amount_spent)}</b>${A.spend_cap?' / giới hạn '+arMoney(A.spend_cap):''}</span></div>`;
+ const k1=[arKpi('Chi tiêu',s.spend,p.spend,arMoney,'chart','#e8750a'),arKpi('Hiển thị',s.impressions,p.impressions,num,'trend','#2563eb'),arKpi('Tiếp cận',s.reach,p.reach,num,'trend','#0891b2'),arKpi('Tần suất',s.frequency,p.frequency,arDec,'trend','#64748b',true),
+  arKpi('Click liên kết',s.link_clicks,p.link_clicks,num,'link','#7c3aed'),arKpi('CTR liên kết',s.link_ctr,p.link_ctr,arPct,'link','#7c3aed'),arKpi('CPC (liên kết)',s.cpc,p.cpc,arMoney,'chart','#d97706',true),arKpi('CPM',s.cpm,p.cpm,arMoney,'chart','#d97706',true)].join('');
+ const k2=[arKpi('Kết quả (lead + tin nhắn + mua)',s.results,p.results,num,'check','#0d9488'),arKpi('Chi phí / kết quả',s.cost_per_result,p.cost_per_result,arMoney,'chart','#dc2626',true),
+  arKpi('Lead',s.leads,p.leads,num,'check','#0d9488'),arKpi('CPL',s.cpl,p.cpl,arMoney,'chart','#dc2626',true),arKpi('Bắt đầu nhắn tin',s.messages,p.messages,num,'check','#1877f2'),arKpi('Chi phí / tin nhắn',s.cost_per_msg,p.cost_per_msg,arMoney,'chart','#dc2626',true),
+  arKpi('Mua hàng',s.purchases,p.purchases,num,'check','#db2777'),arKpi('ROAS · doanh thu '+arMoney(s.revenue),s.roas,p.roas,arDec,'trend','#db2777')].join('');
+ const kg=`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">`;
+ const IC={good:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)',info:'var(--info)'};
+ const insight=(D.insights||[]).length?`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Nhận xét tự động</h3><span class="sub">so với kỳ trước cùng độ dài · gợi ý tối ưu</span></div><div class="card-b">${D.insights.map(x=>`<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0"><span style="width:9px;height:9px;border-radius:50%;background:${IC[x[0]]||'var(--mut)'};margin-top:6px;flex:none"></span><span>${esc(x[1])}</span></div>`).join('')}${(D.warnings||[]).map(w=>`<div class="mini" style="color:var(--warn)">${esc(w)}</div>`).join('')}</div></div>`:'';
+ // biểu đồ theo ngày
+ const CM=[['spend','Chi tiêu','#e8750a'],['results','Kết quả','#0d9488'],['link_clicks','Click liên kết','#7c3aed'],['impressions','Hiển thị','#2563eb'],['revenue','Doanh thu','#db2777']];
+ const cm=CM.find(x=>x[0]===AR.cm)||CM[0];const S2=D.series||[];
+ const chart=`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Diễn biến theo ngày</h3><div class="segbar" style="margin:0">${CM.map(x=>`<button class="seg ${x[0]===cm[0]?'on':''}" onclick="arSet('cm','${x[0]}')">${x[1]}</button>`).join('')}</div></div><div class="card-b">${S2.length>1?chLine(stThin(S2.map(x=>stDay(x.d))),[{name:cm[1],color:cm[2],values:S2.map(x=>x[cm[0]]||0)}]):'<div class="mini">Cần ít nhất 2 ngày có số liệu để vẽ biểu đồ.</div>'}</div></div>`;
+ return bar+head+kg+k1+'</div>'+kg+k2+'</div>'+insight+chart+arTable(D)+arBreak(D);
+}
+function arRowsView(D){
+ const q=AR.q.trim().toLowerCase();let R=(D.rows||[]).filter(r=>(!q||(r.name+' '+r.campaign+' '+r.adset).toLowerCase().includes(q))&&(AR.st==='all'||(AR.st==='active'?r.status==='ACTIVE':r.spend>0)));
+ const k=AR.sort,d=AR.dir;R=R.slice().sort((a,b)=>k==='name'?d*String(a.name).localeCompare(String(b.name),'vi'):d*((a[k]||0)-(b[k]||0)));return R;
+}
+function arTable(D){
+ const R=arRowsView(D);const tot=R.reduce((t,r)=>{['spend','impressions','reach','link_clicks','clicks','results','leads','messages','purchases','revenue'].forEach(k=>t[k]+=r[k]||0);return t},{spend:0,impressions:0,reach:0,link_clicks:0,clicks:0,results:0,leads:0,messages:0,purchases:0,revenue:0});
+ const maxSp=Math.max(...R.map(r=>r.spend),1);
+ const LV=[['campaign','Chiến dịch'],['adset','Nhóm quảng cáo'],['ad','Quảng cáo']];
+ const th=(k,t,num)=>`<th${num?' class="tar"':''} style="cursor:pointer;white-space:nowrap" onclick="arSort('${k}')">${t}${AR.sort===k?(AR.dir<0?' ▼':' ▲'):''}</th>`;
+ const rows=R.map(r=>`<tr><td style="min-width:220px">${r.thumb?`<img src="${esc(r.thumb)}" alt="" style="width:34px;height:34px;object-fit:cover;border-radius:6px;float:left;margin-right:8px">`:''}<b>${esc(r.name)}</b>${AR.level!=='campaign'?`<div class="r-mut">${esc(r.campaign)}${AR.level==='ad'&&r.adset?' › '+esc(r.adset):''}</div>`:''}<div style="height:4px;background:#eef1f5;border-radius:3px;margin-top:5px"><div style="height:4px;width:${(r.spend/maxSp*100).toFixed(1)}%;background:#1877f2;border-radius:3px"></div></div></td>
+  <td>${badge(AR_ST,r.status)}</td><td class="tar">${r.budget?arMoney(r.budget)+`<div class="r-mut">/${esc(r.budget_type||'')}</div>`:'<span class="r-mut">—</span>'}</td>
+  <td class="tar"><b>${arMoney(r.spend)}</b></td><td class="tar">${num(r.impressions)}</td><td class="tar">${num(r.reach)}</td><td class="tar">${arDec(r.frequency)}</td><td class="tar">${num(r.link_clicks)}</td><td class="tar">${arPct(r.link_ctr)}</td><td class="tar">${arMoney(r.cpc)}</td><td class="tar">${arMoney(r.cpm)}</td>
+  <td class="tar"><b>${num(r.result)}</b><div class="r-mut">${esc(r.result_label)}</div></td><td class="tar">${r.result?arMoney(r.cost_per):'—'}</td><td class="tar">${r.revenue?arDec(r.roas):'—'}</td></tr>`).join('');
+ const T=Object.assign({},tot);T.ctr=T.impressions?T.link_clicks/T.impressions*100:0;
+ return `<div class="card" style="margin-bottom:14px"><div class="card-h" style="flex-wrap:wrap;gap:8px"><div class="segbar" style="margin:0">${LV.map(x=>`<button class="seg ${AR.level===x[0]?'on':''}" onclick="arSet('level','${x[0]}')">${x[1]}</button>`).join('')}</div>
+  <div class="hact"><select onchange="arSet('st',this.value)"><option value="all" ${AR.st==='all'?'selected':''}>Tất cả</option><option value="spent" ${AR.st==='spent'?'selected':''}>Có chi tiêu</option><option value="active" ${AR.st==='active'?'selected':''}>Đang chạy</option></select><input placeholder="Tìm theo tên…" value="${esc(AR.q)}" oninput="AR.q=this.value;clearTimeout(AR._t);AR._t=setTimeout(()=>{render();const i=document.querySelector('#ar-q');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},250)" id="ar-q" style="width:200px"></div></div>
+  <div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl"><thead><tr>${th('name','Tên')}<th>Trạng thái</th>${th('budget','Ngân sách',1)}${th('spend','Chi tiêu',1)}${th('impressions','Hiển thị',1)}${th('reach','Tiếp cận',1)}${th('frequency','Tần suất',1)}${th('link_clicks','Click LK',1)}${th('link_ctr','CTR LK',1)}${th('cpc','CPC',1)}${th('cpm','CPM',1)}${th('result','Kết quả',1)}${th('cost_per','Chi phí/KQ',1)}${th('roas','ROAS',1)}</tr></thead>
+  <tbody>${rows||`<tr><td colspan="14"><div class="mini" style="padding:14px">${AR.busy?'Đang tải…':'Không có '+(LV.find(x=>x[0]===AR.level)[1]).toLowerCase()+' nào có số liệu trong khoảng ngày này.'}</div></td></tr>`}</tbody>
+  ${R.length?`<tfoot><tr style="font-weight:700;background:#f8fafc"><td>Tổng ${R.length} mục</td><td></td><td></td><td class="tar">${arMoney(T.spend)}</td><td class="tar">${num(T.impressions)}</td><td class="tar">—</td><td></td><td class="tar">${num(T.link_clicks)}</td><td class="tar">${arPct(T.ctr)}</td><td class="tar">${arMoney(T.link_clicks?T.spend/T.link_clicks:0)}</td><td class="tar">${arMoney(T.impressions?T.spend/T.impressions*1000:0)}</td><td class="tar">${num(T.leads+T.messages+T.purchases)}</td><td class="tar">${(T.leads+T.messages+T.purchases)?arMoney(T.spend/(T.leads+T.messages+T.purchases)):'—'}</td><td class="tar">${T.revenue&&T.spend?arDec(T.revenue/T.spend):'—'}</td></tr></tfoot>`:''}</table></div></div>`;
+}
+function arBreak(D){
+ const BT=[['platform','Kênh hiển thị'],['position','Vị trí quảng cáo'],['age','Độ tuổi & giới tính'],['region','Khu vực'],['device','Thiết bị']];
+ const cols=(first)=>`<thead><tr><th>${first}</th><th class="tar">Chi tiêu</th><th class="tar">% chi</th><th class="tar">Hiển thị</th><th class="tar">Click</th><th class="tar">CTR</th><th class="tar">CPM</th><th class="tar">Kết quả</th><th class="tar">Chi phí/KQ</th></tr></thead>`;
+ const tot=Math.max((D.summary.cur.spend||0),1);
+ const tr=(name,r)=>`<tr><td><b>${esc(name)}</b></td><td class="tar">${arMoney(r.spend)}</td><td class="tar">${arPct(r.spend/tot*100)}</td><td class="tar">${num(r.impressions)}</td><td class="tar">${num(r.clicks)}</td><td class="tar">${arPct(r.ctr)}</td><td class="tar">${arMoney(r.cpm)}</td><td class="tar">${num(r.results)}</td><td class="tar">${r.results?arMoney(r.cost_per_result):'—'}</td></tr>`;
+ let body='';
+ if(AR.bt==='platform'){const P=D.platforms||[];body=P.length?`<div class="grid2" style="grid-template-columns:1fr 1.6fr;align-items:center"><div>${chDonut(P.map((x,i)=>({label:x.name,value:Math.round(x.spend),color:AR_COL[i%AR_COL.length],fmt:arMoney})))}</div><div class="tbl-wrap" style="box-shadow:none"><table class="tbl">${cols('Nền tảng')}<tbody>${P.map(x=>tr(x.name,x)).join('')}</tbody></table></div></div>`:''}
+ else if(AR.bt==='position'){const P=D.positions||[];body=P.length?`<div class="tbl-wrap" style="box-shadow:none"><table class="tbl">${cols('Vị trí')}<tbody>${P.map(x=>tr(x.platform+' · '+x.position,x)).join('')}</tbody></table></div>`:''}
+ else if(AR.bt==='age'){const G=D.age_gender||[];const ages=[...new Set(G.map(x=>x.age))].sort();const gens=[...new Set(G.map(x=>x.gender))];const mx=Math.max(...G.map(x=>x.spend),1);const GC={'Nam':'#2563eb','Nữ':'#db2777'};
+  body=G.length?`<div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>Độ tuổi</th>${gens.map(g=>`<th>${esc(g)} · chi tiêu</th><th class="tar">${esc(g)} · kết quả</th><th class="tar">Chi phí/KQ</th>`).join('')}</tr></thead><tbody>${ages.map(a=>`<tr><td><b>${esc(a)}</b></td>${gens.map(g=>{const r=G.find(x=>x.age===a&&x.gender===g)||{spend:0,results:0,cost_per_result:0};return `<td style="min-width:150px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:8px;background:#eef1f5;border-radius:4px"><div style="height:8px;width:${(r.spend/mx*100).toFixed(1)}%;background:${GC[g]||'#64748b'};border-radius:4px"></div></div><span style="white-space:nowrap">${arMoney(r.spend)}</span></div></td><td class="tar">${num(r.results)}</td><td class="tar">${r.results?arMoney(r.cost_per_result):'—'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>`:''}
+ else if(AR.bt==='region'){const P=D.regions||[];body=P.length?`<div class="tbl-wrap" style="box-shadow:none"><table class="tbl">${cols('Tỉnh / thành')}<tbody>${P.map(x=>tr(x.region,x)).join('')}</tbody></table></div>`:''}
+ else {const P=D.devices||[];body=P.length?`<div class="tbl-wrap" style="box-shadow:none"><table class="tbl">${cols('Thiết bị')}<tbody>${P.map(x=>tr(x.device,x)).join('')}</tbody></table></div>`:''}
+ return `<div class="card" style="margin-bottom:14px"><div class="card-h" style="flex-wrap:wrap;gap:8px"><h3>Hiệu quả theo kênh & đối tượng</h3><div class="segbar" style="margin:0">${BT.map(x=>`<button class="seg ${AR.bt===x[0]?'on':''}" onclick="arSet('bt','${x[0]}')">${x[1]}</button>`).join('')}</div></div><div class="card-b">${body||'<div class="mini">Chưa có số liệu cho mục này trong khoảng ngày đã chọn.</div>'}</div></div>`;
+}
+function arCSV(){
+ const D=AR.d;if(!D)return;const R=arRowsView(D);const LVN={campaign:'ChienDich',adset:'NhomQC',ad:'QuangCao'}[AR.level];
+ dlCSV(['Tên','Chiến dịch','Nhóm QC','Trạng thái','Ngân sách','Chi tiêu','Hiển thị','Tiếp cận','Tần suất','Click liên kết','CTR liên kết (%)','CPC','CPM','Kết quả','Loại kết quả','Chi phí/KQ','Lead','Tin nhắn','Mua hàng','Doanh thu','ROAS'],
+  R.map(r=>[r.name,r.campaign,r.adset,(AR_ST[r.status]||{t:r.status}).t,r.budget||'',Math.round(r.spend),r.impressions,r.reach,r.frequency,r.link_clicks,r.link_ctr,Math.round(r.cpc),Math.round(r.cpm),r.result,r.result_label,Math.round(r.cost_per),r.leads,r.messages,r.purchases,Math.round(r.revenue),r.roas]),
+  `FacebookAds_${LVN}_${D.range.since}_${D.range.until}.csv`);
 }
 /* ---- Facebook Ads: kết nối bằng 1 token (System User, quyền ads_read) — app tự tìm tài khoản + Pixel ---- */
 const MA={look:null,busy:false,pixel:'',sel:'',pixSel:''};

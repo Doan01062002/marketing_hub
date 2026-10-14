@@ -28,7 +28,7 @@ return [
   // --- Meta: dùng chung cho Fanpage Facebook và Meta Ads ---
   // Tạo app tại https://developers.facebook.com/apps (loại "Business"),
   // thêm sản phẩm "Facebook Login for Business",
-  //   Valid OAuth Redirect URI: <app_url>/api/oauth_meta_callback.php
+  //   Valid OAuth Redirect URI: <app_url>/api/oauth_facebook_callback.php
   // Quyền dùng: pages_show_list, pages_read_engagement, read_insights (Fanpage) và ads_read (quảng cáo).
   // Chế độ phát triển (chưa App Review): chỉ admin/tester của app đăng nhập được — đủ để phòng Marketing tự dùng.
   'meta_app_id' => '',

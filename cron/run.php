@@ -52,12 +52,20 @@ if ($CFG['meta_app_id'] && $CFG['meta_app_secret'] && setting_get('cron.last_met
     $n = 0; $err = 0;
     foreach ($rows as $c) {
         if ((PROVIDERS[$c['provider']]['auth'] ?? '') !== 'meta') continue;
-        [$code, $d] = http_get_json(graph_url($CFG, 'oauth/access_token', ['grant_type' => 'fb_exchange_token', 'client_id' => $CFG['meta_app_id'], 'client_secret' => $CFG['meta_app_secret'], 'fb_exchange_token' => $c['access_token']]));
-        if ($code === 200 && !empty($d['access_token'])) { $pdo->prepare("UPDATE connections SET access_token=?, expires_at=?, last_error=NULL WHERE id=?")->execute([$d['access_token'], date('Y-m-d H:i:s', time() + (int)($d['expires_in'] ?? 5184000)), $c['id']]); $n++; }
+        [$code, $d] = http_post_form(graph_url($CFG, 'oauth/access_token'), ['grant_type' => 'fb_exchange_token', 'client_id' => $CFG['meta_app_id'], 'client_secret' => $CFG['meta_app_secret'], 'fb_exchange_token' => (string)meta_user_token($CFG, $c)]);
+        if ($code === 200 && !empty($d['access_token'])) { $pdo->prepare("UPDATE connections SET access_token=?, expires_at=?, last_error=NULL WHERE id=?")->execute([tok_enc($CFG, $d['access_token']), date('Y-m-d H:i:s', time() + (int)($d['expires_in'] ?? 5184000)), $c['id']]); $n++; }
         else { $err++; $pdo->prepare("UPDATE connections SET last_error=? WHERE id=?")->execute(['Không gia hạn được token Meta: ' . ($d['error']['message'] ?? "HTTP $code") . ' — bấm Kết nối lại', $c['id']]); }
     }
     if ($rows) $log('Gia hạn token Meta', "$n gia hạn, $err lỗi");
     setting_set('cron.last_meta_refresh', date('Y-m-d'), ['id' => null]);
+    // 14/10/2026: đồng bộ quyền + danh sách Fanpage (Page token mã hoá) mỗi ngày — phát hiện quyền bị gỡ / token bị thu hồi sớm.
+    require_once __DIR__ . '/../api/_meta_lib.php';
+    $n = 0; $err = 0;
+    foreach ($pdo->query("SELECT * FROM connections WHERE auth_method='oauth' AND status='connected' AND access_token IS NOT NULL")->fetchAll() as $c) {
+        if ((PROVIDERS[$c['provider']]['auth'] ?? '') !== 'meta') continue;
+        try { $r = meta_sync_account($CFG, $c); $r['warning'] ? $err++ : $n++; } catch (Throwable $e) { $err++; }
+    }
+    if ($n || $err) $log('Đồng bộ quyền Meta', "$n ổn, $err cần xem lại");
 }
 setting_set('cron.last_run', date('Y-m-d H:i:s'), ['id' => null]);
 exit($exit);

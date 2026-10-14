@@ -11,16 +11,20 @@ if (!$CFG['meta_app_id'] || !$CFG['meta_app_secret']) {
     back_to_app($CFG, ['conn_error' => 'Chưa cấu hình meta_app_id/meta_app_secret trong config.local.php (cạnh index.html) — xem README mục Meta.']);
 }
 
-$state = bin2hex(random_bytes(16));
-$_SESSION['oauth_state'] = $state;
-$_SESSION['oauth_conn_id'] = $conn['id'];
-$_SESSION['oauth_project_id'] = $conn['project_id'] ?? null;
+// state chống CSRF: ngẫu nhiên, dùng 1 lần, gắn với người dùng + kênh + dự án, hết hạn sau 15 phút.
+$state = bin2hex(random_bytes(32));
+$_SESSION['oauth_meta'] = ['state' => $state, 'conn_id' => $conn['id'], 'project_id' => $conn['project_id'] ?? null,
+    'user_id' => current_user()['id'], 'exp' => time() + 900];
 
-header('Location: https://www.facebook.com/' . $CFG['meta_graph_version'] . '/dialog/oauth?' . http_build_query([
+$q = [
     'client_id' => $CFG['meta_app_id'],
-    'redirect_uri' => rtrim($CFG['app_url'], '/') . '/api/oauth_meta_callback.php',
+    'redirect_uri' => meta_redirect_uri($CFG),
     'scope' => ($CFG['meta_scope_' . $conn['provider']] ?? '') ?: PROVIDERS[$conn['provider']]['scope'],
     'response_type' => 'code',
     'state' => $state,
-]));
+];
+// Kết nối lại: hỏi lại các quyền người dùng từng bỏ chọn.
+if (!empty($conn['access_token']) || ($conn['status'] ?? '') === 'error') $q['auth_type'] = 'rerequest';
+
+header('Location: https://www.facebook.com/' . $CFG['meta_graph_version'] . '/dialog/oauth?' . http_build_query($q));
 exit;

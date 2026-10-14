@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'google' => ['has_client' => (bool)($CFG['google_client_id'] && $CFG['google_client_secret']), 'client_id' => $CFG['google_client_id'] ?: '',
             'from_config' => (bool)(require __DIR__ . '/../config.php')['google_client_id'], 'redirect_uri' => rtrim($CFG['app_url'], '/') . '/api/oauth_google_callback.php'],
         'meta' => ['has_client' => (bool)($CFG['meta_app_id'] && $CFG['meta_app_secret']), 'app_id' => $CFG['meta_app_id'] ?: '',
-            'from_config' => (bool)(require __DIR__ . '/../config.php')['meta_app_id'], 'redirect_uri' => rtrim($CFG['app_url'], '/') . '/api/oauth_meta_callback.php'],
+            'from_config' => (bool)(require __DIR__ . '/../config.php')['meta_app_id'] || $CFG['meta_app_source'] === 'env', 'from_env' => $CFG['meta_app_source'] === 'env', 'redirect_uri' => rtrim($CFG['app_url'], '/') . '/api/oauth_facebook_callback.php'],
         'tiktok' => ['has_client' => (bool)tiktok_app($CFG)['configured']]];
     foreach (DATA_KEYS as $k => $sk) { $v = setting_get($sk); $out[$k] = ['has_key' => (bool)$v, 'hint' => $v ? mask_secret($v) : '']; }
     respond($out);

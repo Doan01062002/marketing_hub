@@ -202,7 +202,7 @@ if ($method === 'GET') {
             if ($conn['provider'] === 'facebook_page') {
                 $tok = meta_page_token($CFG, $conn);
                 if (!$manual && $conn['access_token']) {
-                    [$c, $d] = http_get_json(graph_url($CFG, 'me/permissions', ['access_token' => $conn['access_token']]));
+                    [$c, $d] = http_get_json(graph_url($CFG, 'me/permissions', ['access_token' => meta_user_token($CFG, $conn)]));
                     if ($c === 200) {
                         $g = [];
                         foreach ($d['data'] ?? [] as $pm) $g[$pm['permission']] = ($pm['status'] ?? '') === 'granted';

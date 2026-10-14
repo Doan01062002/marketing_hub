@@ -256,7 +256,7 @@ function list_accounts(array $CFG, array $conn): array {
 
     $path = $p === 'facebook_page' ? 'me/accounts' : 'me/adaccounts';
     $out = [];
-    $url = graph_url($CFG, $path, ['fields' => 'id,name', 'limit' => 100, 'access_token' => $conn['access_token']]);
+    $url = graph_url($CFG, $path, ['fields' => 'id,name', 'limit' => 100, 'access_token' => meta_user_token($CFG, $conn)]);
     for ($page = 0; $url && $page < 20; $page++) {
         [$code, $d] = http_get_json($url);
         if ($code !== 200) fail('Meta: ' . ($d['error']['message'] ?? 'không lấy được danh sách'), 502);

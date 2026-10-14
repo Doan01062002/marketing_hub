@@ -151,9 +151,13 @@ function meta_page_token(array $CFG, array $conn): string {
         if (!$conn['secret']) throw new PublishError('Chưa có Page Access Token — vào Thiết lập > Kết nối kênh để dán token');
         return $conn['secret'];
     }
-    if (!$conn['access_token']) throw new PublishError('Kênh chưa đăng nhập Facebook — ' . PERM_HINT);
+    // Page token đã lưu (mã hoá) lúc đăng nhập / đồng bộ quyền; chưa có thì đổi từ token người dùng như cũ.
+    require_once __DIR__ . '/_meta_lib.php';
+    if ($pt = meta_stored_page_token($CFG, $conn)) return $pt;
+    $ut = meta_user_token($CFG, $conn);
+    if (!$ut) throw new PublishError('Kênh chưa đăng nhập Facebook — ' . PERM_HINT);
     [$code, $pg, $raw] = http_get_json(graph_url($CFG, rawurlencode($conn['external_account_id']), [
-        'fields' => 'access_token', 'access_token' => $conn['access_token'],
+        'fields' => 'access_token', 'access_token' => $ut,
     ]));
     if ($code !== 200 || empty($pg['access_token'])) {
         if ($code === 200) throw new PublishError('Tài khoản Facebook đã kết nối không còn quản trị Page này — ' . PERM_HINT);

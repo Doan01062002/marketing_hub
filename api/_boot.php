@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 16; // v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 17; // v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -56,6 +56,7 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols('leads', ['email' => 'TEXT', 'notes' => 'TEXT', 'source_ref' => 'TEXT']);
     // v11 (11/10/2026): tài khoản kênh nhiều môi trường (sandbox/production), quyền đã cấp, tên/ảnh tài khoản
     $addCols('connections', ['env' => 'TEXT', 'scopes' => 'TEXT', 'account_name' => 'TEXT', 'avatar' => 'TEXT']);
+    $addCols('connections', ['scopes_declined' => 'TEXT']); // v17: quyền Meta người dùng đã bỏ chọn
     $addCols('inbox_threads', ['ai_mode' => "TEXT NOT NULL DEFAULT 'on'", 'needs_human' => 'INTEGER NOT NULL DEFAULT 0', 'kind' => "TEXT NOT NULL DEFAULT 'message'", 'post_id' => 'TEXT', 'permalink' => 'TEXT']);
 
     /* v8 (11/10/2026) — lớp DỰ ÁN: mọi bản ghi nghiệp vụ thuộc một project_id; backend lọc theo dự án. */
@@ -85,6 +86,12 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
 // OAuth client Google dán trên giao diện (Thiết lập → Nguồn dữ liệu thị trường) dùng khi config để trống.
 foreach (['google_client_id' => 'google.client_id', 'google_client_secret' => 'google.client_secret', 'meta_app_id' => 'meta.app_id', 'meta_app_secret' => 'meta.app_secret'] as $__ck => $__sk) {
     if (empty($CFG[$__ck]) && ($__v = setting_get($__sk))) $CFG[$__ck] = $__v;
+}
+// Meta App ID / App Secret từ biến môi trường (pool PHP-FPM + cron) — ưu tiên hơn config và giao diện, không nằm trong mã hay CSDL.
+$CFG['meta_app_source'] = '';
+foreach (['meta_app_id' => 'META_APP_ID', 'meta_app_secret' => 'META_APP_SECRET'] as $__ck => $__ek) {
+    $__v = getenv($__ek);
+    if (is_string($__v) && trim($__v) !== '') { $CFG[$__ck] = trim($__v); $CFG['meta_app_source'] = 'env'; }
 }
 
 /** Kết thúc luồng OAuth: cửa sổ bật lên (kết nối nhanh) thì báo về trang chính rồi tự đóng; không thì quay về app như cũ. */
@@ -440,6 +447,16 @@ function graph_url(array $CFG, string $path, array $q = []): string {
     return 'https://graph.facebook.com/' . $CFG['meta_graph_version'] . '/' . ltrim($path, '/') . ($q ? '?' . http_build_query($q) : '');
 }
 
+/** Redirect URI OAuth Meta — dùng chung cho hộp thoại đăng nhập và bước đổi code (phải khớp tuyệt đối). */
+function meta_redirect_uri(array $CFG): string {
+    return rtrim($CFG['app_url'], '/') . '/api/oauth_facebook_callback.php';
+}
+
+/** Token người dùng Meta (đăng nhập Facebook) đã giải mã. Lưu dạng enc1:; giá trị cũ chưa mã hoá vẫn đọc được. */
+function meta_user_token(array $CFG, array $conn): ?string {
+    return tok_dec($CFG, $conn['access_token'] ?? null);
+}
+
 /** Access token Google còn hạn cho một kênh; tự làm mới bằng refresh_token khi sắp hết hạn. */
 function google_access_token(array $CFG, array $conn): ?string {
     global $pdo;
@@ -672,6 +689,7 @@ function public_connection(array $r): array {
         'last_synced_at' => $r['last_synced_at'],
         // 11/10/2026: tài khoản nhiều môi trường (TikTok sandbox/production), quyền đã cấp, hạn token, tên hiển thị
         'env' => $r['env'] ?? null, 'scopes' => array_values(array_filter(explode(',', (string)($r['scopes'] ?? '')))),
+        'scopes_declined' => array_values(array_filter(explode(',', (string)($r['scopes_declined'] ?? '')))),
         'token_until' => $r['expires_at'] ?? null, 'account_name' => $r['account_name'] ?? null, 'avatar' => $r['avatar'] ?? null,
         'project_id' => $r['project_id'] ?? null,
     ];
