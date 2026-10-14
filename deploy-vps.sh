@@ -64,6 +64,7 @@ server {
 
     location = / { try_files /index.html =404; }
     location = /index.html { }
+    location ~ ^/(privacy|terms|data-deletion)\.html$ { }
     location ~ ^/api/[a-z0-9][a-z0-9_]*\.php$ {
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
