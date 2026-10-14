@@ -311,6 +311,15 @@ textarea.cf-in.mono{font-family:ui-monospace,Consolas,monospace;font-size:12.5px
 .cf-way details>summary{cursor:pointer;color:var(--brand-d);font-weight:600;font-size:13px}
 .oa-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line2)}
 .oa-row:first-of-type{border-top:0}
+.acm{display:grid;grid-template-columns:240px 1fr;min-height:400px}
+.acm-l{border-right:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:2px;max-height:70vh;overflow:auto}
+.acm-i{display:flex;align-items:center;gap:10px;padding:9px 10px;border:0;background:transparent;border-radius:10px;cursor:pointer;font:inherit;font-size:14px;text-align:left;color:inherit}
+.acm-i:hover{background:#f3f1fb}.acm-i.on{background:#ece8fb;font-weight:600}
+.acm-r{padding:28px 30px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}
+.acm-r h4{margin:6px 0 0;font-size:19px}
+.acm-act{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:14px;width:100%}
+.acm-act .btn.primary{padding:12px 26px;font-size:15px}
+@media(max-width:720px){.acm{grid-template-columns:1fr}.acm-l{border-right:0;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;max-height:none}}
 .modal.wide{width:min(880px,calc(100vw - 32px));max-width:880px}.modal.wide .mb{max-height:68vh;overflow:auto}
 
 /* ===== Giao diện gọn kiểu phân hệ Kế toán (đè lên phần trên) ===== */
@@ -687,7 +696,10 @@ function notifyOauthResult(){
   const c=(DB.connections||[]).find(x=>x.id===p.get('conn_ok'));
   if(c&&c.provider==='tiktok'){S.ch=S.ch||{};S.ch.channels='tt';S.tab.chsub='api';if(S.page==='channels')render()}
   toast('Đã kết nối',c?c.label:'');
-  if(c&&!c.external_account_id)setTimeout(()=>pickAccounts(c.id),300);
+  if(c&&!c.external_account_id){
+   if(c.provider==='facebook_page')autoImportAll(c).then(r=>{if(r==='err')pickAccounts(c.id)});
+   else setTimeout(()=>pickAccounts(c.id),300);
+  }
  }
  if(p.get('conn_msg')){toast('TikTok',p.get('conn_msg'));}
  if(p.get('conn_error')){toast('Kết nối lỗi',p.get('conn_error'));}
@@ -3423,8 +3435,8 @@ function quickWebCard(){
  return `<div class="card" style="border-color:var(--brand,#0d9488)"><div class="card-h">${ic('zap')}<div><h3>Kết nối nhanh website</h3><div class="sub">Dán link website → bấm Kết nối → đăng nhập Google trong cửa sổ bật lên. App tự tìm đúng website trong <b>Search Console</b> và <b>Google Analytics (GA4)</b>, tạo kênh và lấy số liệu luôn.</div></div></div>
   <div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap"><input id="qw-url" placeholder="VD: webseo.com.vn" style="flex:1;min-width:220px" onkeydown="if(event.key==='Enter')quickWeb()"><button class="btn primary" id="qw-btn" onclick="quickWeb()">${ic('link')} Kết nối với Google</button></div></div>`;
 }
-async function quickWeb(){
- const url=($('#qw-url')||{}).value.trim();if(!url){toast('Dán link website');return}
+async function quickWeb(urlArg){
+ const url=(urlArg!==undefined?String(urlArg):(($('#qw-url')||{}).value||'')).trim();if(!url){toast('Dán link website');return}
  const w=window.open('about:blank','mkt_gconnect','width=520,height=720'); // mở ngay trong lúc bấm để trình duyệt không chặn cửa sổ
  let r,d;
  try{r=await fetch('/api/connections.php',{method:'POST',credentials:'same-origin',headers:PH({'Content-Type':'application/json'}),body:JSON.stringify({action:'quick_web',url})});d=await r.json().catch(()=>({}))}
@@ -3438,7 +3450,14 @@ window.addEventListener('message',e=>{
  if(e.origin!==location.origin||!e.data||!e.data.mktOauth)return;
  const q=e.data.mktOauth;
  if(q.conn_error)toast('Kết nối chưa xong',q.conn_error);else toast('Đã kết nối',q.conn_msg||'');
- refreshData().then(()=>{if(S.page==='settings'||S.page==='channels')render()});
+ refreshData().then(()=>{
+  if(S.page==='settings'||S.page==='channels')render();
+  const c=q.conn_ok&&(DB.connections||[]).find(x=>x.id===q.conn_ok);
+  if(c&&!c.external_account_id&&c.provider!=='tiktok'){
+   if(c.provider==='facebook_page')autoImportAll(c).then(r=>{if(r==='err')pickAccounts(c.id)});
+   else pickAccounts(c.id);
+  }
+ });
 });
 function metaClientModal(retryProvider){
  const m=(DSET.d&&DSET.d.meta)||{};const redirect=m.redirect_uri||(location.origin+'/api/oauth_meta_callback.php');
@@ -3504,8 +3523,8 @@ function connectionsSection(){
  const all=DB.connections||[];
  const form=S.connForm||null;
  if(!DSET.loaded&&!DSET.req){DSET.req=true;dataSettingsLoad().finally(()=>{DSET.req=false})}
- return `${oauthSetupCard()}${quickWebCard()}<div class="card"><div class="card-h"><div><h3>Bước 2 — Thêm kênh</h3><div class="sub">Bấm “Thêm” ở kênh cần đo: chọn <b>Đăng nhập</b> (dễ nhất) hoặc <b>Nhập tay</b> (nâng cao). Thêm bao nhiêu kênh cũng được.</div></div>
-  <div class="hact"><button class="btn sm" onclick="syncAll()">${ic('search')} Kiểm tra kết nối</button><button class="iconbtn" title="Tải lại" onclick="refreshData().then(()=>toast('Đã tải lại'))">${ic('trend')}</button></div></div>
+ return `${oauthSetupCard()}${quickWebCard()}<div class="card"><div class="card-h"><div><h3>Bước 2 — Thêm kênh</h3><div class="sub">Bấm <b>Thêm kết nối</b>, chọn nền tảng, đăng nhập trong cửa sổ nhỏ là xong. Thêm bao nhiêu kênh cũng được; nhập tay chỉ dành cho trường hợp nâng cao.</div></div>
+  <div class="hact"><button class="btn primary" onclick="addConnModal()">${ic('plus')} Thêm kết nối</button><button class="btn sm" onclick="syncAll()">${ic('search')} Kiểm tra kết nối</button><button class="iconbtn" title="Tải lại" onclick="refreshData().then(()=>toast('Đã tải lại'))">${ic('trend')}</button></div></div>
   <div class="card-b" style="padding-top:6px">
  ${CHANNEL_TYPES.map(t=>{const rows=all.filter(c=>c.provider===t.provider);const f=MANUAL_FIELDS[t.provider];const open=form&&form.provider===t.provider;const editing=open&&form.id?all.find(c=>c.id===form.id):null;return `<div class="connsec">
   <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px"><span class="av sm" style="background:${t.color}">${t.short}</span><div><b style="font-size:14px">${t.name}</b> <span class="chip">${rows.length}</span> <span class="badge ${f?(f.oauth?'b-ok':'b-mut'):'b-ok'}" style="font-weight:500">${!f||t.provider==='tiktok'?'Đăng nhập':f.oauth?'Đăng nhập · hoặc nhập tay':'Nhập tay'}</span><div class="mini">${t.desc}</div></div>
@@ -3545,10 +3564,43 @@ async function oauthNew(provider){
   if(auth==='google'&&DSET.d&&DSET.d.google)return googleClientModal(DSET.d.google.redirect_uri,'',provider);
  }
  const el=$('#cf-label');const label=(el&&el.value.trim())||chType(provider).name;
+ const ttReady=provider==='tiktok'&&oauthReady('tiktok')===true;
+ const w=(provider!=='tiktok'||ttReady)?window.open('about:blank','mkt_oauth','width=620,height=760'):null;
  const d=await connAction({action:'create',provider,label});
- if(d&&d.id&&provider==='tiktok'){await refreshData();if(oauthReady('tiktok')===true)return ttReconnect(d.id);ttConnectModal(d.id);return}
- if(d&&d.id)location.href=connStartUrl({id:d.id,provider});
+ if(!d||!d.id){if(w)w.close();return}
+ if(provider==='tiktok'){await refreshData();if(ttReady)return ttReconnect(d.id,w);ttConnectModal(d.id);return}
+ const url=connStartUrl({id:d.id,provider});
+ if(w){w.location=url+'&popup=1';toast('Đăng nhập trong cửa sổ vừa mở','Xong cửa sổ tự đóng, kênh tự được thêm')}
+ else location.href=url;
 }
+const CONN_PLATFORMS=[
+ {k:'facebook',name:'Facebook',provider:'facebook_page',color:'#1877f2',short:'FB',title:'Kết nối với trang Facebook',desc:'Đăng nhập Facebook rồi chọn Trang cần dùng là xong. Tự lấy người theo dõi, tiếp cận, tương tác và dùng được cho đăng bài đa kênh.'},
+ {k:'instagram',name:'Instagram',provider:'facebook_page',color:'#e1306c',short:'IG',title:'Kết nối Instagram',desc:'Tài khoản Instagram Business được gắn với Fanpage, nên kết nối qua Facebook là có luôn Instagram (đăng ảnh, Reels, carousel).'},
+ {k:'tiktok',name:'TikTok',provider:'tiktok',color:'#111827',short:'TT',title:'Kết nối với TikTok',desc:'Đăng nhập TikTok để đo người theo dõi, lượt xem, thích, bình luận của video. Mỗi lần đăng nhập là một tài khoản.'},
+ {k:'youtube',name:'YouTube',provider:'youtube',color:'#ff0000',short:'YT',title:'Kết nối với YouTube',desc:'Đăng nhập Google rồi chọn kênh. Đo người đăng ký, lượt xem, phút xem và đăng được video.'},
+ {k:'web',name:'Website (GA4 + SEO)',provider:'web',color:'#e8750a',short:'WEB',title:'Kết nối website',desc:'Dán link website rồi đăng nhập Google. App tự tìm Search Console và Google Analytics (GA4) của website đó.'},
+ {k:'maps',name:'Google Maps',provider:'gbp',color:'#ea4335',short:'MAP',title:'Kết nối Google Maps',desc:'Lượt xem, cuộc gọi, chỉ đường và đánh giá của địa điểm trên Google Maps. Google phải duyệt quyền Business Profile trước.'},
+ {k:'metaads',name:'Quảng cáo Meta',provider:'meta_ads',color:'#0866ff',short:'MA',title:'Kết nối tài khoản quảng cáo Meta',desc:'Chi tiêu, hiển thị, click và lead của tài khoản quảng cáo Facebook/Instagram.'},
+ {k:'gads',name:'Google Ads',provider:'google_ads',color:'#34a853',short:'GA',title:'Kết nối Google Ads',desc:'Chi tiêu, click, chuyển đổi từng tài khoản Google Ads. Cần Developer Token đã được Google duyệt.'},
+ {k:'zalo',name:'Zalo OA',provider:'zalo_oa',color:'#0068ff',short:'ZL',title:'Thêm Zalo Official Account',desc:'Zalo chỉ hỗ trợ nhập tay (OA ID, App ID, Secret key và Refresh token).'},
+];
+function addConnModal(k){
+ const p=CONN_PLATFORMS.find(x=>x.k===k)||CONN_PLATFORMS[0];
+ const f=MANUAL_FIELDS[p.provider];
+ const auth=p.provider==='web'?'google':(chType(p.provider).auth||'google');
+ const who=OA_WHY[auth]||'Google';
+ let act;
+ if(p.provider==='web')act=`<input id="aw-url" class="cf-in" placeholder="VD: chungauto.vn" onkeydown="if(event.key==='Enter')addConnWeb()" style="max-width:380px;text-align:center"><button class="btn primary" onclick="addConnWeb()">${ic('link')} Kết nối với Google</button>`;
+ else if(p.provider==='zalo_oa')act=`<button class="btn primary" onclick="closeLayer();openConnForm('zalo_oa')">${ic('plus')} Thêm Zalo OA</button>`;
+ else act=`<button class="btn primary" onclick="addConnGo('${p.provider}')">${ic('link')} Kết nối với ${who}</button>${f&&f.oauth?`<a href="#" class="mini" onclick="event.preventDefault();closeLayer();openConnForm('${p.provider}')">Nhập tay (nâng cao)</a>`:''}`;
+ const html=`<div class="mh">${ic('link')}<h3>Thêm kết nối</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+  <div class="acm"><div class="acm-l">${CONN_PLATFORMS.map(x=>`<button class="acm-i ${x.k===p.k?'on':''}" onclick="addConnModal('${x.k}')"><span class="av sm" style="background:${x.color}">${x.short}</span>${esc(x.name)}</button>`).join('')}</div>
+  <div class="acm-r"><span class="av" style="background:${p.color};width:60px;height:60px;font-size:17px">${p.short}</span><h4>${esc(p.title)}</h4><div class="mini" style="max-width:420px">${esc(p.desc)}</div>${waySetupNote(auth)}<div class="acm-act">${act}</div></div></div>`;
+ const m=document.querySelector('.modal');
+ if(m&&m.querySelector('.acm'))m.innerHTML=html;else openModal(html,'lg');
+}
+function addConnGo(provider){closeLayer();oauthNew(provider)}
+function addConnWeb(){const v=(($('#aw-url')||{}).value||'').trim();if(!v){toast('Dán link website');return}closeLayer();quickWeb(v)}
 function pgSettings(){
  const t=tabOf('settings','integ');
  const tabs=[['integ','Kết nối kênh','link',(DB.connections||[]).length],['perm','Phân quyền Group→CN','shield'],['ai','AI & khoá API','cpu'],['data','Nguồn dữ liệu thị trường','globe'],['notify','Gửi tin & thông báo','bell'],['account','Tài khoản','users']];
@@ -3632,6 +3684,27 @@ async function pickAccounts(id){
    <div style="max-height:52vh;overflow:auto">${accounts.map((a,i)=>{const dup=taken.has(a.id)||a.id===c.external_account_id;return `<label class="gaterow" style="cursor:pointer;opacity:${dup?.5:1}"><input type="checkbox" class="pick-acc" value="${esc(a.id)}" data-name="${esc(a.name)}" ${dup?'disabled':(!hasOwn&&i===0?'checked':'')}><div class="gm"><b>${esc(a.name)}</b><span class="mono">${esc(a.id)}${dup?' · đã có trong danh sách':''}</span></div></label>`}).join('')}</div>
   </div>
   <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitPickAccounts('${id}',${hasOwn})">${ic('check')} Lưu lựa chọn</button></div>`,'lg');
+}
+/* Như Pancake: người dùng đã chọn Trang ngay trên hộp thoại Facebook, nên thêm luôn mọi Fanpage được cấp quyền rồi đồng bộ. Trả về 'ok' | 'empty' | 'err'. */
+async function autoImportAll(c){
+ try{
+  toast('Đang thêm Fanpage…','Lấy danh sách Trang từ Facebook');
+  const la=await apiPost('/api/connections.php',{action:'list_accounts',id:c.id});
+  const taken=new Set(DB.connections.filter(x=>x.provider===c.provider&&x.id!==c.id).map(x=>x.external_account_id));
+  const list=(la.accounts||[]).filter(a=>!taken.has(a.id));
+  if(!list.length){
+   toast('Không có Fanpage mới nào','Ở bước “Chọn Trang” của Facebook hãy chọn đúng Trang cần dùng (đã thêm rồi thì không lặp lại)');
+   await refreshData();if(S.page==='settings')render();return 'empty';
+  }
+  await apiPost('/api/connections.php',{action:'import_accounts',id:c.id,accounts:list.map(a=>({id:a.id,name:a.name})),keep_own:false});
+  await refreshData();
+  toast('Đã thêm '+list.length+' Fanpage','Đang đồng bộ số liệu…');
+  for(const x of DB.connections.filter(x=>x.provider===c.provider&&x.status==='connected'&&x.external_account_id&&!x.last_synced_at))await syncChannel(x.id,true);
+  await refreshData();
+  toast('Xong','Đã kết nối '+list.length+' Fanpage');
+  if(S.page==='settings')render();
+  return 'ok';
+ }catch(e){toast('Chưa tự thêm được',e.message);return 'err'}
 }
 async function submitPickAccounts(id,hasOwn){
  const picked=$$('.pick-acc:checked').map(x=>({id:x.value,name:x.dataset.name}));
@@ -4205,7 +4278,7 @@ async function ttConnectGo(id){
   const d=await apiPost('/api/tiktok.php',{action:'reconnect',id});closeLayer();location.href=API(d.start_url);
  }catch(e){toast('Lỗi',e.message)}
 }
-async function ttReconnect(id){try{const d=await apiPost('/api/tiktok.php',{action:'reconnect',id});location.href=API(d.start_url)}catch(e){toast('Lỗi',e.message)}}
+async function ttReconnect(id,w){try{const d=await apiPost('/api/tiktok.php',{action:'reconnect',id});const u=API(d.start_url);if(w){w.location=u+(u.indexOf('?')>=0?'&':'?')+'popup=1';toast('Đăng nhập TikTok trong cửa sổ vừa mở','Xong cửa sổ tự đóng')}else location.href=u}catch(e){if(w)w.close();toast('Lỗi',e.message)}}
 async function ttDisconnect(id){if(!confirm('Ngắt kết nối tài khoản này? Token bị xoá, số liệu cũ giữ lại.'))return;try{await apiPost('/api/connections.php',{action:'disconnect',id});TT.d=null;await refreshData()}catch(e){toast('Lỗi',e.message)}}
 async function ttMove(id,to){const p=(DB.projects||[]).find(x=>x.id===to);if(!confirm('Chuyển tài khoản TikTok này sang dự án "'+(p?p.name:to)+'"? Số liệu và bình luận đi theo tài khoản.'))return;try{await apiPost('/api/connections.php',{action:'set_project',id,project_id_to:to});toast('Đã chuyển dự án');TT.d=null;await refreshData()}catch(e){toast('Lỗi',e.message)}}
 async function ttCheck(id){try{TT.chk[id]=await apiPost('/api/tiktok.php',{action:'check_publish',id});render()}catch(e){toast('Lỗi',e.message)}}

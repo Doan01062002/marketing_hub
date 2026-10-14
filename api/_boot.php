@@ -87,16 +87,20 @@ foreach (['google_client_id' => 'google.client_id', 'google_client_secret' => 'g
     if (empty($CFG[$__ck]) && ($__v = setting_get($__sk))) $CFG[$__ck] = $__v;
 }
 
-/** Kết thúc luồng OAuth: cửa sổ bật lên (kết nối nhanh) thì báo về trang chính rồi tự đóng; không thì quay về app như cũ. */
-function oauth_finish(array $CFG, array $q): void {
-    if (empty($_SESSION['oauth_popup'])) back_to_app($CFG, $q);
+/** Trang kết thúc cho OAuth mở trong cửa sổ bật lên: báo kết quả về trang chính rồi tự đóng. */
+function oauth_popup_page(array $q): void {
     unset($_SESSION['oauth_popup']);
     header('Content-Type: text/html; charset=utf-8');
     $msg = json_encode($q, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     $txt = htmlspecialchars($q['conn_error'] ?? $q['conn_msg'] ?? 'Đã kết nối', ENT_QUOTES);
-    echo "<!doctype html><meta charset=utf-8><title>Kết nối Google</title><body style=\"font-family:system-ui;padding:24px\"><p>$txt</p><p>Cửa sổ sẽ tự đóng…</p>"
+    echo "<!doctype html><meta charset=utf-8><title>Kết nối kênh</title><body style=\"font-family:system-ui;padding:24px\"><p>$txt</p><p>Cửa sổ sẽ tự đóng…</p>"
         . "<script>try{window.opener&&window.opener.postMessage({mktOauth:$msg},location.origin)}catch(e){}setTimeout(function(){window.close()},400)</script>";
     exit;
+}
+/** Kết thúc luồng OAuth: cửa sổ bật lên thì báo về trang chính rồi tự đóng; không thì quay về app như cũ. */
+function oauth_finish(array $CFG, array $q): void {
+    if (!empty($_SESSION['oauth_popup'])) oauth_popup_page($q);
+    back_to_app($CFG, $q);
 }
 
 function json_input(): array {
@@ -268,6 +272,7 @@ function gen_id(string $prefix): string {
  *  không phải endpoint JSON gọi bằng fetch, nên không dùng fail()/respond() ở đây,
  *  mà đưa người dùng quay lại đúng chỗ kèm thông báo lỗi/thành công qua query string. */
 function back_to_app(array $CFG, array $q, string $hash = 'settings'): void {
+    if (!empty($_SESSION['oauth_popup'])) oauth_popup_page($q);
     header('Location: ' . rtrim($CFG['app_url'], '/') . '/?' . http_build_query($q) . '#' . $hash);
     exit;
 }

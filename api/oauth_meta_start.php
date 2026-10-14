@@ -1,6 +1,7 @@
 <?php
 require __DIR__ . '/_boot.php';
 if (!current_user()) { header('Location: ' . rtrim($CFG['app_url'], '/') . '/'); exit; }
+$_SESSION['oauth_popup'] = !empty($_GET['popup']); // mở trong cửa sổ bật lên
 
 if (!in_array(project_role(), PROJECT_ADMIN_ROLES, true)) back_to_app($CFG, ['conn_error' => 'Chỉ chủ / quản lý dự án được kết nối kênh']);
 $conn = get_connection((string)($_GET['conn_id'] ?? ''));
@@ -21,6 +22,7 @@ header('Location: https://www.facebook.com/' . $CFG['meta_graph_version'] . '/di
     'redirect_uri' => rtrim($CFG['app_url'], '/') . '/api/oauth_meta_callback.php',
     'scope' => ($CFG['meta_scope_' . $conn['provider']] ?? '') ?: PROVIDERS[$conn['provider']]['scope'],
     'response_type' => 'code',
+    'auth_type' => 'rerequest',
     'state' => $state,
 ]));
 exit;
