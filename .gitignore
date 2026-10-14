@@ -2,3 +2,8 @@ data/*
 !data/marketing.sqlite
 uploads/
 *.bak
+
+# zalo-bridge: bí mật + thư viện
+zalo-bridge/config.json
+zalo-bridge/session.json
+zalo-bridge/node_modules/

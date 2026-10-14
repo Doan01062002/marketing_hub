@@ -152,6 +152,7 @@ function ib_ai_post_context(array $CFG, array $conn, array $th): string {
 }
 function ib_ai_system(array $cfg, array $conn, array $th): string {
     global $pdo;
+    if ($conn['provider'] === 'zalo_user') { require_once __DIR__ . '/_zalo_ai_lib.php'; return zu_ai_system($th); } // Zalo cá nhân: cấu hình AI Chat riêng
     $p = $cfg['project']; $s = $cfg['settings'];
     $st = $pdo->prepare('SELECT kind,title,content FROM brand_items WHERE project_id=? ORDER BY kind'); $st->execute([$p['id'] ?? '']);
     $brand = implode("\n", array_map(fn($b) => '- [' . $b['kind'] . '] ' . $b['title'] . ': ' . $b['content'], $st->fetchAll()));
@@ -222,9 +223,15 @@ function ib_ai_apply(array $CFG, array $th, array $d, string $kind = 'auto'): st
     if (!empty($d['skip'])) { log_activity('reply', 'inbox', $th['id'], 'AI bỏ qua (' . ($d['reason'] ?? 'spam') . '): ' . $th['customer_name'], null, $th['project_id']); return 'bỏ qua: ' . ($d['reason'] ?? 'spam'); }
     // Điều kiện an toàn lần cuối (người thật có thể đã trả lời trong lúc chờ)
     $q = $pdo->prepare("SELECT MAX(sent_at) FROM inbox_messages WHERE thread_id=? AND direction='out' AND COALESCE(sent_by,'')<>'ai'"); $q->execute([$th['id']]);
-    $lastHuman = $q->fetchColumn(); if ($lastHuman && strtotime($lastHuman . ' UTC') > time() - IB_AI_HUMAN_QUIET_MIN * 60) return 'người thật đã trả lời';
+    $lastHuman = $q->fetchColumn();
+    if ($th['provider'] === 'zalo_user') { // Zalo cá nhân: chỉ nhường khi chủ TK đã trả lời SAU tin mới nhất của người kia (AI đọc theo ngữ cảnh)
+        $qi = $pdo->prepare("SELECT MAX(sent_at) FROM inbox_messages WHERE thread_id=? AND direction='in'"); $qi->execute([$th['id']]); $lastIn = (string)$qi->fetchColumn();
+        if ($lastHuman && $lastIn !== '' && $lastHuman > $lastIn) return 'người thật đã trả lời';
+    } elseif ($lastHuman && strtotime($lastHuman . ' UTC') > time() - IB_AI_HUMAN_QUIET_MIN * 60) return 'người thật đã trả lời';
     $cur = $pdo->prepare('SELECT last_direction, ai_mode FROM inbox_threads WHERE id=?'); $cur->execute([$th['id']]); $c = $cur->fetch();
-    if (!$c || $c['last_direction'] !== 'in' || ($c['ai_mode'] ?? 'on') === 'off') return 'không còn cần';
+    if (!$c || $c['last_direction'] !== 'in') return 'không còn cần';
+    if ($th['provider'] === 'zalo_user') { require_once __DIR__ . '/_zalo_ai_lib.php'; if (!zu_ai_person_allowed((string)$th['customer_id'])) return 'không còn trong phạm vi AI Zalo'; }
+    elseif (($c['ai_mode'] ?? 'on') === 'off') return 'không còn cần';
     $r = inbox_send($CFG, $th, $d['reply'], ['id' => 'ai', 'name' => 'AI']);
     if (!$r['ok']) return 'gửi lỗi: ' . $r['error'];
     if (!empty($d['handoff'])) {
@@ -236,8 +243,11 @@ function ib_ai_apply(array $CFG, array $th, array $d, string $kind = 'auto'): st
         $phone = preg_replace('/\D+/', '', (string)$d['phone']);
         if (strlen($phone) >= 9) { $id = gen_id('LD');
             $pdo->prepare("INSERT INTO leads(id,project_id,name,phone,source,subject,state,notes,source_ref) VALUES (?,?,?,?,?,?,'CREATED',?,?)")
-                ->execute([$id, $th['project_id'], $th['customer_name'], $phone, $th['provider'] === 'facebook_page' ? 'messenger' : 'zalo_oa', 'Khách để lại SĐT qua chat (AI ghi nhận)', mb_substr((string)$th['last_message'], 0, 500), $th['id']]);
-            $pdo->prepare('UPDATE inbox_threads SET lead_id=? WHERE id=?')->execute([$id, $th['id']]); }
+                ->execute([$id, $th['project_id'], $th['customer_name'], $phone, $th['provider'] === 'facebook_page' ? 'messenger' : $th['provider'], 'Khách để lại SĐT qua chat (AI ghi nhận)', mb_substr((string)$th['last_message'], 0, 500), $th['id']]);
+            $pdo->prepare('UPDATE inbox_threads SET lead_id=? WHERE id=?')->execute([$id, $th['id']]);
+            // Khách nóng: báo ngay chủ / quản lý dự án để gọi lại
+            $ms = $pdo->prepare("SELECT user_id FROM project_members WHERE project_id=? AND role IN ('owner','manager')"); $ms->execute([$th['project_id']]);
+            foreach ($ms->fetchAll() as $m) notify($m['user_id'], '📞 Khách để lại SĐT: ' . $th['customer_name'] . ' — ' . $phone, mb_substr((string)$th['last_message'], 0, 150), '#inbox', $th['project_id']); }
     }
     log_activity('reply', 'inbox', $th['id'], 'AI trả lời ' . $th['customer_name'] . (!empty($d['handoff']) ? ' · cần người thật: ' . ($d['reason'] ?? '') : ''), null, $th['project_id']);
     return 'đã trả lời' . (!empty($d['handoff']) ? ' + bàn giao' : '');

@@ -324,7 +324,8 @@ const PROVIDERS = [
     'google_ads' => ['auth' => 'google', 'scope' => 'https://www.googleapis.com/auth/adwords'],
     'facebook_page' => ['auth' => 'meta', 'scope' => 'pages_show_list,pages_read_engagement,read_insights,pages_manage_posts,pages_read_user_content,pages_manage_engagement,instagram_basic,instagram_content_publish,instagram_manage_comments'],
     'meta_ads' => ['auth' => 'meta', 'scope' => 'ads_read,ads_management,business_management,pages_show_list,pages_read_engagement'], // 12/10: đủ quyền tạo quảng cáo + Conversions API
-    'zalo_oa' => ['auth' => 'zalo', 'scope' => ''], // Zalo Official Account: nhập tay App ID + Secret key + Refresh token
+    'zalo_oa' => ['auth' => 'zalo', 'scope' => ''],
+    'zalo_user' => ['auth' => 'zalo_user', 'scope' => ''], // 14/10: Zalo cá nhân qua zalo-bridge (QR, API không chính thức) — nội bộ, Cửa sổ chat + AI Chat // Zalo Official Account: nhập tay App ID + Secret key + Refresh token
     'tiktok' => ['auth' => 'tiktok', 'scope' => 'user.info.basic,user.info.profile,user.info.stats,video.list'],
     // 12/10/2026: X (Twitter) — OAuth 2.0 PKCE; scope cách nhau bằng dấu cách. offline.access để có refresh_token, media.write để tải ảnh/video.
     'x' => ['auth' => 'x', 'scope' => 'tweet.read tweet.write users.read offline.access media.write'],

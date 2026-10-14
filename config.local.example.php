@@ -73,4 +73,7 @@ return [
   // --- Bảo mật ---
   'token_key' => '',                   // openssl rand -hex 32 — mã hoá token kênh (bắt buộc nên có)
   'hl_api_key' => '',                  // khoá máy HL (tuỳ chọn)
+    // Zalo cá nhân (zalo-bridge/README.md)
+    'zalo_bridge_url' => 'http://127.0.0.1:8721',
+    'zalo_bridge_key' => '',
 ];

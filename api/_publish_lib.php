@@ -151,6 +151,7 @@ function meta_page_token(array $CFG, array $conn): string {
         if (!$conn['secret']) throw new PublishError('Chưa có Page Access Token — vào Thiết lập > Kết nối kênh để dán token');
         return $conn['secret'];
     }
+    if (!empty($conn['secret'])) return $conn['secret']; // Page token không hết hạn, cất lúc kết nối OAuth
     if (!$conn['access_token']) throw new PublishError('Kênh chưa đăng nhập Facebook — ' . PERM_HINT);
     [$code, $pg, $raw] = http_get_json(graph_url($CFG, rawurlencode($conn['external_account_id']), [
         'fields' => 'access_token', 'access_token' => $conn['access_token'],
