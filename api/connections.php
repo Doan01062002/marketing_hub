@@ -57,6 +57,21 @@ if ($action === 'quick_web') {
     respond(['start_url' => '/api/oauth_google_start.php?popup=1&conn_id=' . $id, 'domain' => $dom]);
 }
 
+if ($action === 'quick_channel') {
+    // Kết nối nhanh: dán link Fanpage / kênh YouTube → đăng nhập (cửa sổ bật lên) → callback tự chọn đúng Page/kênh, lưu khoá lâu dài.
+    require_once __DIR__ . '/_quick_channel.php';
+    try { [$prov, $key, $kind] = qc_parse((string)($in['url'] ?? '')); } catch (RuntimeException $e) { fail($e->getMessage()); }
+    if ($prov === 'facebook_page' && (!$CFG['meta_app_id'] || !$CFG['meta_app_secret'])) fail('Chưa cấu hình ứng dụng Meta (App ID / App Secret) — mở mục "Ứng dụng Meta" bên dưới để dán', 409);
+    if ($prov === 'youtube' && (!$CFG['google_client_id'] || !$CFG['google_client_secret'])) respond(['need_client' => true,
+        'redirect_uri' => rtrim($CFG['app_url'], '/') . '/api/oauth_google_callback.php'], 409);
+    $pdo->prepare("DELETE FROM connections WHERE project_id=? AND provider IN ('facebook_page','youtube') AND external_account_id IS NULL AND status<>'connected' AND label LIKE '⏳ %'")->execute([pid()]);
+    $id = gen_id('CH');
+    $pdo->prepare('INSERT INTO connections(id,project_id,provider,label) VALUES (?,?,?,?)')->execute([$id, pid(), $prov, '⏳ ' . $key]);
+    $_SESSION['quick_ch'] = ['conn_id' => $id, 'provider' => $prov, 'key' => $key, 'kind' => $kind];
+    respond(['start_url' => '/api/' . ($prov === 'youtube' ? 'oauth_google_start.php' : 'oauth_meta_start.php') . '?popup=1&conn_id=' . $id,
+        'provider' => $prov, 'key' => $key]);
+}
+
 if ($action === 'save_manual') {
     // Nhập tay: dán ID + token/API key, không cần đăng nhập OAuth.
     $manualProviders = ['facebook_page', 'youtube', 'ga4', 'gsc', 'gbp', 'meta_ads', 'zalo_oa'];
@@ -148,14 +163,20 @@ if ($action === 'rename') {
 }
 
 if ($action === 'set_account') {
-    $pdo->prepare('UPDATE connections SET external_account_id=?, last_metrics=NULL WHERE id=?')
-        ->execute([trim((string)($in['external_account_id'] ?? '')) ?: null, $conn['id']]);
+    $acc = trim((string)($in['external_account_id'] ?? '')) ?: null;
+    $pdo->prepare('UPDATE connections SET external_account_id=?, last_metrics=NULL WHERE id=?')->execute([$acc, $conn['id']]);
+    if ($conn['provider'] === 'facebook_page' && ($conn['auth_method'] ?? 'oauth') !== 'manual' && $acc && $conn['access_token']) {
+        // Cất Page token (không hết hạn) ngay khi chọn Page.
+        [$c, $pg] = http_get_json(graph_url($CFG, rawurlencode($acc), ['fields' => 'access_token', 'access_token' => $conn['access_token']]));
+        $pdo->prepare('UPDATE connections SET secret=?, expires_at=CASE WHEN ? IS NULL THEN expires_at ELSE NULL END WHERE id=?')
+            ->execute([$c === 200 ? ($pg['access_token'] ?? null) : null, $c === 200 ? ($pg['access_token'] ?? null) : null, $conn['id']]);
+    }
     respond(['ok' => true]);
 }
 
 if ($action === 'disconnect') {
     $pdo->prepare("UPDATE connections SET status='disconnected', access_token=NULL, refresh_token=NULL,
-        expires_at=NULL, last_error=NULL WHERE id=?")->execute([$conn['id']]);
+        expires_at=NULL, last_error=NULL, secret=CASE WHEN auth_method='manual' THEN secret ELSE NULL END WHERE id=?")->execute([$conn['id']]);
     respond(['ok' => true]);
 }
 

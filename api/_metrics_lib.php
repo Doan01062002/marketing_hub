@@ -18,6 +18,7 @@ const METRIC_KEYS = [
     'tiktok' => ['key' => 'followers', 'label' => 'Người theo dõi'],
     'x' => ['key' => 'followers', 'label' => 'Người theo dõi'], // 12/10/2026
     'zalo_oa' => ['key' => 'followers', 'label' => 'Người quan tâm OA'],
+    'zalo_user' => ['key' => 'friends', 'label' => 'Bạn bè Zalo'],
     'ga4' => ['key' => 'sessions', 'label' => 'Phiên (30 ngày)'],
     'gsc' => ['key' => 'clicks', 'label' => 'Click Google Search (28 ngày)'],
     'gbp' => ['key' => 'views', 'label' => 'Lượt xem Google Maps + Search (30 ngày)'],
@@ -90,6 +91,14 @@ function sync_connection(array $CFG, array $conn): array {
     }
 
     if ($p === 'tiktok') return sync_tiktok($CFG, $conn);
+    if ($p === 'zalo_user') {
+        require_once __DIR__ . '/_zalo_user_lib.php';
+        [$c, $b] = zu_bridge('GET', '/status', null, 8);
+        if (($b['state'] ?? '') !== 'online') metrics_fail($conn, 'Zalo cá nhân chưa đăng nhập — quét QR lại');
+        [$c2, $f] = zu_bridge('GET', '/friends', null, 60);
+        $fr = $f['friends'] ?? [];
+        return metrics_save($conn, [mitem('Bạn bè Zalo', count($fr), 'num', 'friends'), mitem('Bạn có số điện thoại', count(array_filter($fr, fn($x) => $x['phone'] !== '')), 'num', 'friends_phone')]);
+    }
     if ($p === 'x') return sync_x($CFG, $conn); // 12/10/2026: X (Twitter)
     if ($p === 'zalo_oa') {
         [$tok, $err] = zalo_access_token($conn);
@@ -301,11 +310,13 @@ function sync_connection(array $CFG, array $conn): array {
 
     if ($p === 'facebook_page') {
         // Nhập tay: token dán vào chính là Page Access Token. OAuth: token người dùng → lấy Page token.
+        // OAuth đã cất Page token (không hết hạn) ở secret → dùng thẳng, không phụ thuộc token người dùng 60 ngày.
+        $pageTok = $manual ? $conn['access_token'] : (string)($conn['secret'] ?? '');
         [$code, $pg] = http_get_json(graph_url($CFG, rawurlencode($conn['external_account_id']), [
-            'fields' => $manual ? 'name,followers_count,fan_count' : 'name,access_token,followers_count,fan_count',
-            'access_token' => $conn['access_token'],
+            'fields' => $pageTok !== '' ? 'name,followers_count,fan_count' : 'name,access_token,followers_count,fan_count',
+            'access_token' => $pageTok !== '' ? $pageTok : $conn['access_token'],
         ]));
-        if ($manual && $code === 200) $pg['access_token'] = $conn['access_token'];
+        if ($pageTok !== '' && $code === 200) $pg['access_token'] = $pageTok;
         if ($code !== 200 || empty($pg['access_token'])) {
             metrics_fail($conn, 'Fanpage: ' . ($pg['error']['message'] ?? 'tài khoản đã đăng nhập không quản trị Page này'));
         }

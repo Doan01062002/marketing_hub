@@ -1,21 +1,27 @@
 <?php
 require __DIR__ . '/_boot.php';
 
-if (!current_user()) back_to_app($CFG, ['conn_error' => 'Phiên đăng nhập đã hết — đăng nhập lại rồi kết nối lại']);
-if (!empty($_GET['error'])) back_to_app($CFG, ['conn_error' => (string)($_GET['error_description'] ?? $_GET['error'])]);
+if (!current_user()) oauth_finish($CFG, ['conn_error' => 'Phiên đăng nhập đã hết — đăng nhập lại rồi kết nối lại']);
+if (!empty($_GET['error'])) {
+    if (!empty($_SESSION['quick_ch']['conn_id'])) { // kết nối nhanh bị huỷ → bỏ kênh tạm
+        $pdo->prepare("DELETE FROM connections WHERE id=? AND external_account_id IS NULL")->execute([$_SESSION['quick_ch']['conn_id']]);
+        unset($_SESSION['quick_ch']);
+    }
+    oauth_finish($CFG, ['conn_error' => ($_GET['error'] ?? '') === 'access_denied' ? 'Đã huỷ đăng nhập Facebook' : (string)($_GET['error_description'] ?? $_GET['error'])]);
+}
 
 $state = $_GET['state'] ?? '';
 $connId = $_SESSION['oauth_conn_id'] ?? '';
 if (!$state || $state !== ($_SESSION['oauth_state'] ?? null) || !$connId) {
-    back_to_app($CFG, ['conn_error' => 'state_mismatch']);
+    oauth_finish($CFG, ['conn_error' => 'state_mismatch']);
 }
 unset($_SESSION['oauth_state'], $_SESSION['oauth_conn_id']);
 
 $conn = get_connection($connId);
-if (!$conn) back_to_app($CFG, ['conn_error' => 'Kênh đã bị xoá trong lúc kết nối']);
+if (!$conn) oauth_finish($CFG, ['conn_error' => 'Kênh đã bị xoá trong lúc kết nối']);
 
 $code = $_GET['code'] ?? '';
-if (!$code) back_to_app($CFG, ['conn_error' => 'missing_code']);
+if (!$code) oauth_finish($CFG, ['conn_error' => 'missing_code']);
 
 [$httpCode, $tok] = http_get_json(graph_url($CFG, 'oauth/access_token', [
     'client_id' => $CFG['meta_app_id'],
@@ -27,7 +33,7 @@ if (!$code) back_to_app($CFG, ['conn_error' => 'missing_code']);
 if ($httpCode !== 200 || empty($tok['access_token'])) {
     $msg = $tok['error']['message'] ?? ('Không đổi được token Meta (HTTP ' . $httpCode . ')');
     $pdo->prepare("UPDATE connections SET status='error', last_error=? WHERE id=?")->execute([$msg, $conn['id']]);
-    back_to_app($CFG, ['conn_error' => $msg]);
+    oauth_finish($CFG, ['conn_error' => $msg]);
 }
 
 // Đổi sang token dài hạn (~60 ngày) để không phải đăng nhập lại liên tục.
@@ -63,4 +69,16 @@ if ($conn['provider'] === 'meta_ads') {
     log_activity('update', 'connection', $conn['id'], 'Kết nối Meta Ads qua đăng nhập Facebook (token dài hạn tới ' . date('d/m/Y', time() + $expiresIn) . ')');
     back_to_app($CFG, ['conn_ok' => $conn['id'], 'conn_msg' => $msg], 'ads');
 }
-back_to_app($CFG, ['conn_ok' => $conn['id']]);
+// Kết nối nhanh bằng link Fanpage: chọn đúng Page, lưu Page token (không hết hạn).
+if ($conn['provider'] === 'facebook_page' && ($_SESSION['quick_ch']['conn_id'] ?? '') === $conn['id']) {
+    require_once __DIR__ . '/_quick_channel.php';
+    $r = qc_finish_facebook($CFG, $conn, $accessToken, $_SESSION['quick_ch']);
+    unset($_SESSION['quick_ch']);
+    oauth_finish($CFG, $r);
+}
+// Fanpage đã chọn Page: cất luôn Page token lấy từ token dài hạn → không hết hạn sau 60 ngày.
+if ($conn['provider'] === 'facebook_page' && !empty($conn['external_account_id'])) {
+    [$c, $pg] = http_get_json(graph_url($CFG, rawurlencode($conn['external_account_id']), ['fields' => 'access_token', 'access_token' => $accessToken]));
+    if ($c === 200 && !empty($pg['access_token'])) $pdo->prepare('UPDATE connections SET secret=?, expires_at=NULL WHERE id=?')->execute([$pg['access_token'], $conn['id']]);
+}
+oauth_finish($CFG, ['conn_ok' => $conn['id']]);
