@@ -1,0 +1,14 @@
+!!! CHỈ ĐỂ TRONG REPO RIÊNG TƯ — KHÔNG ĐƯA REPO NÀY RA CÔNG KHAI !!!
+
+Repo này chứa sẵn khoá và dữ liệu đã kết nối để clone về chạy được ngay, không phải kết nối lại:
+  - config.local.php        khoá app (Google/Meta/TikTok), token_key, tài khoản admin ban đầu, app_url
+  - data/marketing.sqlite   CSDL: các kênh đã kết nối (token mã hoá bằng token_key trong config.local.php)
+
+Cách chạy: cài PHP 8.1+ (bật pdo_sqlite, curl, openssl, mbstring, sodium) rồi chạy run-local.bat (Windows)
+hoặc ./run-local.sh. Mở http://localhost:8080.
+
+Lưu ý:
+  - app_url trong config.local.php đang là địa chỉ ngrok của máy gốc. Máy khác muốn đăng nhập TikTok/Meta/Google
+    phải đổi app_url và đăng ký lại Redirect URI ở TikTok / Meta / Google cho địa chỉ mới.
+  - Token Google (refresh token) và TikTok có hạn; nếu báo lỗi thì bấm Kết nối lại ở kênh đó.
+  - Nếu repo từng bị lộ: đặt lại App secret (Meta), Client secret (TikTok/Google) và đổi mật khẩu admin.

@@ -1,0 +1,4 @@
+data/*
+!data/marketing.sqlite
+uploads/
+*.bak
