@@ -4737,7 +4737,7 @@ function pgReportsMenu(){
 
 /* ================= TIỆN ÍCH: landing · đối thủ · ý tưởng ================= */
 const UT={ideas:null,landings:null,busy:false,lmode:'prompt',members:null};
-/* (14/10/2026) Đã gỡ CRM webseo.vn và báo cáo máy HL — bản Chung Auto không dùng. */
+/* (14/10/2026) Đã gỡ CRM ngoài và báo cáo máy ngoài — bản Chung Auto không dùng. */
 const CRM={sum:null,leads:null,exp:null,busy:{},err:null};const HL={d:null};
 function crmOn(){return false}
 function crmCard(){return ''}
@@ -4803,7 +4803,7 @@ async function ttCheck(id){try{TT.chk[id]=await apiPost('/api/tiktok.php',{actio
 async function ttSaveProjectApp(){const b={action:'project_app',label:$('#tp-label').value,client_key:$('#tp-key').value,client_secret:$('#tp-sec').value};try{await apiPost('/api/tiktok.php',b);toast('Đã lưu sandbox riêng của dự án');TT.d=null;await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 async function ttClearProjectApp(){if(!confirm('Bỏ sandbox riêng, quay về app chung?'))return;try{await apiPost('/api/tiktok.php',{action:'project_app',clear:true});TT.d=null;await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 async function ttSaveApp(){const b={action:'app',env:$('#tt-env').value,sandbox_client_key:$('#tt-sk').value,sandbox_client_secret:$('#tt-ss').value,client_key:$('#tt-pk').value,client_secret:$('#tt-ps').value,scopes:$('#tt-sc').value};try{await apiPost('/api/tiktok.php',b);toast('Đã lưu cấu hình app TikTok');TT.d=null;render()}catch(e){toast('Lỗi',e.message)}}
-/* (14/10/2026) Đã gỡ Kho kênh tham khảo — tính năng chạy bằng máy HL. */
+/* (14/10/2026) Đã gỡ Kho kênh tham khảo. */
 const REF={d:null,busy:false,err:null,poll:{}};
 function pgRefs(){return ''}
 
