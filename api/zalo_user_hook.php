@@ -29,7 +29,7 @@ if ($ev === 'message') {
         $ms = $pdo->prepare("SELECT user_id FROM project_members WHERE project_id=? AND role IN ('owner','manager')"); $ms->execute([$proj]);
         foreach ($ms->fetchAll() as $m) notify($m['user_id'], 'Zalo: ' . ($in['name'] ?: 'Bạn Zalo') . ' vừa nhắn', mb_substr((string)$in['text'], 0, 200), '#inbox', $proj);
     }
-    // AI Chat: trả lời bridge ngay, xử lý AI sau (chờ gộp tin, máy HL có thể mất vài chục giây)
+    // AI Chat: trả lời bridge ngay, xử lý AI sau (chờ gộp tin rồi gọi API AI)
     if ($new > 0 && ($in['dir'] ?? 'in') === 'in') {
         require_once __DIR__ . '/_zalo_ai_lib.php';
         if (zu_ai_person_allowed((string)$in['uid'])) {

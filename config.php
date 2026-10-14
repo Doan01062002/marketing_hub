@@ -34,6 +34,5 @@ return array_merge([
   'default_project_goal' => '',
   'brand_hotline' => '',
   'token_key' => '',          // 64 ký tự hex (openssl rand -hex 32): mã hoá token kênh trong CSDL
-  'hl_api_key' => '',         // khoá cho máy HL (tuỳ chọn, xem CAI-DAT.md mục 7)
   'anthropic_model' => 'claude-opus-5-5',
 ], $cfg);

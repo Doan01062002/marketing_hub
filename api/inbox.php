@@ -104,7 +104,7 @@ if ($action === 'send') {
     respond(['ok' => true, 'id' => $r['id']]);
 }
 if ($action === 'ai_suggest') {
-    if (!ai_available()['ok']) { $prep = ib_ai_prepare($CFG, $t); if (empty($prep['ok'])) fail($prep['error']); if (!ib_hl_alive()) fail('Máy HL (Claude Max) chưa kết nối — mở app phòng marketing trên máy HL', 503); respond(['job_id' => ib_ai_enqueue($t, 'suggest', $prep)], 202); }
+    if (!ai_available()['ok']) fail('Chưa có khoá API AI (Claude hoặc ChatGPT) — ' . AI_SETUP_HINT, 409);
     $d = ib_ai_draft($CFG, $t); if (empty($d['ok'])) fail($d['error'] ?? 'AI lỗi', 502); respond(['text' => $d['reply'], 'handoff' => $d['handoff'], 'reason' => $d['reason']]);
 }
 if ($action === 'ai_job') { $st = $pdo->prepare('SELECT * FROM inbox_ai_jobs WHERE id=? AND thread_id=?'); $st->execute([(string)($b['job_id'] ?? ''), $t['id']]); $j = $st->fetch(); if (!$j) fail('Không có việc', 404);

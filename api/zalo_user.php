@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         require_once __DIR__ . '/_zalo_ai_lib.php'; require_once __DIR__ . '/_inbox_lib.php';
         $th = $pdo->prepare("SELECT customer_id uid, customer_name name, customer_avatar avatar, last_time FROM inbox_threads WHERE provider='zalo_user' AND project_id=? ORDER BY last_time DESC LIMIT 50"); $th->execute([$P]);
         $av = ai_available();
-        respond(['ai' => zu_ai_cfg(), 'sales_default' => zu_ai_sales_default(), 'recent' => $th->fetchAll(), 'engine' => $av['ok'] ? ['via' => 'api', 'label' => 'Khoá API ' . ($av['provider'] ?? '')] : (ib_hl_alive() ? ['via' => 'hl', 'label' => 'Máy HL (Claude Max) đang kết nối'] : ['via' => 'none', 'label' => 'Chưa có máy AI — máy HL chưa kết nối, chưa có khoá API']),
+        respond(['ai' => zu_ai_cfg(), 'sales_default' => zu_ai_sales_default(), 'recent' => $th->fetchAll(), 'engine' => $av['ok'] ? ['via' => 'api', 'label' => 'Khoá API ' . ($av['provider'] ?? '')] : ['via' => 'none', 'label' => 'Chưa có khoá API AI — nhập khoá Claude hoặc ChatGPT ở Thiết lập › AI & khoá API'],
             'can_admin' => in_array(project_role(), PROJECT_ADMIN_ROLES, true)]);
     }
     if (!empty($_GET['friends'])) {

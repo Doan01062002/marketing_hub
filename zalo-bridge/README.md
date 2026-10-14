@@ -41,4 +41,4 @@ Sau đó vào app: **Cài đặt dự án → Tài khoản kết nối → Zalo 
 Lưu ý:
 - `session.json` (phiên Zalo) và `config.json` là bí mật — đã có trong `.gitignore`.
 - Danh sách bạn bè tải MỘT lần sau khi đăng nhập 30 giây (gọi dồn dễ bị Zalo trả 429).
-- AI Chat chạy bằng khoá API AI của app; không có khoá thì xếp việc cho máy HL (Claude Max) nếu có.
+- AI Chat chạy bằng khoá API AI của app (Claude hoặc ChatGPT — Thiết lập › AI & khoá API).

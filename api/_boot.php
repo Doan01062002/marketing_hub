@@ -23,7 +23,7 @@ $pdo = new PDO('sqlite:' . $DB_PATH);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 $pdo->exec('PRAGMA foreign_keys = ON');
-$pdo->exec('PRAGMA busy_timeout = 30000'); // 12/10/2026: nhiều tiến trình ghi cùng lúc (webhook, cron, máy HL, thăm dò 4s) → chờ khoá thay vì lỗi "database is locked"
+$pdo->exec('PRAGMA busy_timeout = 30000'); // 12/10/2026: nhiều tiến trình ghi cùng lúc (webhook, cron, thăm dò 4s) → chờ khoá thay vì lỗi "database is locked"
 try { $pdo->exec('PRAGMA journal_mode = WAL'); } catch (Throwable $e) {}
 
 if ($isNew) {
@@ -77,9 +77,6 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
         }
     }
     foreach (PROJECT_TABLES as $t) { if ($pdo->query("PRAGMA table_info($t)")->fetchAll()) $pdo->exec("CREATE INDEX IF NOT EXISTS idx_{$t}_project ON $t(project_id)"); }
-    // v10: dự án 'webseo' (nếu có) gắn nguồn CRM webseo.vn — tích hợp riêng, nơi khác không có dự án này nên bỏ qua
-    $pr = $pdo->query("SELECT settings FROM projects WHERE id='webseo'")->fetchColumn();
-    if ($pr !== false) { $sj = json_decode((string)$pr, true) ?: []; if (empty($sj['crm'])) { $sj['crm'] = 'webseo'; $pdo->prepare('UPDATE projects SET settings=? WHERE id=?')->execute([json_encode($sj, JSON_UNESCAPED_UNICODE), 'webseo']); } }
     $pdo->exec('PRAGMA user_version = ' . SCHEMA_VERSION);
 }
 

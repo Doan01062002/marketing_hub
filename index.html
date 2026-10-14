@@ -1028,9 +1028,8 @@ function funnel(rows){const mx=rows[0].v||1;return `<div class="funnel">${rows.m
    Bám theo bộ tài liệu canonical: 8 Capability Family · 12 workflow · phân quyền Group→Cty→CN
    ============================================================================================ */
 /* ---------- Tổ chức: Group → Công ty con → Chi nhánh ---------- */
-const ORG={group:'WebSEO',companies:[
- {id:'co1',name:'WebSEO — Thiết kế web, Hosting, Email, Tên miền',branches:[{id:'b1',name:'Hà Nội'}]},
- {id:'co2',name:'Share123 — Công cụ & kênh nội dung',branches:[{id:'b2',name:'Trực tuyến'}]}
+const ORG={group:'Chung Auto',companies:[
+ {id:'co1',name:'Chung Auto',branches:[{id:'b1',name:'Hà Nội'}]}
 ]};
 const S={page:'dashboard',tab:{},flt:{},openGrp:{},scope:{co:'all',br:'all'},board:'content',chat:[]};
 function coName(id){const c=ORG.companies.find(x=>x.id===id);return c?c.name:'—'}
@@ -1307,9 +1306,8 @@ async function deleteCompetitor(id){
 
 /* ================= XU HƯỚNG & SOCIAL ================= */
 /* ================= DỮ LIỆU THỊ TRƯỜNG THẬT: Search Console + bình luận kênh ================= */
-/* Nhóm từ khoá theo DỰ ÁN: settings.keyword_groups (sửa ở Cài đặt dự án). Chưa đặt → WebSEO dùng nhóm dịch vụ mặc định; dự án khác → Thương hiệu / Giá-mua. */
-const MK_TOPICS_WEBSEO=[['Thiết kế website',['thiết kế web','thiet ke web','website','làm web','lam web','web bán hàng','landing','giao diện web','wordpress']],['Hosting / VPS',['hosting','vps','máy chủ','may chu','server','cloud']],['Email doanh nghiệp',['email','mail','gmail','workspace','outlook']],['Tên miền',['tên miền','ten mien','domain','.vn','.com']],['SEO / quảng cáo',['seo','marketing','quảng cáo','quang cao','google ads','từ khoá','tu khoa']],['Thương hiệu WebSEO',['webseo','web seo']]];
-function mkTopics(){const p=proj()||{};const st=p.settings||{};const g=st.keyword_groups;if(Array.isArray(g)&&g.length)return g.map(x=>[x.name,(x.words||[]).map(w=>String(w).toLowerCase().trim()).filter(Boolean)]);if(st.crm==='webseo'||/webseo/i.test(p.domain||''))return MK_TOPICS_WEBSEO;const brand=String(p.domain||p.name||'').toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('.')[0];return [['Thương hiệu',brand?[brand]:[]],['Giá / mua ở đâu',['giá','bao nhiêu','bao nhieu','mua','ở đâu','o dau','review','có tốt']]]}
+/* Nhóm từ khoá theo DỰ ÁN: settings.keyword_groups (sửa ở Cài đặt dự án). Chưa đặt → Thương hiệu / Giá-mua. */
+function mkTopics(){const p=proj()||{};const st=p.settings||{};const g=st.keyword_groups;if(Array.isArray(g)&&g.length)return g.map(x=>[x.name,(x.words||[]).map(w=>String(w).toLowerCase().trim()).filter(Boolean)]);const brand=String(p.domain||p.name||'').toLowerCase().replace(/^https?:\/\//,'').replace(/^www\./,'').split('.')[0];return [['Thương hiệu',brand?[brand]:[]],['Giá / mua ở đâu',['giá','bao nhiêu','bao nhieu','mua','ở đâu','o dau','review','có tốt']]]}
 function mkTopic(q){q=String(q).toLowerCase();for(const [n,ws] of mkTopics())if(ws.some(w=>w&&q.includes(w)))return n;return 'Khác'}
 function mkGeneric(q){const t=String(q).trim().toLowerCase();return t.split(/\s+/).length<=1||/^(giá|giá bao nhiêu|bao nhiêu tiền|mua|review|có tốt không|là gì)$/.test(t)}
 function kwGroupsText(st){const g=(st||{}).keyword_groups;return Array.isArray(g)?g.map(x=>x.name+': '+(x.words||[]).join(', ')).join('\n'):''}
@@ -1339,7 +1337,7 @@ function gscKeywordsHtml(){
   <div class="grid2"><div class="card"><div class="card-h">${ic('doc')}<h3>Trang nhận nhiều click</h3></div><div class="card-b">${mkBars(pages.slice(0,10).map(r=>({l:String(r[0]).replace(/^https?:\/\/[^/]+/,'')||'/',v:r[1]})))||'<div class="mini">Chưa có</div>'}</div></div>
    <div class="card"><div class="card-h">${ic('globe')}<h3>Thiết bị & quốc gia (click)</h3></div><div class="card-b">${mkBars(dev.map(r=>({l:{MOBILE:'Điện thoại',DESKTOP:'Máy tính',TABLET:'Máy tính bảng'}[r[0]]||r[0],v:r[1]})))}${ctry.length?'<hr style="border:0;border-top:1px solid #eef1f5;margin:10px 0">'+mkBars(ctry.slice(0,6).map(r=>({l:String(r[0]).toUpperCase(),v:r[1]}))):''}</div></div></div>
   ${imp<1000?`<div class="mini" style="margin:6px 0">Website còn ít hiển thị (${num(imp)} lượt / ${per}): Google đang thử ghép trang với truy vấn rộng như "giá", "bao nhiêu" nên danh sách chưa phản ánh nhu cầu thật. Số liệu sẽ sát dần khi có bài viết/trang sản phẩm đúng từ khoá. ${projAdmin()?`<a href="#" onclick="event.preventDefault();go('settings','project')">Sửa nhóm từ khoá của dự án</a>`:''}</div>`:''}
-  <div class="mini">Nguồn: Google Search Console, tự đồng bộ mỗi ngày. Số liệu Search Console trễ 2–3 ngày. Nhóm từ khoá theo dự án${mkTopics()===MK_TOPICS_WEBSEO?' (mặc định WebSEO)':''}.</div>`;
+  <div class="mini">Nguồn: Google Search Console, tự đồng bộ mỗi ngày. Số liệu Search Console trễ 2–3 ngày. Nhóm từ khoá theo dự án.</div>`;
 }
 function exportGscKw(){const rows=[['Từ khoá','Nhóm','Hiển thị','Click','CTR %','Vị trí']].concat(gscQueries().map(q=>[q.q,q.topic,q.i,q.c,q.ctr.toFixed(2),q.p.toFixed(1)]));const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tu-khoa-search-console.csv';a.click()}
 async function trendAddKw(btn,q){btn.disabled=true;try{const d=await apiPost('/api/trends.php',{name:'"'+q+'"',vol:'',dir:1,data:[],note:'Từ khoá Search Console'});try{await apiPost('/api/trends.php',{action:'refresh',id:d.id})}catch(e){}await refreshData();toast('Đã thêm vào xu hướng theo dõi',q)}catch(e){toast('Lỗi',e.message);btn.disabled=false}}
@@ -1377,7 +1375,7 @@ function vocHtml(){
 function autoInsights(){
  const out=[];const qs=gscQueries();
  if(qs.length){const g={};qs.forEach(q=>{g[q.topic]=(g[q.topic]||0)+q.i});const top=Object.entries(g).sort((a,b)=>b[1]-a[1]);const ti=top.reduce((t,x)=>t+x[1],0)||1;
-  out.push({q:'Khách tìm WebSEO trên Google vì nhu cầu nào nhiều nhất?',ins:top.slice(0,3).map(([k,v])=>`${k}: ${(v/ti*100).toFixed(0)}% lượt hiển thị (${num(v)})`).join('; ')+'.',src:'Google Search Console',conf:'Cao',subject:top[0][0]});
+  out.push({q:'Khách tìm '+((proj()||{}).name||'thương hiệu')+' trên Google vì nhu cầu nào nhiều nhất?',ins:top.slice(0,3).map(([k,v])=>`${k}: ${(v/ti*100).toFixed(0)}% lượt hiển thị (${num(v)})`).join('; ')+'.',src:'Google Search Console',conf:'Cao',subject:top[0][0]});
   const opp=qs.filter(q=>q.p>3&&q.p<=20&&q.i>=10).sort((a,b)=>b.i-a.i).slice(0,5);
   if(opp.length)out.push({q:'Từ khoá nào có thể lên top nhanh nhất?',ins:opp.map(q=>`"${q.q}" (vị trí ${q.p.toFixed(1)}, ${num(q.i)} hiển thị)`).join('; ')+' — đã có hiển thị, chỉ cần tối ưu nội dung + liên kết.',src:'Google Search Console',conf:'Cao',subject:opp[0].topic});
   const low=qs.filter(q=>q.p<=10&&q.i>=30&&q.ctr<2);if(low.length)out.push({q:'Vì sao hiện trang 1 mà ít người bấm?',ins:low.slice(0,5).map(q=>`"${q.q}" CTR ${q.ctr.toFixed(1)}% ở vị trí ${q.p.toFixed(1)}`).join('; ')+' — tiêu đề / mô tả trên Google chưa đủ hấp dẫn.',src:'Google Search Console',conf:'Trung bình',subject:low[0].topic});}
@@ -1475,7 +1473,7 @@ async function deleteInsight(id){
 /* ================= KẾ HOẠCH ================= */
 /* ---- Tự động lập kế hoạch quý từ dữ liệu thật (api/plan_auto.php) ---- */
 const AP={d:null,sel:{c:{},o:{}}};
-function autoPlanBanner(){return `<div class="card" style="border-color:var(--brand,#0d9488)"><div class="card-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="ki" style="font-size:22px">${ic('zap')}</span><div style="flex:1;min-width:240px"><b>Tự động lập kế hoạch quý</b><div class="mini">Hệ thống đọc số liệu thật (từ khoá Google, trang CTR thấp, bình luận chờ, nguồn đo còn thiếu) và đề xuất chiến dịch + công việc + OKR cho WebSEO. Anh/chị xem, bỏ chọn mục không cần rồi bấm Tạo.</div></div><button class="btn primary" onclick="autoPlanOpen()">${ic('zap')} Lập kế hoạch tự động</button></div></div>`}
+function autoPlanBanner(){return `<div class="card" style="border-color:var(--brand,#0d9488)"><div class="card-b" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="ki" style="font-size:22px">${ic('zap')}</span><div style="flex:1;min-width:240px"><b>Tự động lập kế hoạch quý</b><div class="mini">Hệ thống đọc số liệu thật (từ khoá Google, trang CTR thấp, bình luận chờ, nguồn đo còn thiếu) và đề xuất chiến dịch + công việc + OKR cho dự án. Anh/chị xem, bỏ chọn mục không cần rồi bấm Tạo.</div></div><button class="btn primary" onclick="autoPlanOpen()">${ic('zap')} Lập kế hoạch tự động</button></div></div>`}
 async function autoPlanOpen(){
  openModal(`<div class="mh">${ic('zap')}<h3>Kế hoạch đề xuất từ dữ liệu thật</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb" id="ap-body"><div class="empty">Đang phân tích dữ liệu…</div></div><div class="mf" id="ap-foot"></div>`,'wide');
  try{AP.d=await apiGet('/api/plan_auto.php')}catch(e){$('#ap-body').innerHTML=`<span style="color:var(--bad)">${esc(e.message)}</span>`;return}
@@ -1809,7 +1807,7 @@ async function submitNewCampaign(){
 /* ================= NỘI DUNG ================= */
 /* ================= XƯỞNG ẢNH CAROUSEL (vẽ trên trình duyệt, không cần dịch vụ ngoài) =================
    Dán bài viết → tách trang (dấu --- hoặc tự chia theo đoạn) → vẽ từng ảnh 1080px theo màu thương hiệu → tải PNG hoặc đưa thẳng vào bài đăng. */
-const STU={text:'',size:'1080x1080',theme:0,brand:'WebSEO',foot:'webseo.com.vn · 0988 227 905',cta:true,busy:false};
+const STU={text:'',size:'1080x1080',theme:0,brand:'Chung Auto',foot:'chungauto.vn',cta:true,busy:false};
 const STU_THEMES=[{n:'Tím thương hiệu',bg:['#4f46e5','#7c3aed'],fg:'#ffffff',acc:'#fde68a'},{n:'Đêm xanh',bg:['#0f172a','#1e3a8a'],fg:'#ffffff',acc:'#38bdf8'},{n:'Trắng sạch',bg:['#ffffff','#eef2ff'],fg:'#0f172a',acc:'#7c3aed'},{n:'Xanh ngọc',bg:['#0d9488','#065f46'],fg:'#ffffff',acc:'#fef08a'},{n:'Cam hồng',bg:['#f97316','#db2777'],fg:'#ffffff',acc:'#fff7ed'}];
 function stuSlides(){
  const t=STU.text.trim();if(!t)return [];
@@ -1928,11 +1926,11 @@ async function botEdit(id,kind){
  const sch=Object.entries(BOT.d.schedules).map(([k,v])=>`<option value="${k}" ${(j?j.schedule:'weekly')===k?'selected':''}>${esc(v)}</option>`).join('');
  openModal(`<div class="mh">${ic(kind==='rank'?'search':'eye')}<h3>${j?'Sửa':'Thêm'} việc: ${esc(BOT.d.kinds[kind])}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
   <div class="frow"><div class="field"><label>Tên</label><input id="bt-name" value="${esc(j?j.name:(kind==='rank'?'Thứ hạng Google '+(sug.domain||''):'Chụp website đối thủ'))}"></div><div class="field"><label>Lịch chạy</label><select id="bt-sch">${sch}</select></div></div>
-  ${kind==='rank'?`<div class="field"><label>Tên miền cần theo dõi</label><input id="bt-dom" value="${esc(c.domain||sug.domain||'')}" placeholder="webseo.com.vn"></div>
+  ${kind==='rank'?`<div class="field"><label>Tên miền cần theo dõi</label><input id="bt-dom" value="${esc(c.domain||sug.domain||'')}" placeholder="chungauto.vn"></div>
    <div class="field"><label>Từ khoá (mỗi dòng 1 từ, tối đa 20)</label><textarea id="bt-kw" rows="8">${esc((c.keywords||sug.keywords||[]).join('\n'))}</textarea><div class="mini">${!j&&sug.keywords.length?'Đã gợi ý sẵn '+sug.keywords.length+' từ khoá có nhiều hiển thị nhất từ Search Console.':''}</div></div>
    <div class="field"><label>Độ sâu</label><select id="bt-depth">${[[1,'Top 10 (1 lượt SerpApi / từ khoá)'],[2,'Top 20 (tối đa 2 lượt)'],[3,'Top 30 (tối đa 3 lượt)']].map(o=>`<option value="${o[0]}" ${(c.depth||1)==o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
    <div class="field"><label>Vị trí tìm kiếm</label><select id="bt-loc">${[['Hanoi,Hanoi,Vietnam','Hà Nội'],['Ho Chi Minh City,Ho Chi Minh City,Vietnam','TP. Hồ Chí Minh'],['Da Nang,Da Nang,Vietnam','Đà Nẵng'],['Vietnam','Toàn Việt Nam']].map(o=>`<option value="${o[0]}" ${(c.location||'Hanoi,Hanoi,Vietnam')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>`
-  :`<div class="field"><label>Địa chỉ website (mỗi dòng 1 địa chỉ, tối đa 10)</label><textarea id="bt-urls" rows="5" placeholder="https://doithu.vn&#10;https://webseo.com.vn/bang-gia/">${esc((c.urls||(DB.competitors||[]).filter(x=>x.website).map(x=>x.website)).join('\n'))}</textarea></div>
+  :`<div class="field"><label>Địa chỉ website (mỗi dòng 1 địa chỉ, tối đa 10)</label><textarea id="bt-urls" rows="5" placeholder="https://doithu.vn&#10;https://chungauto.vn/">${esc((c.urls||(DB.competitors||[]).filter(x=>x.website).map(x=>x.website)).join('\n'))}</textarea></div>
    <div class="field"><label>Thiết bị</label><select id="bt-dev">${[['both','Máy tính + điện thoại'],['desktop','Máy tính'],['mobile','Điện thoại']].map(o=>`<option value="${o[0]}" ${(c.device||'both')===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>`}
   ${j?`<label class="dleg" style="cursor:pointer"><input type="checkbox" id="bt-en" style="width:auto" ${j.enabled?'checked':''}> Đang bật</label>`:''}
  </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="botSave('${id||''}','${kind}')">${ic('check')} Lưu</button></div>`);
@@ -2077,7 +2075,7 @@ function newSegment(){
  openModal(`<div class="mh">${ic('users')}<h3>Thêm phân khúc khách hàng</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
   <div class="mb">
    <div class="field"><label>Tên phân khúc</label><input id="sg-name" placeholder="VD: Chủ doanh nghiệp SME cần website"></div>
-   <div class="frow f3"><div class="field"><label>Quy mô</label><input id="sg-size" type="number" placeholder="12000"></div><div class="field"><label>Giá trị</label><select id="sg-value"><option>Rất cao</option><option>Cao</option><option value="TB">TB</option></select></div><div class="field"><label>Chiến dịch phù hợp</label><input id="sg-camp" placeholder="VD: Google Search — Dịch vụ WebSEO"></div></div>
+   <div class="frow f3"><div class="field"><label>Quy mô</label><input id="sg-size" type="number" placeholder="12000"></div><div class="field"><label>Giá trị</label><select id="sg-value"><option>Rất cao</option><option>Cao</option><option value="TB">TB</option></select></div><div class="field"><label>Chiến dịch phù hợp</label><input id="sg-camp" placeholder="VD: Google Search — Dịch vụ Chung Auto"></div></div>
   </div>
   <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitNewSegment()">${ic('plus')} Thêm phân khúc</button></div>`);
 }
@@ -3578,13 +3576,13 @@ function exportChannelHistory(){
 
 /* ================= THIẾT LẬP & KẾT NỐI ================= */
 const CHANNEL_TYPES=[
- {provider:'facebook_page',auth:'meta',name:'Fanpage Facebook',short:'FB',color:'#1877f2',desc:'Người theo dõi, tiếp cận, tương tác từng Page',idLabel:'Page ID',example:'VD: Fanpage WebSEO'},
+ {provider:'facebook_page',auth:'meta',name:'Fanpage Facebook',short:'FB',color:'#1877f2',desc:'Người theo dõi, tiếp cận, tương tác từng Page',idLabel:'Page ID',example:'VD: Fanpage Chung Auto'},
  {provider:'youtube',auth:'google',name:'Kênh YouTube',short:'YT',color:'#ff0000',desc:'Người đăng ký, lượt xem, phút xem từng kênh',idLabel:'Channel ID',example:'VD: Kênh YouTube chính'},
  {provider:'tiktok',auth:'tiktok',name:'Kênh TikTok',short:'TT',color:'#111827',desc:'Người theo dõi, lượt xem / thích / bình luận / chia sẻ video đăng 30 ngày',idLabel:'Open ID (tự lấy khi đăng nhập)',example:'VD: TikTok chính của hãng'},
  {provider:'ga4',auth:'google',name:'Website (Google Analytics 4)',short:'WEB',color:'#e8750a',desc:'Phiên, người dùng, lượt xem, chuyển đổi từng website',idLabel:'GA4 Property ID',example:'VD: Website bán hàng'},
- {provider:'gsc',auth:'google',name:'Google Search Console (SEO)',short:'SEO',color:'#4285f4',desc:'Click, lượt hiển thị, CTR, vị trí trung bình, từ khoá & trang top trên Google',idLabel:'Website (sc-domain:… / https://…)',example:'VD: webseo.com.vn'},
- {provider:'gbp',auth:'google',name:'Google Maps (Business Profile)',short:'MAP',color:'#ea4335',desc:'Lượt xem Maps/Search, cuộc gọi, chỉ đường, click web, điểm & đánh giá',idLabel:'Location ID',example:'VD: WebSEO Hà Nội'},
- {provider:'zalo_oa',auth:'zalo',name:'Zalo Official Account',short:'ZL',color:'#0068ff',desc:'Người quan tâm OA, tin nhắn khách — đổ vào hộp chăm sóc để trả lời',idLabel:'OA ID',example:'VD: Zalo OA WebSEO'},
+ {provider:'gsc',auth:'google',name:'Google Search Console (SEO)',short:'SEO',color:'#4285f4',desc:'Click, lượt hiển thị, CTR, vị trí trung bình, từ khoá & trang top trên Google',idLabel:'Website (sc-domain:… / https://…)',example:'VD: chungauto.vn'},
+ {provider:'gbp',auth:'google',name:'Google Maps (Business Profile)',short:'MAP',color:'#ea4335',desc:'Lượt xem Maps/Search, cuộc gọi, chỉ đường, click web, điểm & đánh giá',idLabel:'Location ID',example:'VD: Chung Auto Hà Nội'},
+ {provider:'zalo_oa',auth:'zalo',name:'Zalo Official Account',short:'ZL',color:'#0068ff',desc:'Người quan tâm OA, tin nhắn khách — đổ vào hộp chăm sóc để trả lời',idLabel:'OA ID',example:'VD: Zalo OA Chung Auto'},
  {provider:'meta_ads',auth:'meta',name:'Quảng cáo Meta (Facebook/Instagram)',short:'MA',color:'#0866ff',desc:'Chi tiêu, hiển thị, click, lead từng tài khoản quảng cáo',idLabel:'Ad Account ID (act_…)',example:'VD: TKQC chính'},
  {provider:'google_ads',auth:'google',name:'Quảng cáo Google Ads',short:'GA',color:'#34a853',desc:'Chi tiêu, click, chuyển đổi từng tài khoản Google Ads',idLabel:'Customer ID',example:'VD: Google Ads Search'},
 ];
@@ -3601,17 +3599,17 @@ function connStatusBadge(c){
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 const MANUAL_FIELDS={
- facebook_page:{add:'Thêm Fanpage',label:'Tên fanpage (vd: Fanpage WebSEO)',id:'Page ID (dãy số)',secret:'Page Access Token (token dài hạn)',rows:3,oauth:'Đăng nhập Facebook để chọn nhiều Page một lần',
+ facebook_page:{add:'Thêm Fanpage',label:'Tên fanpage (vd: Fanpage Chung Auto)',id:'Page ID (dãy số)',secret:'Page Access Token (token dài hạn)',rows:3,oauth:'Đăng nhập Facebook để chọn nhiều Page một lần',
   help:`<ol><li><b>Page ID</b>: mở Fanpage → <i>Giới thiệu</i> → <i>Tính minh bạch của Trang</i> (hoặc Meta Business Suite → Cài đặt → Trang) → copy dãy số ID.</li><li><b>Page Access Token</b>: vào <a href="https://developers.facebook.com/tools/explorer" target="_blank" rel="noopener">Graph API Explorer</a> → chọn app → <i>Get Token → Get Page Access Token</i>, tick quyền <code>pages_read_engagement</code> và <code>read_insights</code> → chọn đúng Page → copy token.</li><li>Token lấy kiểu trên chỉ sống khoảng 1 giờ. Muốn token dài hạn: dán user token vào <a href="https://developers.facebook.com/tools/debug/accesstoken/" target="_blank" rel="noopener">Access Token Debugger</a> → <i>Extend Access Token</i>, rồi lấy lại Page token từ token đã gia hạn (Page token sinh từ user token dài hạn thì không hết hạn). Bền nhất: tạo <i>System User</i> trong Business Settings, cấp quyền Page và tạo token không hết hạn.</li></ol>`},
- youtube:{add:'Thêm kênh YouTube',label:'Tên kênh (vd: WebSeo Official)',id:'Channel ID (UCxxxx…)',secret:'YouTube Data API key (tuỳ chọn — dự phòng đọc số công khai)',rows:1,oauth:'Đăng nhập Google để lấy cả lượt xem / phút xem 30 ngày',
+ youtube:{add:'Thêm kênh YouTube',label:'Tên kênh (vd: Chung Auto Official)',id:'Channel ID (UCxxxx…)',secret:'YouTube Data API key (tuỳ chọn — dự phòng đọc số công khai)',rows:1,oauth:'Đăng nhập Google để lấy cả lượt xem / phút xem 30 ngày',
   help:`<ol><li><b>Channel ID</b>: YouTube → ảnh đại diện → <i>Cài đặt</i> → <i>Cài đặt nâng cao</i> (hoặc mở youtube.com/account_advanced) → copy mã bắt đầu bằng UC.</li><li><b>API key</b>: <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Google Cloud</a> → bật <i>YouTube Data API v3</i> → <i>APIs &amp; Services → Credentials → Create credentials → API key</i>. Một key dùng chung được cho mọi kênh.</li><li><b>OAuth Client ID / Client Secret</b>: Google Cloud → <i>APIs &amp; Services → Credentials</i> → OAuth client (Web application). Bật <i>YouTube Data API v3</i> và <i>YouTube Analytics API</i> trong project đó.</li><li><b>Refresh Token</b>: lấy bằng <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener">OAuth Playground</a> (bánh răng → <i>Use your own OAuth credentials</i> → dán Client ID/Secret) với các quyền <code>youtube.readonly</code> (hoặc <code>youtube.force-ssl</code>), <code>yt-analytics.readonly</code>, đăng nhập đúng tài khoản/kênh → <i>Exchange authorization code for tokens</i> → copy Refresh token. Token có sẵn từ app đăng video cũng dùng được; thiếu quyền <code>yt-analytics.readonly</code> thì chỉ có người đăng ký / tổng lượt xem / số video.</li><li>Có đủ 3 trường OAuth thì có báo cáo 30 ngày (lượt xem, phút xem, đăng ký mới, thích, bình luận, chia sẻ). API key chỉ đọc số công khai.</li></ol>`},
  ga4:{add:'Thêm website',label:'Tên website (vd: Website bán hàng)',id:'GA4 Property ID (dãy số)',secret:'Nội dung file JSON service account (mở file .json bằng Notepad, copy toàn bộ dán vào)',rows:6,oauth:'Đăng nhập Google để chọn nhiều website một lần',
   help:`<ol><li><b>Property ID</b>: GA4 → <i>Quản trị (Admin)</i> → <i>Chi tiết thuộc tính</i> → dãy số (không phải mã G-…).</li><li><b>Service account</b>: <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Google Cloud → IAM → Service Accounts</a> → tạo service account → <i>Keys → Add key → JSON</i> → tải file về. Bật <i>Google Analytics Data API</i> cho project đó.</li><li>Trong GA4 → <i>Quản trị → Quản lý quyền truy cập thuộc tính</i> → thêm email của service account (dạng …@….iam.gserviceaccount.com) với quyền <b>Người xem</b>. Một service account dùng được cho nhiều website: chỉ cần thêm email đó vào từng property.</li></ol>`},
- gsc:{add:'Thêm website (Search Console)',label:'Tên (vd: webseo.com.vn)',id:'Website: sc-domain:webseo.com.vn hoặc https://webseo.com.vn/',secret:'Nội dung file JSON service account (dùng chung file với GA4 được)',rows:6,oauth:'Đăng nhập Google để chọn website',
+ gsc:{add:'Thêm website (Search Console)',label:'Tên (vd: chungauto.vn)',id:'Website: sc-domain:chungauto.vn hoặc https://chungauto.vn/',secret:'Nội dung file JSON service account (dùng chung file với GA4 được)',rows:6,oauth:'Đăng nhập Google để chọn website',
   help:`<ol><li><b>Website</b>: đúng như thuộc tính trong <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console</a> — thuộc tính <i>Miền</i> nhập <code>sc-domain:ten-mien.vn</code> (gõ tên miền là đủ, app tự thêm), thuộc tính <i>Tiền tố URL</i> nhập đủ <code>https://ten-mien.vn/</code>.</li><li><b>Service account</b>: dùng lại file JSON của GA4 (hoặc tạo mới ở Google Cloud → IAM → Service Accounts → Keys → JSON). Bật <i>Google Search Console API</i> cho project đó.</li><li>Search Console → <i>Cài đặt → Người dùng và quyền → Thêm người dùng</i> → dán email service account (…@….iam.gserviceaccount.com), quyền <b>Bị hạn chế</b>.</li><li>Số liệu Search Console trễ 2–3 ngày; app lấy 28 ngày gần nhất + 10 từ khoá và 10 trang nhiều click nhất.</li></ol>`},
- gbp:{add:'Thêm địa điểm Google Maps',label:'Tên (vd: WebSEO Hà Nội)',id:'Location ID (locations/123… hoặc dãy số)',secret:'',rows:1,oauth:'Đăng nhập Google để chọn địa điểm',
+ gbp:{add:'Thêm địa điểm Google Maps',label:'Tên (vd: Chung Auto Hà Nội)',id:'Location ID (locations/123… hoặc dãy số)',secret:'',rows:1,oauth:'Đăng nhập Google để chọn địa điểm',
   help:`<ol><li><b>Location ID</b>: <a href="https://business.google.com/locations" target="_blank" rel="noopener">business.google.com</a> → chọn địa điểm → <i>Thông tin doanh nghiệp → Giới thiệu → Mã doanh nghiệp</i> (Business Profile ID, dãy số). Hoặc bấm "Đăng nhập Google để chọn địa điểm".</li><li><b>OAuth Client ID / Secret</b>: Google Cloud → Credentials (dùng chung client với YouTube được). Bật <i>My Business Account Management API</i>, <i>My Business Business Information API</i>, <i>Business Profile Performance API</i> và <i>Google My Business API</i>. Google chỉ mở các API này sau khi duyệt đơn <a href="https://developers.google.com/my-business/content/prereqs" target="_blank" rel="noopener">xin quyền Business Profile API</a> (vài ngày).</li><li><b>Refresh Token</b>: <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener">OAuth Playground</a> (bánh răng → dùng Client ID/Secret của mình) với quyền <code>https://www.googleapis.com/auth/business.manage</code>, đăng nhập tài khoản quản lý địa điểm → đổi mã lấy Refresh token.</li><li>Đánh giá Google Maps tự đổ vào trang <b>Bình luận &amp; phản hồi</b> để trả lời.</li></ol>`},
- zalo_oa:{add:'Thêm Zalo OA',label:'Tên (vd: Zalo OA WebSEO)',id:'OA ID (dãy số)',secret:'',rows:1,oauth:'',
+ zalo_oa:{add:'Thêm Zalo OA',label:'Tên (vd: Zalo OA Chung Auto)',id:'OA ID (dãy số)',secret:'',rows:1,oauth:'',
   help:`<ol><li><b>OA ID</b>: <a href="https://oa.zalo.me" target="_blank" rel="noopener">oa.zalo.me</a> → chọn OA → <i>Thông tin OA</i>.</li><li><b>App ID + Secret key</b>: <a href="https://developers.zalo.me" target="_blank" rel="noopener">developers.zalo.me</a> → tạo ứng dụng → <i>Thiết lập chung</i>. Thêm sản phẩm <b>Official Account API</b> và liên kết OA với ứng dụng.</li><li><b>Refresh token</b>: trong ứng dụng → <i>Official Account → API Explorer</i> (hoặc <a href="https://developers.zalo.me/tools/explorer" target="_blank" rel="noopener">công cụ API Explorer</a>) → chọn OA → lấy <b>OA Refresh Token</b>. Hệ thống tự làm mới và lưu token mới mỗi ngày; nếu báo hết hạn thì lấy lại và dán vào.</li><li>Tin khách nhắn OA tự vào <b>Bình luận &amp; đánh giá</b>; trả lời ở đó sẽ gửi tin tư vấn qua Zalo (Zalo chỉ cho trả lời trong khung thời gian sau tin cuối của khách).</li></ol>`},
  meta_ads:{add:'Thêm tài khoản quảng cáo',label:'Tên (vd: TKQC chính)',id:'Ad Account ID (số sau act=)',secret:'Access Token (System User, quyền ads_read)',rows:3,oauth:'Đăng nhập Facebook để chọn nhiều tài khoản quảng cáo một lần',
   help:`<ol><li><b>Ad Account ID</b>: mở Ads Manager, lấy dãy số sau <code>act=</code> trên thanh địa chỉ (app tự thêm tiền tố act_).</li><li><b>Access Token</b>: <a href="https://business.facebook.com/settings/system-users" target="_blank" rel="noopener">Business Settings → Người dùng hệ thống</a> → tạo system user → <i>Thêm tài sản</i> (chọn tài khoản quảng cáo, quyền xem) → <i>Tạo mã mới</i>, chọn app, tick <code>ads_read</code>, chọn hạn "Không bao giờ".</li></ol>`},
@@ -3673,7 +3671,7 @@ function connAddForm(t){
 /* ---- Kết nối nhanh website: dán link → cửa sổ đăng nhập Google → tự nhận Search Console + GA4 ---- */
 function quickWebCard(){
  return `<div class="card" style="border-color:var(--brand,#0d9488)"><div class="card-h">${ic('zap')}<div><h3>Kết nối nhanh website</h3><div class="sub">Dán link website → bấm Kết nối → đăng nhập Google trong cửa sổ bật lên. App tự tìm đúng website trong <b>Search Console</b> và <b>Google Analytics (GA4)</b>, tạo kênh và lấy số liệu luôn.</div></div></div>
-  <div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap"><input id="qw-url" placeholder="VD: webseo.com.vn" style="flex:1;min-width:220px" onkeydown="if(event.key==='Enter')quickWeb()"><button class="btn primary" id="qw-btn" onclick="quickWeb()">${ic('link')} Kết nối với Google</button></div></div>`;
+  <div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap"><input id="qw-url" placeholder="VD: chungauto.vn" style="flex:1;min-width:220px" onkeydown="if(event.key==='Enter')quickWeb()"><button class="btn primary" id="qw-btn" onclick="quickWeb()">${ic('link')} Kết nối với Google</button></div></div>`;
 }
 async function quickWeb(urlArg){
  const url=(urlArg!==undefined?String(urlArg):(($('#qw-url')||{}).value||'')).trim();if(!url){toast('Dán link website');return}
@@ -4304,7 +4302,7 @@ async function projCreate(){
 /* ================= PHÂN TÍCH THỊ TRƯỜNG (5 tab) ================= */
 function pgMarket(){
  const t=tabOf('market','trends');
- const tabs=[['trends','Xu hướng & từ khoá','trend'],['research','Thị trường & đối thủ','search'],['robot','Robot duyệt web','eye'],['audience','Phân khúc khách hàng','users'],['insights','Kho insight','book',DB.insights.length],['refs','Kênh tham khảo','star',REF.d?REF.d.refs.length:null]];
+ const tabs=[['trends','Xu hướng & từ khoá','trend'],['research','Thị trường & đối thủ','search'],['robot','Robot duyệt web','eye'],['audience','Phân khúc khách hàng','users'],['insights','Kho insight','book',DB.insights.length]];
  const P={trends:pgTrends,research:pgResearch,robot:pgRobot,audience:pgAudience,insights:pgInsights,refs:pgRefs};
  return `<div class="menuhead"><h1>Phân tích thị trường</h1><div class="sub">${esc((proj()||{}).name||'')}</div></div>${seg('market',tabs,t)}${(P[t]||pgTrends)()}`;
 }
@@ -4698,7 +4696,7 @@ function pgInbox(){
    <div class="ib-rows" id="ib-rows">${ibRows()}</div></div>${ibChat()}</div></div>`;
 }
 function ibEmoji(e){const ta=$('#ib-text');if(!ta)return;ta.value+=e;ta.focus()}
-async function ibAiSuggest(){if(!IB.cur)return;const b=$('#ib-ai');if(b){b.disabled=true;b.textContent='AI đang soạn…'}try{let d=await apiPost('/api/inbox.php',{action:'ai_suggest',id:IB.cur});if(d.job_id){for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,2000));const j=await apiPost('/api/inbox.php',{action:'ai_job',id:IB.cur,job_id:d.job_id});if(j.status==='done'){d=j;break}if(j.status==='failed')throw new Error(j.error||'AI lỗi')}if(!d.text)throw new Error('Máy HL chưa trả lời trong 80 giây')}const ta=$('#ib-text');if(ta){ta.value=d.text;ta.focus()}if(d.handoff)toast('AI đề nghị người thật xử lý',d.reason||'')}catch(e){toast('AI chưa gợi ý được',e.message)}finally{if(b){b.disabled=false;b.textContent='🤖 Gợi ý'}}}
+async function ibAiSuggest(){if(!IB.cur)return;const b=$('#ib-ai');if(b){b.disabled=true;b.textContent='AI đang soạn…'}try{let d=await apiPost('/api/inbox.php',{action:'ai_suggest',id:IB.cur});if(d.job_id){for(let i=0;i<40;i++){await new Promise(r=>setTimeout(r,2000));const j=await apiPost('/api/inbox.php',{action:'ai_job',id:IB.cur,job_id:d.job_id});if(j.status==='done'){d=j;break}if(j.status==='failed')throw new Error(j.error||'AI lỗi')}if(!d.text)throw new Error('AI chưa trả lời')}const ta=$('#ib-text');if(ta){ta.value=d.text;ta.focus()}if(d.handoff)toast('AI đề nghị người thật xử lý',d.reason||'')}catch(e){toast('AI chưa gợi ý được',e.message)}finally{if(b){b.disabled=false;b.textContent='🤖 Gợi ý'}}}
 async function ibLoadTpls(sel){try{IB.tpls=(await apiGet('/api/inbox.php?action=templates')).templates||[];sel.innerHTML='<option value="">Mẫu…</option>'+IB.tpls.map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join('')}catch(e){IB.tpls=[]}}
 /* ================= CHĂM SÓC DỰ ÁN ================= */
 function pgCareMenu(){
@@ -4717,7 +4715,7 @@ function pgAutomationMenu(){
 const PIPE=[['CREATED','Mới'],['VALIDATING','Đang kiểm tra'],['ROUTED','Đã định tuyến'],['DELIVERED','Bàn giao CRM'],['ACCEPTED','CRM đã nhận'],['REJECTED','CRM từ chối']];
 function pgLeadsMenu(){
  const t=tabOf('leadsmenu','list');
- const tabs=[['list','Danh sách & bàn giao','route',DB.leads.length],['pipe','Pipeline','layers']].concat(crmOn()?[['crm','CRM webseo.vn (thật)','building']]:[]);
+ const tabs=[['list','Danh sách & bàn giao','route',DB.leads.length],['pipe','Pipeline','layers']];
  let body='';
  if(t==='crm')body=crmLeadsTab();
  else if(t==='pipe'){
@@ -4739,46 +4737,12 @@ function pgReportsMenu(){
 
 /* ================= TIỆN ÍCH: landing · đối thủ · ý tưởng ================= */
 const UT={ideas:null,landings:null,busy:false,lmode:'prompt',members:null};
-/* ---- Dữ liệu thật: CRM webseo.vn (chỉ đọc) + báo cáo máy HL ---- */
-const CRM={sum:null,leads:null,exp:null,busy:{},err:null};const HL={d:null,busy:false};
-function crmOn(){const p=proj();return !!(p&&p.settings&&p.settings.crm)}
-async function crmLoad(k){
- if(CRM.busy[k])return;CRM.busy[k]=true;const seq=S.projSeq||0;
- try{const d=await apiGet('/api/crm.php?action='+(k==='sum'?'summary':k==='exp'?'expiring':'leads'));if(seq!==(S.projSeq||0))return;
-  if(!d.connected){CRM.err=d.reason||'Chưa kết nối';CRM[k]=k==='sum'?{}:[]}else{CRM.err=null;CRM[k]=k==='sum'?d.summary:k==='exp'?d.expiring:d.leads}}
- catch(e){CRM.err=e.message;CRM[k]=k==='sum'?{}:[]}
- finally{CRM.busy[k]=false;render()}
-}
-async function hlLoad(){if(HL.busy)return;HL.busy=true;const seq=S.projSeq||0;try{const d=await apiGet('/api/hl.php?days=14');if(seq!==(S.projSeq||0))return;HL.d=d}catch(e){HL.d={reports:{},latest:{},err:e.message}}finally{HL.busy=false;render()}}
-function crmCard(){
- if(!crmOn())return '';
- if(!CRM.sum){crmLoad('sum');return `<div class="card"><div class="card-h"><h3>CRM webseo.vn</h3></div><div class="card-b mini">Đang đọc dữ liệu thật…</div></div>`}
- const c=CRM.sum;if(CRM.err||!c.leads_total&&c.leads_total!==0)return `<div class="card"><div class="card-h"><h3>CRM webseo.vn</h3><span class="badge b-warn">Chưa kết nối</span></div><div class="card-b mini">${esc(CRM.err||'')}</div></div>`;
- const ex=(c.expiring_30||[]).reduce((t,x)=>t+(+x.n),0);const act=(c.services_active||[]).map(x=>`${esc(x.type)} ${x.n}`).join(' · ');
- const byCh=(c.leads_by_channel||[]).map(x=>`${esc(x.k)} ${x.p}/${x.n}`).join(' · ');
- return `<div class="card"><div class="card-h"><div><h3>Dữ liệu thật từ CRM webseo.vn</h3><div class="sub">${esc(c.source)} · ${c.days} ngày · cập nhật ${esc(c.as_of)}</div></div><div class="hact"><button class="btn sm" onclick="go('leadsmenu','crm')">${ic('route')} Lead & dịch vụ</button>${projAdmin()?`<button class="btn sm" onclick="apiGet('/api/crm.php?action=refresh').then(()=>{CRM.sum=null;CRM.leads=null;CRM.exp=null;render()})">Làm mới</button>`:''}</div></div>
-  <div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${kpi('Khách để lại thông tin',num(c.leads_period),'route','#2563eb',`hôm nay ${c.leads_today} · chưa đọc ${c.leads_unread}`)}${kpi('Khách hàng mới',num(c.customers_new),'users','#7c3aed',`tổng ${num(c.customers_total)} khách`)}${kpi('Tiền vào (sổ thu)',money(c.inflow_period),'coin','#0d9488',`${c.days} ngày`)}${kpi('Dịch vụ sắp hết hạn (30 ngày)',num(ex),'calendar',ex?'#d97706':'#0d9488',`${c.expiring_7} trong 7 ngày · ${c.expired_unrenewed_30} đã quá hạn chưa gia hạn`)}${kpi('Đơn hàng',num((c.orders_period||[]).reduce((t,x)=>t+(+x.n),0)),'clipboard','#db2777',(c.orders_period||[]).map(x=>`${x.status} ${x.n}`).join(' · ')||'—')}${kpi('Hỗ trợ đang mở',num(c.tickets_open),'bell',c.tickets_open?'#d97706':'#0d9488','ticket open/replied')}</div>
-  <div class="mini" style="margin-top:6px">Lead theo kênh (kỳ/tổng): ${byCh||'—'} · Dịch vụ đang hoạt động: ${act||'—'}${(c.orders_by_source||[]).some(x=>x.k.startsWith('(không'))?' · <b>Đơn hàng chưa gắn nguồn kênh</b> — bật ghi nguồn (UTM) ở webseo.vn để quy chiến dịch':''}</div></div>`;
-}
-function hlCard(){
- if(!HL.d){hlLoad();return ''}
- const L=HL.d.latest||{};const k=Object.keys(L);if(!k.length)return HL.d.configured?`<div class="card"><div class="card-h"><h3>Máy HL (app phòng marketing)</h3><span class="badge b-warn">Chưa có báo cáo</span></div><div class="card-b mini">Máy HL gửi báo cáo tổng hợp mỗi tối và khi có khách trả lời. Chưa nhận bản nào.</div></div>`:'';
- const tk=L.tim_khach?L.tim_khach.data:null,em=L.email_chien_dich?L.email_chien_dich.data:null,ht=L.hop_thu?L.hop_thu.data:null,seo=L.seo_hang_ngay?L.seo_hang_ngay.data:null,kd=L.kinh_doanh?L.kinh_doanh.data:null;
- const day=Object.values(L).map(x=>x.day).sort().pop();
- return `<div class="card"><div class="card-h"><div><h3>Máy HL — tìm khách, thư chào hàng, hộp thư, SEO</h3><div class="sub">Báo cáo tổng hợp gửi từ app trên PC · mới nhất ${esc(day||'')}</div></div><button class="btn sm" onclick="go('channels');setCh('channels','email')">${ic('send')} Chi tiết email</button></div>
-  <div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${tk?kpi('Lead tìm được',num(tk.tong||0),'search','#2563eb',`mới ${tk.moi||0} · đã gọi ${tk.da_goi||0} · đưa CRM ${tk.crm||0}`):''}${em?kpi('Thư chào hàng đã gửi',num(em.tong_gui||0),'send','#7c3aed',`hôm nay ${em.gui_hom_nay||0} · còn ${em.con_lai||0} khách`):''}${ht?kpi('Khách trả lời thư',num(ht.tong||0),'users','#0d9488',`báo giá ${ht.bao_gia||0} · quan tâm ${ht.quan_tam||0} · từ chối ${ht.tu_choi||0}`):''}${seo?kpi('SEO hằng ngày',num(seo.da_lam||0),'trend','#d97706',`việc đã làm · ${seo.bai_moi||0} bài mới, ${seo.day_len||0} cập nhật`):''}${kd?kpi('Cuộc gọi hôm nay',num(kd.goi||0),'bell','#db2777',`${kd.ok||0} nghe máy · ${kd.hen||0} hẹn`):''}</div></div>`;
-}
-/* Nội dung SEO/GEO tự động (Claude trên máy HL đăng/cập nhật hằng ngày theo truy vấn Search Console) — anh Tập chỉ theo dõi. */
-function seoAutoBlock(){
- if(!HL.d){hlLoad();return ''}
- const L=(HL.d.latest||{}).seo_hang_ngay;if(!L)return '';
- const d=L.data||{},ds=d.danh_sach||[],kh=d.ke_hoach||[];
- const site=s=>`<span class="chip">${esc(s||'')}</span>`;
- const vn=iso=>{const d=new Date(iso);return isNaN(d)?esc(String(iso||'')):d.toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh',hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})};
- return `<div class="card"><div class="card-h"><div><h3>Bài SEO/GEO đăng & cập nhật tự động</h3><div class="sub">Máy HL làm theo truy vấn Search Console mỗi sáng · hôm nay ${d.da_lam||0} việc (${d.bai_moi||0} bài mới, ${d.day_len||0} cập nhật) · cập nhật ${esc(fmtTs(L.updated_at))}</div></div><span class="badge b-vio">Tự động · chỉ theo dõi</span></div>
-  ${ds.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Lúc</th><th>Trang</th><th>Việc</th><th>Truy vấn nhắm tới</th><th>Bài</th></tr></thead><tbody>${ds.slice(0,25).map(x=>`<tr><td class="r-mut" style="white-space:nowrap">${vn(x.luc)}</td><td>${site(x.site)}</td><td>${x.viec==='bai-moi'?'<span class="badge b-ok">Bài mới</span>':'<span class="badge b-info">Cập nhật</span>'}</td><td>${esc(x.cau||'')}</td><td>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url.replace(/^https?:\/\//,'').slice(0,60))}</a>`:'—'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="card-b mini">Chưa có việc nào được ghi nhận.</div>'}
-  ${kh.length?`<div class="card-b"><b>Việc dự kiến từ Search Console (${esc(d.ngay_nhiem_vu||'')})</b><div class="mini" style="margin-top:6px">${kh.slice(0,12).map(k=>`${site(k.site)} ${k.loai==='bai_moi'?'bài mới':'đẩy lên'}: ${esc(k.cau)}${k.vi_tri?' (vị trí '+k.vi_tri+')':''}`).join('<br>')}</div></div>`:''}</div>`;
-}
+/* (14/10/2026) Đã gỡ CRM webseo.vn và báo cáo máy HL — bản Chung Auto không dùng. */
+const CRM={sum:null,leads:null,exp:null,busy:{},err:null};const HL={d:null};
+function crmOn(){return false}
+function crmCard(){return ''}
+function hlCard(){return ''}
+function seoAutoBlock(){return ''}
 /* ---- TikTok: một app dùng chung, nhiều tài khoản, mỗi tài khoản thuộc một dự án ---- */
 const TT={d:null,busy:false,chk:{}};
 async function ttLoad(){if(TT.busy)return;TT.busy=true;const seq=S.projSeq||0;try{const d=await apiGet('/api/tiktok.php');if(seq!==(S.projSeq||0))return;TT.d=d}catch(e){TT.d={err:e.message,accounts:[],app:{}}}finally{TT.busy=false;render()}}
@@ -4839,81 +4803,9 @@ async function ttCheck(id){try{TT.chk[id]=await apiPost('/api/tiktok.php',{actio
 async function ttSaveProjectApp(){const b={action:'project_app',label:$('#tp-label').value,client_key:$('#tp-key').value,client_secret:$('#tp-sec').value};try{await apiPost('/api/tiktok.php',b);toast('Đã lưu sandbox riêng của dự án');TT.d=null;await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 async function ttClearProjectApp(){if(!confirm('Bỏ sandbox riêng, quay về app chung?'))return;try{await apiPost('/api/tiktok.php',{action:'project_app',clear:true});TT.d=null;await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 async function ttSaveApp(){const b={action:'app',env:$('#tt-env').value,sandbox_client_key:$('#tt-sk').value,sandbox_client_secret:$('#tt-ss').value,client_key:$('#tt-pk').value,client_secret:$('#tt-ps').value,scopes:$('#tt-sc').value};try{await apiPost('/api/tiktok.php',b);toast('Đã lưu cấu hình app TikTok');TT.d=null;render()}catch(e){toast('Lỗi',e.message)}}
-/* ================= KHO KÊNH THAM KHẢO (dùng chung mọi dự án) — 12/10/2026 ================= */
+/* (14/10/2026) Đã gỡ Kho kênh tham khảo — tính năng chạy bằng máy HL. */
 const REF={d:null,busy:false,err:null,poll:{}};
-async function refLoad(){if(REF.busy)return;REF.busy=true;try{REF.d=await apiGet('/api/refs.php');REF.err=null}catch(e){REF.err=e.message}finally{REF.busy=false}if(S.page==='market')render()}
-function refPlat(p){return `<span class="plat plat-${esc(p)}">${esc((REF.d&&REF.d.platforms[p])||p)}</span>`}
-function refNum(n){return n==null?'—':(n>=1e6?(Math.round(n/1e5)/10)+'M':n>=1e3?(Math.round(n/100)/10)+'K':num(n))}
-function refProjName(id){const p=(REF.d&&REF.d.projects||[]).find(x=>x.id===id);return p?p.name:id}
-function pgRefs(){
- if(!REF.d){refLoad();return `<div class="card"><div class="card-b mini">${REF.err?'<span style="color:var(--bad)">'+esc(REF.err)+'</span>':'Đang tải kho kênh tham khảo…'}</div></div>`}
- const d=REF.d,cur=S.project,only=S.refOnly!==false;
- const list=d.refs.filter(r=>!only||!cur||(r.projects||[]).includes(cur)||!(r.projects||[]).length);
- const jobOf=r=>(d.jobs||[]).find(j=>j.ref_id===r.id&&j.kind==='ref_fetch'&&(j.status==='queued'||j.status==='taken'));
- const card=r=>{const j=jobOf(r);const fm=r.formats||[],sm=r.samples||[];
-  return `<div class="card refcard"><div class="card-b">
-   <div class="refhead">${r.avatar?`<img src="${esc(r.avatar)}" referrerpolicy="no-referrer">`:`<span class="av" style="width:44px;height:44px;font-size:16px;background:${avc(r.handle)}">${initials(r.name||r.handle)}</span>`}<div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center">${refPlat(r.platform)}<b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.name||r.handle)}</b></div><a href="${esc(r.url)}" target="_blank" rel="noopener" class="mini mono">@${esc(r.handle)}</a></div></div>
-   <div class="refstats"><div><b>${refNum(r.followers)}</b><span>theo dõi</span></div><div><b>${refNum(r.likes)}</b><span>thích</span></div><div><b>${refNum(r.posts_count)}</b><span>bài</span></div><div class="mini" style="align-self:center">${j?'<span class="badge b-warn">đang lấy số liệu…</span>':r.fetch_error?`<span class="badge b-bad" title="${esc(r.fetch_error)}">lỗi lấy số liệu</span>`:r.fetched_at?'cập nhật '+esc(fmtTs(r.fetched_at)):'<span class="badge b-mut">chưa có số liệu</span>'}</div></div>
-   ${r.bio?`<div class="mini" style="white-space:pre-line">${esc(r.bio)}</div>`:''}
-   ${fm.length?`<div style="display:flex;flex-direction:column;gap:5px">${fm.map((f,i)=>`<div class="reffmt"><b>${i+1}. ${esc(f.name)}</b>${esc(f.desc||'')}${f.structure?`<div class="mini" style="margin-top:3px;white-space:pre-line">${esc(f.structure)}</div>`:''}${f.why?`<div class="mini" style="margin-top:3px"><i>Vì sao hiệu quả:</i> ${esc(f.why)}</div>`:''}</div>`).join('')}</div>`:`<div class="mini">Chưa ghi format nào — bấm Sửa để thêm (mỗi dòng "Tên: mô tả").</div>`}
-   ${sm.length?`<div class="refsamp">${sm.map((m,i)=>`<img src="${esc(APP_BASE+m.path)}" title="${esc(m.caption||'')}" onclick="refSampleView('${r.id}',${i})">`).join('')}</div>`:''}
-   <div style="display:flex;gap:4px;flex-wrap:wrap">${(r.projects||[]).map(p=>`<span class="chip">${esc(refProjName(p))}</span>`).join('')||'<span class="chip">mọi dự án</span>'}</div>
-   ${r.notes?`<div class="mini" style="white-space:pre-line">${esc(r.notes)}</div>`:''}
-   ${d.can_edit?`<div class="hact" style="flex-wrap:wrap"><button class="btn sm primary" onclick="refAdaptModal('${r.id}')">${ic('zap')} Làm theo cho ${esc((proj()||{}).name||'dự án')}</button><button class="btn sm" onclick="refRefresh('${r.id}')" ${j?'disabled':''}>${ic('trend')} Số liệu</button><button class="btn sm" onclick="refSampleAdd('${r.id}')">${ic('palette')} Ảnh mẫu</button><button class="btn sm" onclick="refEdit('${r.id}')">${ic('edit')} Sửa</button><button class="iconbtn sm" title="Xoá" onclick="refDelete('${r.id}')">${ic('trash')}</button></div>`:''}
-  </div></div>`};
- const running=(d.jobs||[]).filter(j=>j.kind==='ref_adapt'&&(j.status==='queued'||j.status==='taken'));
- return `<div class="card"><div class="card-h">${ic('star')}<div><h3>Kho kênh tham khảo</h3><div class="sub">Dùng chung mọi dự án · học format nội dung của kênh mẫu rồi "Làm theo" → máy HL soạn bài + vẽ slide → bài nháp trong Lịch đăng của dự án đang chọn</div></div><div class="hact"><label class="mini" style="display:flex;align-items:center;gap:4px"><input type="checkbox" ${only?'checked':''} onchange="S.refOnly=this.checked;render()"> chỉ kênh gắn dự án này</label>${d.can_edit?`<button class="btn sm primary" onclick="refAddModal()">${ic('plus')} Thêm kênh</button>`:''}</div></div>
-  <div class="card-b" style="padding:8px 14px"><div class="mini">Máy HL ${d.hl_alive?'<span class="badge b-ok">đang trực</span>':'<span class="badge b-warn">không thấy nhịp tim</span>'} — số liệu kênh và việc "Làm theo" chạy trên máy HL (VPS bị TikTok/X chặn).${running.length?` · <b>${running.length}</b> bài đang soạn…`:''}</div></div></div>
-  ${list.length?`<div class="refgrid">${list.map(card).join('')}</div>`:noData('Chưa có kênh tham khảo nào'+(only&&cur?' gắn với dự án này':''),'Dán link hồ sơ TikTok / X / YouTube / Facebook / Instagram của kênh bạn muốn học format.',d.can_edit?`<button class="btn primary" onclick="refAddModal()">${ic('plus')} Thêm kênh</button>`:'')}`;
-}
-function refProjChecks(sel){return (REF.d.projects||[]).map(p=>`<label class="chip" style="cursor:pointer"><input type="checkbox" class="ref-pj" value="${esc(p.id)}" ${sel.includes(p.id)?'checked':''}> ${esc(p.name)}</label>`).join(' ')}
-function refFmtText(fm){return (fm||[]).map(f=>f.name+(f.desc?': '+f.desc:'')).join('\n')}
-function refAddModal(){
- openModal(`<div class="mh">${ic('star')}<h3>Thêm kênh tham khảo</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
-  <div class="field"><label>Link hồ sơ kênh (hoặc @handle TikTok)</label><input id="rf-url" placeholder="https://www.tiktok.com/@eddytruongdata"></div>
-  <div class="field"><label>Format đáng học (mỗi dòng: Tên: mô tả)</label><textarea id="rf-fm" rows="4" placeholder="Carousel 7 prompt: slide 1 hook gây sốc + 7 slide mỗi slide 1 prompt + slide cuối CTA follow"></textarea></div>
-  <div class="field"><label>Áp dụng cho dự án</label><div style="display:flex;gap:6px;flex-wrap:wrap">${refProjChecks([S.project])}</div></div>
-  <div class="field"><label>Ghi chú</label><textarea id="rf-note" rows="2"></textarea></div>
-  <div class="mini">Sau khi thêm, máy HL tự lấy tên, mô tả, số người theo dõi/thích/bài (TikTok, YouTube; X cần đăng nhập nên chỉ lưu link).</div>
- </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="refAddGo()">${ic('check')} Thêm</button></div>`);
-}
-async function refAddGo(){const url=$('#rf-url').value.trim();if(!url){toast('Dán link kênh');return}
- const projects=[...document.querySelectorAll('.ref-pj:checked')].map(x=>x.value);
- try{const d=await apiPost('/api/refs.php',{action:'add',url,formats:$('#rf-fm').value,projects,notes:$('#rf-note').value});closeLayer();toast('Đã thêm kênh',d.hl_alive?'Máy HL đang lấy số liệu…':'Máy HL chưa trực — số liệu sẽ lấy khi máy bật');REF.d=null;refLoad();refPollFetch(d.id)}catch(e){toast('Lỗi',e.message)}}
-function refPollFetch(id){let n=0;const t=setInterval(async()=>{n++;if(n>30){clearInterval(t);return}try{const d=await apiGet('/api/refs.php');REF.d=d;const j=(d.jobs||[]).find(x=>x.ref_id===id&&x.kind==='ref_fetch');if(!j||j.status==='done'||j.status==='failed'){clearInterval(t);if(S.page==='market')render()}}catch(e){clearInterval(t)}},4000)}
-async function refRefresh(id){try{const d=await apiPost('/api/refs.php',{action:'refresh',id});toast('Đang lấy số liệu',d.hl_alive?'máy HL đang trực':'máy HL chưa trực');REF.d=null;await refLoad();refPollFetch(id)}catch(e){toast('Lỗi',e.message)}}
-function refEdit(id){const r=REF.d.refs.find(x=>x.id===id);if(!r)return;
- openModal(`<div class="mh">${ic('edit')}<h3>Sửa kênh @${esc(r.handle)}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
-  <div class="grid2"><div class="field"><label>Tên hiển thị</label><input id="re-name" value="${esc(r.name||'')}"></div><div class="field"><label>Mô tả kênh</label><input id="re-bio" value="${esc(r.bio||'')}"></div></div>
-  <div class="field"><label>Format đáng học (mỗi dòng: Tên: mô tả)</label><textarea id="re-fm" rows="6">${esc(refFmtText(r.formats))}</textarea><div class="mini">Format có cấu trúc chi tiết (structure / why) chỉ sửa được qua API — sửa ở đây sẽ giữ tên + mô tả.</div></div>
-  <div class="field"><label>Áp dụng cho dự án</label><div style="display:flex;gap:6px;flex-wrap:wrap">${refProjChecks(r.projects||[])}</div></div>
-  <div class="field"><label>Ghi chú</label><textarea id="re-note" rows="3">${esc(r.notes||'')}</textarea></div>
- </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="refEditGo('${id}')">${ic('check')} Lưu</button></div>`);
-}
-async function refEditGo(id){const r=REF.d.refs.find(x=>x.id===id)||{};const txt=$('#re-fm').value;
- // giữ structure/why của format cũ nếu tên không đổi
- const old=r.formats||[];const formats=txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{const i=l.indexOf(':');const name=(i<0?l:l.slice(0,i)).trim(),desc=(i<0?'':l.slice(i+1)).trim();const o=old.find(f=>f.name===name)||{};return {name,desc,structure:o.structure||'',why:o.why||''}});
- const projects=[...document.querySelectorAll('.ref-pj:checked')].map(x=>x.value);
- try{await apiPost('/api/refs.php',{action:'update',id,name:$('#re-name').value,bio:$('#re-bio').value,formats,projects,notes:$('#re-note').value});closeLayer();toast('Đã lưu');REF.d=null;refLoad()}catch(e){toast('Lỗi',e.message)}}
-async function refDelete(id){const r=REF.d.refs.find(x=>x.id===id);if(!confirm('Xoá kênh tham khảo @'+(r?r.handle:id)+'?'))return;try{await apiPost('/api/refs.php',{action:'delete',id});REF.d=null;refLoad()}catch(e){toast('Lỗi',e.message)}}
-function refSampleAdd(id){const inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.multiple=true;inp.onchange=async()=>{const fs=[...inp.files].slice(0,12);if(!fs.length)return;toast('Đang tải '+fs.length+' ảnh…');const media=[];
- for(const f of fs){try{const fd=new FormData();fd.append('file',f);const r=await fetch(API('/api/upload.php'),{method:'POST',credentials:'same-origin',headers:PH(),body:fd});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||('Lỗi '+r.status));media.push({path:j.path,caption:f.name})}catch(e){toast('Lỗi tải ảnh',e.message)}}
- if(!media.length)return;try{await apiPost('/api/refs.php',{action:'sample_add',id,media});toast('Đã thêm '+media.length+' ảnh mẫu');REF.d=null;refLoad()}catch(e){toast('Lỗi',e.message)}};inp.click()}
-function refSampleView(id,i){const r=REF.d.refs.find(x=>x.id===id);if(!r)return;const m=(r.samples||[])[i];if(!m)return;
- openModal(`<div class="mh"><h3>Ảnh mẫu ${i+1}/${(r.samples||[]).length} — @${esc(r.handle)}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb" style="text-align:center"><img src="${esc(APP_BASE+m.path)}" style="max-width:100%;max-height:70vh;border-radius:8px">${m.caption?`<div class="mini" style="margin-top:6px">${esc(m.caption)}</div>`:''}</div><div class="mf">${i>0?`<button class="btn" onclick="refSampleView('${id}',${i-1})">‹ Trước</button>`:''}${i<(r.samples||[]).length-1?`<button class="btn" onclick="refSampleView('${id}',${i+1})">Sau ›</button>`:''}${REF.d.can_edit?`<button class="btn danger" onclick="refSampleDel('${id}',${i})">${ic('trash')} Xoá ảnh</button>`:''}<button class="btn" onclick="closeLayer()">Đóng</button></div>`)}
-async function refSampleDel(id,i){try{await apiPost('/api/refs.php',{action:'sample_del',id,idx:i});closeLayer();REF.d=null;refLoad()}catch(e){toast('Lỗi',e.message)}}
-function refAdaptModal(id){const r=REF.d.refs.find(x=>x.id===id);if(!r)return;const fm=r.formats||[];if(!fm.length){toast('Kênh chưa có format','Bấm Sửa, thêm format (Tên: mô tả) rồi mới làm theo được');return}
- const p=proj()||{};const tg=(DB.connections||[]).filter(c=>c.status==='connected'&&['facebook_page','tiktok','x'].includes(c.provider));
- openModal(`<div class="mh">${ic('zap')}<h3>Làm theo @${esc(r.handle)} cho ${esc(p.name||'')}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
-  <div class="field"><label>Format</label><select id="ra-fm">${fm.map((f,i)=>`<option value="${i}">${esc(f.name)}${f.desc?' — '+esc(f.desc.slice(0,80)):''}</option>`).join('')}</select></div>
-  <div class="field"><label>Chủ đề bài (nói rõ cho ai, lợi ích gì)</label><textarea id="ra-topic" rows="3" placeholder="VD: 7 câu hỏi 'Bé ơi vì sao?' giúp bố mẹ khơi trí tò mò cho bé 4-6 tuổi mỗi tối"></textarea></div>
-  <div class="grid2"><div class="field"><label>Số slide</label><input id="ra-n" type="number" min="3" max="12" value="9"></div><div class="field"><label>Yêu cầu thêm (tuỳ chọn)</label><input id="ra-note" placeholder="giọng vui, có emoji, CTA theo dõi kênh…"></div></div>
-  <div class="mini">Máy HL (Claude Max) soạn caption chuẩn SEO + nội dung từng slide, vẽ ảnh slide 1080×1350, rồi tạo <b>bài nháp</b> trong Lịch đăng của dự án này, gắn sẵn ${tg.length} kênh (${tg.map(c=>c.label).join(', ')||'chưa kết nối kênh nào'}). Anh duyệt rồi mới đăng.</div>
- </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" id="ra-go" onclick="refAdaptGo('${id}')">${ic('zap')} Soạn bài</button></div>`);
-}
-async function refAdaptGo(id){const topic=$('#ra-topic').value.trim();if(!topic){toast('Nhập chủ đề bài');return}const b=$('#ra-go');b.disabled=true;b.textContent='Đang gửi máy HL…';
- try{const d=await apiPost('/api/refs.php',{action:'adapt',id,format_idx:Number($('#ra-fm').value||0),topic,slides:Number($('#ra-n').value||9),note:$('#ra-note').value});closeLayer();toast('Máy HL đang soạn bài',d.hl_alive?'thường 1–3 phút; xong sẽ báo ở đây':'máy HL chưa trực — bài sẽ soạn khi máy bật');REF.d=null;refLoad();refPollAdapt(d.job_id)}catch(e){toast('Lỗi',e.message);b.disabled=false;b.textContent='Soạn bài'}}
-function refPollAdapt(jobId){let n=0;const t=setInterval(async()=>{n++;if(n>90){clearInterval(t);return}try{const j=await apiPost('/api/refs.php',{action:'job',job_id:jobId});if(j.status==='done'){clearInterval(t);REF.d=null;if(S.page==='market')refLoad();const pid=(j.result||{}).post_id;toast('Đã soạn xong bài nháp','"'+((j.result||{}).title||'')+'" · '+((j.result||{}).media||0)+' ảnh slide — mở Lịch đăng để duyệt');if(pid&&S.pub){S.pub.list=null}}else if(j.status==='failed'){clearInterval(t);REF.d=null;if(S.page==='market')refLoad();toast('Soạn bài lỗi',j.error||'')}}catch(e){clearInterval(t)}},4000)}
+function pgRefs(){return ''}
 
 /* ================= KÊNH X (Twitter) — OAuth 2.0 PKCE, một app X Developer dùng chung — 12/10/2026 ================= */
 const XS={d:null,busy:false,chk:{}};
@@ -4943,23 +4835,8 @@ async function xDisconnect(id){if(!confirm('Ngắt kết nối tài khoản X n�
 async function xCheck(id){try{XS.chk[id]=await apiPost('/api/x.php',{action:'check',id});render()}catch(e){XS.chk[id]={ok:false,error:e.message};render()}}
 async function xSaveApp(){const cid=$('#x-cid').value.trim(),sec=$('#x-csec').value.trim();if(!cid&&!sec){toast('Nhập Client ID và Client Secret');return}if((cid&&!sec)||(!cid&&sec)){toast('Nhập cả Client ID và Client Secret');return}try{await apiPost('/api/x.php',{action:'app',client_id:cid,client_secret:sec});toast('Đã lưu khoá app X');XS.d=null;render()}catch(e){toast('Lỗi',e.message)}}
 async function xClearApp(){if(!confirm('Xoá Client ID / Secret của app X? Các tài khoản đã kết nối sẽ không làm mới token được.'))return;try{await apiPost('/api/x.php',{action:'app',clear:['client_id','client_secret']});toast('Đã xoá khoá');XS.d=null;render()}catch(e){toast('Lỗi',e.message)}}
-function hlEmailTab(){
- if(!HL.d){hlLoad();return '<div class="empty">Đang tải báo cáo máy HL…</div>'}
- const R=(HL.d.reports||{});const em=R.email_chien_dich||[],ht=R.hop_thu||[];
- const last=em.length?em[em.length-1].data:null;
- return `${noData('Kênh Email — chạy từ máy HL (app phòng marketing), hub nhận báo cáo tổng hợp','Thư chào hàng gửi qua SMTP công ty; hộp thư được đọc để bắt khách trả lời. Hub không giữ địa chỉ email khách, chỉ số liệu.','')}
-  ${last?`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr))">${kpi('Tổng thư đã gửi',num(last.tong_gui||0),'send','#7c3aed','')}${kpi('Gửi hôm nay',num(last.gui_hom_nay||0),'send','#2563eb','')}${kpi('Còn lại',num(last.con_lai||0),'users','#6b7789','khách chưa gửi')}${kpi('Thư theo dõi (2/3)',num(last.theo_doi||0),'calendar','#0d9488','')}</div>`:''}
-  ${last&&last.chien_dich?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Chiến dịch</th><th class="tar">Đã gửi</th><th class="tar">Hôm nay</th><th class="tar">Còn lại</th><th class="tar">Theo dõi</th><th>Bật</th></tr></thead><tbody>${last.chien_dich.map(c=>`<tr><td><b>${esc(c.ten)}</b></td><td class="tar mono">${num(c.da_gui)}</td><td class="tar mono">${num(c.hom_nay)}</td><td class="tar mono">${num(c.con)}</td><td class="tar mono">${num(c.theo_doi)}</td><td>${c.bat?'<span class="badge b-ok">đang chạy</span>':'<span class="badge b-mut">tắt</span>'}</td></tr>`).join('')}</tbody></table></div>`:''}
-  ${ht.length?`<h4 style="margin:16px 0 8px">Khách trả lời thư (14 ngày)</h4><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Ngày</th><th class="tar">Tổng</th><th class="tar">Xin báo giá</th><th class="tar">Quan tâm</th><th class="tar">Từ chối</th><th class="tar">Tự động</th></tr></thead><tbody>${ht.slice().reverse().map(r=>`<tr><td>${esc(r.day)}</td><td class="tar mono">${num(r.data.tong||0)}</td><td class="tar mono">${num(r.data.bao_gia||0)}</td><td class="tar mono">${num(r.data.quan_tam||0)}</td><td class="tar mono">${num(r.data.tu_choi||0)}</td><td class="tar mono">${num(r.data.tu_dong||0)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
-}
-function crmLeadsTab(){
- if(!crmOn())return noData('Dự án chưa gắn nguồn CRM','Vào Cài đặt dự án → Thông tin → Nguồn CRM.');
- if(!CRM.leads)crmLoad('leads');if(!CRM.exp)crmLoad('exp');
- if(!CRM.leads||!CRM.exp)return '<div class="empty">Đang đọc CRM…</div>';
- if(CRM.err)return noData('Không đọc được CRM',esc(CRM.err));
- return `<div class="grid2"><div class="card" style="margin:0"><div class="card-h"><h3>Khách để lại thông tin (CRM)</h3><span class="sub">${CRM.leads.length} gần nhất · SĐT che · xử lý trong CRM webseo.vn</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Khách</th><th>Kênh</th><th>Tin cuối</th><th>Phụ trách</th><th>Lúc</th></tr></thead><tbody>${CRM.leads.map(l=>`<tr><td><b>${esc(l.name||'(không tên)')}</b>${l.unread?' <span class="badge b-warn">chưa đọc</span>':''}<div class="mini mono">${esc(l.phone)}</div></td><td><span class="chip">${esc(l.channel||'')}</span></td><td class="mini" style="max-width:260px">${esc(l.last||'')}</td><td>${esc(l.owner||'—')}</td><td class="r-mut" style="white-space:nowrap">${esc(fmtTs(l.created_at))}</td></tr>`).join('')||'<tr><td colspan=5 class="mini">Chưa có</td></tr>'}</tbody></table></div></div>
- <div class="card" style="margin:0"><div class="card-h"><h3>Dịch vụ sắp hết hạn (30 ngày)</h3><span class="sub">${CRM.exp.length} dịch vụ · cơ hội gia hạn / chăm sóc</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Dịch vụ</th><th>Khách</th><th class="tar">Còn</th><th class="tar">Giá</th></tr></thead><tbody>${CRM.exp.map(x=>`<tr><td><b>${esc(x.name)}</b><div class="mini">${esc(x.type)}${x.plan?' · '+esc(x.plan):''}${x.auto_renew?' · tự gia hạn':''}</div></td><td>${esc(x.customer||'—')}<div class="mini mono">${esc(x.phone||'')}</div></td><td class="tar mono" style="color:${x.days_left<=7?'var(--bad)':'inherit'}">${x.days_left} ngày</td><td class="tar mono">${money(x.price)}</td></tr>`).join('')||'<tr><td colspan=4 class="mini">Không có</td></tr>'}</tbody></table></div></div></div>`;
-}
+function hlEmailTab(){return noData('Kênh Email chưa kết nối','Gửi email cho khách bằng Chuỗi chăm sóc (Thiết lập › Gửi tin & thông báo → email SMTP của công ty).','')}
+function crmLeadsTab(){return ''}
 function pgUtilities(){
  const t=tabOf('utilities','landing');
  const tabs=[['landing','Tạo landing page','globe'],['competitor','Học hỏi đối thủ','search'],['ideas','Ý tưởng chiến dịch','zap',UT.ideas?UT.ideas.length:null]];
@@ -5040,8 +4917,7 @@ function pgSettingsMenu(){
    <div class="grid2"><div class="field"><label>Website</label><input id="ps-domain" value="${esc(p.domain||'')}"${projAdmin()?'':' disabled'}></div><div class="field"><label>Múi giờ</label><input id="ps-tz" value="${esc(p.timezone||'Asia/Ho_Chi_Minh')}"${projAdmin()?'':' disabled'}></div></div>
    <div class="field"><label>Mục tiêu marketing</label><textarea id="ps-goal" rows="2"${projAdmin()?'':' disabled'}>${esc(p.goal||'')}</textarea></div>
    <div class="grid2"><div class="field"><label>Ngân sách KẾ HOẠCH / tháng (₫)</label><input id="ps-budget" type="number" min="0" value="${p.budget_month||0}"${projAdmin()?'':' disabled'}><div class="mini">Không phải ngân sách đã gửi nền tảng quảng cáo.</div></div><div class="field"><label>Màu nhận diện</label><input id="ps-color" type="color" value="${esc(p.color||'#2563eb')}"${projAdmin()?'':' disabled'}></div></div>
-   <div class="grid2"><div class="field"><label>Nguồn CRM (dữ liệu thật)</label><select id="ps-crm"${projAdmin()?'':' disabled'}><option value=""${(p.settings||{}).crm?'':' selected'}>— Không —</option><option value="webseo"${(p.settings||{}).crm==='webseo'?' selected':''}>CRM webseo.vn (cùng VPS, chỉ đọc)</option></select><div class="mini">Hiện lead, khách, dịch vụ sắp hết hạn, tiền vào từ CRM ở Tổng quan và Khách hàng.</div></div><div class="field"><label>Mã dự án cho máy HL</label><input value="${esc(p.id||'')}" readonly><div class="mini">Máy HL gửi báo cáo kèm project_id này (khoá X-HL-Key đặt trên máy chủ).</div></div></div>
-   <div class="field"><label>Nhóm từ khoá của dự án (Phân tích thị trường)</label><textarea id="ps-kw" rows="4" placeholder="Mỗi dòng một nhóm — Tên nhóm: từ khoá 1, từ khoá 2…&#10;VD: Mẹ & bé: mẹ bầu, sữa, bé, sau sinh"${projAdmin()?'':' disabled'}>${esc(kwGroupsText(p.settings))}</textarea><div class="mini">Từ khoá Search Console chứa từ nào thì xếp vào nhóm đó. Để trống = ${(p.settings||{}).crm==='webseo'?'nhóm dịch vụ WebSEO':'Thương hiệu / Giá-mua'}.</div></div>
+   <div class="field"><label>Nhóm từ khoá của dự án (Phân tích thị trường)</label><textarea id="ps-kw" rows="4" placeholder="Mỗi dòng một nhóm — Tên nhóm: từ khoá 1, từ khoá 2…&#10;VD: Mẹ & bé: mẹ bầu, sữa, bé, sau sinh"${projAdmin()?'':' disabled'}>${esc(kwGroupsText(p.settings))}</textarea><div class="mini">Từ khoá Search Console chứa từ nào thì xếp vào nhóm đó. Để trống = Thương hiệu / Giá-mua.</div></div>
    <div class="card" style="margin:6px 0 12px;background:#f8f5ff;border-color:#d8ccff"><div class="card-b"><b>AI chăm sóc trong Cửa sổ chat</b>
     <div class="grid2" style="margin-top:8px"><div class="field"><label>Chế độ</label><select id="ps-aimode"${projAdmin()?'':' disabled'}><option value="off"${((p.settings||{}).ai_care||{}).mode==='auto'||((p.settings||{}).ai_care||{}).mode==='suggest'?'':' selected'}>Tắt</option><option value="suggest"${((p.settings||{}).ai_care||{}).mode==='suggest'?' selected':''}>Chỉ gợi ý (người bấm gửi)</option><option value="auto"${((p.settings||{}).ai_care||{}).mode==='auto'?' selected':''}>Tự trả lời khách 24/7</option></select><div class="mini">Tự trả lời: AI trả lời ngay mỗi tin khách; im lặng khi người thật vừa trả lời (60 phút) hoặc hội thoại đã giao người; khách khiếu nại/hỏi ngoài dữ liệu → giữ khách + báo quản lý.</div></div>
     <div class="field"><label>Bình luận công khai dưới bài</label><select id="ps-aicm"${projAdmin()?'':' disabled'}><option value="auto"${(((p.settings||{}).ai_care||{}).comments||'auto')==='auto'?' selected':''}>AI tự trả lời bình luận (khi chế độ = Tự trả lời)</option><option value="suggest"${(((p.settings||{}).ai_care||{}).comments||'auto')==='suggest'?' selected':''}>Bình luận chỉ gợi ý, người bấm gửi</option></select><div class="mini">Tin nhắn riêng vẫn theo Chế độ ở trên.</div></div>
@@ -5057,7 +4933,7 @@ function pgSettingsMenu(){
  return `<div class="menuhead"><h1>Cài đặt dự án</h1><div class="sub">${esc(p.name||'')}</div></div>${seg('setmenu',tabs,t)}${body}`;
 }
 async function projSave(){
- const b={action:'update',id:S.project,name:$('#ps-name').value.trim(),type:$('#ps-type').value,domain:$('#ps-domain').value.trim(),timezone:$('#ps-tz').value.trim(),goal:$('#ps-goal').value.trim(),budget_month:+$('#ps-budget').value||0,color:$('#ps-color').value,settings:{hotline:$('#ps-hotline').value.trim(),telegram_chat_id:$('#ps-tg').value.trim(),crm:$('#ps-crm').value,keyword_groups:kwGroupsParse($('#ps-kw').value),ai_care:{mode:$('#ps-aimode').value,comments:$('#ps-aicm').value,instructions:$('#ps-aiins').value.trim()}}};
+ const b={action:'update',id:S.project,name:$('#ps-name').value.trim(),type:$('#ps-type').value,domain:$('#ps-domain').value.trim(),timezone:$('#ps-tz').value.trim(),goal:$('#ps-goal').value.trim(),budget_month:+$('#ps-budget').value||0,color:$('#ps-color').value,settings:{hotline:$('#ps-hotline').value.trim(),telegram_chat_id:$('#ps-tg').value.trim(),crm:'',keyword_groups:kwGroupsParse($('#ps-kw').value),ai_care:{mode:$('#ps-aimode').value,comments:$('#ps-aicm').value,instructions:$('#ps-aiins').value.trim()}}};
  try{await apiPost('/api/projects.php',b);toast('Đã lưu');await loadData();renderScope();render()}catch(e){toast('Lỗi',e.message)}
 }
 async function projArchive(){if(!confirm('Lưu trữ dự án này? Dữ liệu giữ nguyên, dự án ẩn khỏi danh sách.'))return;try{await apiPost('/api/projects.php',{action:'archive',id:S.project});toast('Đã lưu trữ');S.project=null;resetProjectCaches();await loadData();renderScope();renderNav();go('portfolio')}catch(e){toast('Lỗi',e.message)}}

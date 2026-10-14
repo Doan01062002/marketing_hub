@@ -133,7 +133,7 @@ function ib_ai_post_context(array $CFG, array $conn, array $th): string {
                     foreach ($cm['data'] ?? [] as $x) if ((string)($x['from']['id'] ?? '') === (string)$conn['external_account_id'] && preg_match_all('#https?://[^\s<>"\']+#i', (string)($x['message'] ?? ''), $mm)) foreach ($mm[0] as $u) if (!str_contains($u, 'facebook.com')) $links[rtrim($u, '.,)')] = 1; }
                 $text = "Bài viết (" . ($d['permalink_url'] ?? $url) . "):\n" . mb_substr($msg !== '' ? $msg : '(không có chữ)', 0, 1500);
                 $hl = jdecode(setting_get('inbox.links.' . $pid) ?: null, []); $direct = '';
-                foreach (($hl['links'] ?? []) as $lk) if (!empty($lk['aff'])) { $links[$lk['aff']] = 1; if ($direct === '' && !empty($lk['direct'])) $direct = (string)$lk['direct']; } // link gắn trong reel do máy HL quét
+                foreach (($hl['links'] ?? []) as $lk) if (!empty($lk['aff'])) { $links[$lk['aff']] = 1; if ($direct === '' && !empty($lk['direct'])) $direct = (string)$lk['direct']; } // link sản phẩm đã lưu cho bài
                 if ($direct !== '') $text .= "\n\nLink mở TRỰC TIẾP trang sản phẩm (gửi khi khách báo không mở được link trên; dặn mở bằng trình duyệt Chrome/Safari hoặc dán vào ô tìm kiếm app Shopee): $direct";
                 $n = 0; foreach (array_keys($links) as $l) { if ($n++ >= 3) break; $text .= "\n\nSản phẩm trong bài:\n" . ib_ai_product_info($l); }
                 if (!$links) { // không có link → tìm trên website của dự án theo tên trong bài
@@ -175,7 +175,7 @@ function ib_ai_system(array $cfg, array $conn, array $th): string {
         . "\nTrả về JSON: {\"reply\": string, \"skip\": boolean, \"handoff\": boolean, \"reason\": string ngắn, \"phone\": string|null (SĐT khách để lại nếu có)}.";
 }
 
-/** Chuẩn bị system + messages cho một hội thoại (dùng chung cho gọi API và cho máy HL). */
+/** Chuẩn bị system + messages cho một hội thoại (gọi API AI). */
 function ib_ai_prepare(array $CFG, array $th, ?array $cfg = null): array {
     global $pdo;
     $cfg = $cfg ?: ib_ai_cfg($th['project_id']);
@@ -190,22 +190,21 @@ function ib_ai_prepare(array $CFG, array $th, ?array $cfg = null): array {
     if (!$msgs || end($msgs)['role'] !== 'user') return ['ok' => false, 'error' => 'Tin cuối không phải của khách'];
     if ($msgs[0]['role'] !== 'user') array_shift($msgs);
     $sys = ib_ai_system($cfg, $conn, $th);
-    // Bài/reel không có link sản phẩm (Graph không trả link gắn trong reel) → máy HL quét trang công khai trước khi trả lời
+    // Bài/reel không có link sản phẩm (Graph không trả link gắn trong reel) → đánh dấu need_links
     $need = []; $pk = ib_ai_post_key($th);
     if ($pk !== '' && !empty($th['permalink']) && (str_contains($sys, 'Bài không có link sản phẩm') || str_contains($sys, 'không mở được')) && empty(jdecode(setting_get('inbox.links.' . $pk) ?: null, [])['links'])) $need = ['need_links' => true, 'reel_url' => (string)$th['permalink'], 'post_key' => $pk];
     return ['ok' => true, 'system' => $sys, 'messages' => $msgs] + $need;
 }
 /** Khoá cache bài viết của hội thoại (id bài không có tiền tố trang). */
 function ib_ai_post_key(array $th): string { $pid = (string)($th['post_id'] ?? ''); if ($pid === '') return ''; return str_contains($pid, '_') ? substr($pid, strpos($pid, '_') + 1) : $pid; }
-/** Máy HL gửi về link sản phẩm gắn trong reel → cache; lần sau ib_ai_post_context dùng ngay. */
+/** Lưu link sản phẩm gắn trong reel → cache; lần sau ib_ai_post_context dùng ngay. */
 function ib_ai_links_store(string $postKey, array $links): void {
     if ($postKey === '' || !$links) return;
     setting_set('inbox.links.' . $postKey, json_encode(['at' => date('Y-m-d H:i:s'), 'links' => array_slice(array_values($links), 0, 5)], JSON_UNESCAPED_UNICODE), ['id' => null]);
     setting_set('inbox.post.' . $postKey, null, ['id' => null]); // bỏ cache bài cũ để dựng lại kèm link
 }
-/** Máy HL có đang nhận việc AI không (poll trong 3 phút gần nhất)? */
-function ib_hl_alive(): bool { $t = setting_get('inbox.hl_ai_seen'); return $t && strtotime($t) > time() - 180; }
-/** Xếp hàng việc AI cho máy HL. Trả về id việc. */
+function ib_hl_alive(): bool { return false; } // 14/10/2026: đã gỡ máy HL — AI chỉ chạy bằng khoá API
+/** (Không còn dùng — máy HL đã gỡ.) Xếp hàng việc AI. Trả về id việc. */
 function ib_ai_enqueue(array $th, string $kind, array $prep): string {
     global $pdo;
     $pdo->prepare("UPDATE inbox_ai_jobs SET status='failed', error='bị thay bằng việc mới' WHERE thread_id=? AND status IN ('queued','taken')")->execute([$th['id']]);
@@ -214,7 +213,7 @@ function ib_ai_enqueue(array $th, string $kind, array $prep): string {
         ->execute([$id, $th['id'], $th['project_id'], $kind, $prep['system'], json_encode($prep['messages'], JSON_UNESCAPED_UNICODE)]);
     return $id;
 }
-/** Áp kết quả AI (từ API hoặc từ máy HL) vào hội thoại: gửi khách (kind=auto), bàn giao, tạo đầu mối. */
+/** Áp kết quả AI (từ API AI) vào hội thoại: gửi khách (kind=auto), bàn giao, tạo đầu mối. */
 function ib_ai_apply(array $CFG, array $th, array $d, string $kind = 'auto'): string {
     global $pdo;
     if ($kind !== 'auto') return 'gợi ý sẵn sàng';
@@ -292,11 +291,7 @@ function ib_ai_auto_reply(array $CFG, string $threadId): string {
     if ($lastHuman && strtotime($lastHuman . ' UTC') > time() - IB_AI_HUMAN_QUIET_MIN * 60) return 'người thật đang trả lời';
     $q = $pdo->prepare("SELECT COUNT(*) FROM inbox_messages WHERE thread_id=? AND sent_by='ai' AND sent_at > ?"); $q->execute([$threadId, gmdate('Y-m-d H:i:s', time() - 86400)]);
     if ((int)$q->fetchColumn() >= IB_AI_MAX_PER_DAY) return 'quá giới hạn ngày';
-    if (!ai_available()['ok']) { // Không có khoá API → máy HL (Claude Max) xử lý
-        $prep = ib_ai_prepare($CFG, $th, $cfg); if (empty($prep['ok'])) return $prep['error'];
-        $jid = ib_ai_enqueue($th, 'auto', $prep);
-        return ib_hl_alive() ? "chờ máy HL ($jid)" : "xếp hàng ($jid) — máy HL chưa kết nối";
-    }
+    if (!ai_available()['ok']) return 'chưa có khoá API AI (Claude / ChatGPT) — ' . AI_SETUP_HINT;
     $d = ib_ai_draft($CFG, $th, $cfg);
     if (empty($d['ok'])) return 'AI lỗi: ' . $d['error'];
     return ib_ai_apply($CFG, $th, $d, 'auto');

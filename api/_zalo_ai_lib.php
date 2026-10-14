@@ -2,7 +2,7 @@
 /* AI CHAT cho Zalo cá nhân (14/10/2026). Cấu hình app_settings 'zalo_user.ai' (một số Zalo / toàn hệ thống).
    AI chỉ trả lời khi: bật · người gửi trong phạm vi (danh sách chọn, hoặc mọi người trừ danh sách chặn) · khớp từ khoá (nếu có đặt)
    · trong giờ hoạt động · chủ tài khoản không vừa tự nhắn người đó · chưa vượt số tin AI/người/ngày.
-   Chủ đề ngoài phạm vi: AI tự trả skip=true (im lặng). Chạy bằng khoá API nếu có, không thì xếp việc cho máy HL (Claude Max). */
+   Chủ đề ngoài phạm vi: AI tự trả skip=true (im lặng). Chạy bằng khoá API AI (Claude hoặc ChatGPT) nhập ở Thiết lập › AI & khoá API. */
 require_once __DIR__ . '/_zalo_user_lib.php';
 
 /** Kịch bản bán hàng mặc định (sửa được ở Cài đặt → Kịch bản bán hàng). */
@@ -116,7 +116,7 @@ function zu_ai_system(array $th): string {
     return $s . "\nTrả về JSON: {\"reply\": string, \"skip\": boolean, \"handoff\": boolean, \"reason\": string ngắn (ghi giai đoạn: hỏi nhu cầu / gửi dịch vụ / báo giá / xin SĐT / chốt), \"phone\": string|null (SĐT người kia vừa để lại, nếu có)}.";
 }
 
-/** Gọi sau khi lưu tin đến (cổng hook). Chờ delay_sec (gộp tin nhắn liên tiếp), kiểm tra lại, rồi trả lời / xếp việc máy HL. */
+/** Gọi sau khi lưu tin đến (cổng hook). Chờ delay_sec (gộp tin nhắn liên tiếp), kiểm tra lại, rồi trả lời bằng khoá API AI. */
 function zu_ai_handle(array $CFG, string $uid, string $msgId): string {
     global $pdo;
     require_once __DIR__ . '/_inbox_lib.php';
@@ -131,12 +131,7 @@ function zu_ai_handle(array $CFG, string $uid, string $msgId): string {
     [$ok, $why] = zu_ai_check($uid, (string)$q->fetchColumn(), $tid, $c);
     if (!$ok) return $why;
     $st = $pdo->prepare('SELECT * FROM inbox_threads WHERE id=?'); $st->execute([$tid]); $th = $st->fetch(); if (!$th) return 'không có hội thoại';
-    if (!ai_available()['ok']) {
-        $prep = ib_ai_prepare($CFG, $th); if (empty($prep['ok'])) return $prep['error'];
-        unset($prep['need_links']);
-        $jid = ib_ai_enqueue($th, 'auto', $prep);
-        return ib_hl_alive() ? "chờ máy HL ($jid)" : "xếp hàng ($jid) — máy HL chưa kết nối";
-    }
+    if (!ai_available()['ok']) return 'chưa có khoá API AI (Claude / ChatGPT) — ' . AI_SETUP_HINT;
     $d = ib_ai_draft($CFG, $th); if (empty($d['ok'])) return 'AI lỗi: ' . $d['error'];
     return ib_ai_apply($CFG, $th, $d, 'auto');
 }

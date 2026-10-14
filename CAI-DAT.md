@@ -78,7 +78,6 @@ Sửa `config.local.php`:
 | `tiktok_client_key/secret` | Hoặc nhập trên giao diện Kênh marketing → TikTok → Kết nối API; Redirect: `<app_url>/api/oauth_tiktok_callback.php` |
 | X (Twitter) | Nhập trên giao diện Kênh marketing → X → Kết nối API; Redirect: `<app_url>/api/oauth_x_callback.php` |
 | `anthropic_api_key` | Tuỳ chọn, cho Trợ lý dự án / AI soạn nội dung chạy trên máy chủ |
-| `hl_api_key` | Tuỳ chọn, khoá cho "máy HL" (xem mục 7) |
 
 Để trống khoá nào thì tính năng đó chỉ báo "chưa cấu hình", không lỗi.
 
@@ -97,14 +96,10 @@ ngẫu nhiên được ghi vào `data/initial-passwords.txt` — đọc xong đ�
 
 Chạy bằng user sở hữu thư mục (không chạy root để tránh sai quyền file SQLite).
 
-## 7. Những phần phụ thuộc "máy HL" (tuỳ chọn)
+## 7. AI (trả lời chat tự động, soạn nội dung)
 
-Một số tính năng gọi sang một máy tính riêng (gọi là máy HL) chạy ứng dụng Node riêng, dùng Claude Code
-gói Max thay cho API trả phí: AI trả lời Cửa sổ chat, lấy số liệu Kho kênh tham khảo, nút "Làm theo" soạn
-carousel. Bản mã này KHÔNG kèm ứng dụng đó. Không có máy HL thì:
-- Cửa sổ chat vẫn nhận/gửi tin, chỉ không có AI gợi ý/trả lời tự động (hoặc điền `anthropic_api_key` để dùng AI trên máy chủ ở phần Trợ lý).
-- Kho kênh tham khảo vẫn lưu kênh, format, ảnh mẫu; số liệu nhập tay; nút "Làm theo" sẽ xếp việc và chờ.
-Endpoint máy HL: `api/hl.php`, `api/hl_jobs.php` (xác thực header `X-HL-Key` = `hl_api_key`).
+AI chạy bằng khoá API của chính đơn vị dùng app: **Claude (Anthropic)** hoặc **ChatGPT (OpenAI)** — quản trị viên nhập ở
+**Thiết lập › AI & khoá API** (chọn nhà cung cấp, model). Không có khoá thì AI không trả lời; tin nhắn vẫn nhận/gửi bình thường.
 
 ## 8. Sau khi cài
 
@@ -112,7 +107,6 @@ Endpoint máy HL: `api/hl.php`, `api/hl_jobs.php` (xác thực header `X-HL-Key`
 2. Tất cả dự án → sửa dự án mặc định (tên, tên miền, mục tiêu, giọng thương hiệu).
 3. Kênh marketing → từng tab → Kết nối API: nối Fanpage, YouTube, TikTok, Google (GA4/Search Console), Zalo OA, X.
 4. Cài đặt → Gửi tin & thông báo: Telegram bot (tuỳ chọn), email.
-5. Phần "CRM webseo.vn" trong Cài đặt dự án là tích hợp riêng của nơi dùng trước (đọc MySQL của webseo.vn); để "— Không —".
 
 ## 9. Cập nhật bản mới
 

@@ -1,6 +1,6 @@
 <?php
 /* TỰ ĐỘNG LẬP KẾ HOẠCH QUÝ từ dữ liệu thật (không cần AI):
-   - Search Console: nhóm từ khoá theo dịch vụ WebSEO, từ khoá vị trí 4–20 (cơ hội lên top), trang CTR thấp.
+   - Search Console: nhóm từ khoá theo dự án (Cài đặt dự án → Nhóm từ khoá), từ khoá vị trí 4–20 (cơ hội lên top), trang CTR thấp.
    - Bình luận kênh: số chưa trả lời từng kênh.
    - Kênh / nguồn đo còn thiếu.
    GET  → đề xuất {quarter, period, okrs[], campaigns[{…, tasks[]}]} (chưa ghi gì)
@@ -8,17 +8,21 @@
 require __DIR__ . '/_boot.php';
 $user = require_login();
 
-const PA_TOPICS = [
-    'Thiết kế website' => ['thiết kế web', 'thiet ke web', 'website', 'làm web', 'lam web', 'web bán hàng', 'landing', 'giao diện web', 'wordpress'],
-    'Hosting / VPS' => ['hosting', 'vps', 'máy chủ', 'may chu', 'server', 'cloud'],
-    'Email doanh nghiệp' => ['email', 'mail', 'gmail', 'workspace', 'outlook'],
-    'Tên miền' => ['tên miền', 'ten mien', 'domain', '.vn', '.com'],
-    'SEO / quảng cáo' => ['seo', 'marketing', 'quảng cáo', 'quang cao', 'google ads', 'từ khoá', 'tu khoa'],
-    'Thương hiệu WebSEO' => ['webseo', 'web seo'],
-];
-function pa_topic(string $q): string {
+/** Nhóm từ khoá của dự án: settings.keyword_groups [{name, words[]}]; chưa đặt → Thương hiệu / Giá-mua (giống Phân tích thị trường). */
+function pa_topics(array $proj): array {
+    $st = jdecode($proj['settings'] ?? null);
+    $out = [];
+    foreach ((array)($st['keyword_groups'] ?? []) as $g) {
+        $w = array_values(array_filter(array_map(fn($x) => mb_strtolower(trim((string)$x)), (array)($g['words'] ?? []))));
+        if (!empty($g['name']) && $w) $out[(string)$g['name']] = $w;
+    }
+    if ($out) return $out;
+    $brand = explode('.', preg_replace('#^(https?://)?(www\.)?#i', '', mb_strtolower((string)(($proj['domain'] ?? '') ?: ($proj['name'] ?? '')))))[0];
+    return ['Thương hiệu' => $brand !== '' ? [$brand] : [], 'Giá / mua ở đâu' => ['giá', 'bao nhiêu', 'bao nhieu', 'mua', 'ở đâu', 'o dau', 'review', 'có tốt']];
+}
+function pa_topic(string $q, array $topics): string {
     $q = mb_strtolower($q);
-    foreach (PA_TOPICS as $t => $ws) foreach ($ws as $w) if (str_contains($q, $w)) return $t;
+    foreach ($topics as $t => $ws) foreach ($ws as $w) if ($w !== '' && str_contains($q, $w)) return $t;
     return 'Khác';
 }
 function pa_quarter(): array {
@@ -34,7 +38,9 @@ function pa_proposal(PDO $pdo): array {
     $conns = $pdo->query("SELECT * FROM connections WHERE project_id=$PQ AND status='connected' AND COALESCE(external_account_id,'')<>''")->fetchAll();
     $byP = []; foreach ($conns as $c) $byP[$c['provider']][] = $c;
     $camps = []; $okrs = []; $notes = [];
-    $co = fn(array $c) => str_contains(mb_strtolower($c['label'] . ' ' . $c['external_account_id']), 'webseo') ? 'co1' : 'co2';
+    $co = fn(array $c) => 'co1';
+    $proj = current_project() ?: []; $pname = (string)(($proj['name'] ?? '') ?: 'thương hiệu'); $pdom = (string)(($proj['domain'] ?? '') ?: 'website');
+    $topics = pa_topics($proj);
 
     // ---- SEO từ Search Console ----
     foreach ($byP['gsc'] ?? [] as $g) {
@@ -47,7 +53,7 @@ function pa_proposal(PDO $pdo): array {
         $site = $g['label'];
         // Gom nhóm dịch vụ theo hiển thị.
         $topic = [];
-        foreach ($qs as $r) { $t = pa_topic($r[0]); if (in_array($t, ['Khác', 'Thương hiệu WebSEO'], true)) continue; $topic[$t][] = $r; }
+        foreach ($qs as $r) { $t = pa_topic($r[0], $topics); if (in_array($t, ['Khác', 'Thương hiệu'], true)) continue; $topic[$t][] = $r; }
         uasort($topic, fn($a, $b) => array_sum(array_column($b, 2)) <=> array_sum(array_column($a, 2)));
         foreach (array_slice($topic, 0, 3, true) as $t => $rows) {
             $opp = array_values(array_filter($rows, fn($r) => $r[4] > 3 && $r[4] <= 20));
@@ -71,8 +77,8 @@ function pa_proposal(PDO $pdo): array {
                 'start' => $start, 'end' => $end, 'obj' => "CTR toàn site $ctr% trên $imp hiển thị ($clicks click/28 ngày). Mục tiêu CTR ≥ 2% bằng tối ưu tiêu đề/mô tả.", 'why' => "CTR $ctr%", 'tasks' => $tasks];
         }
         $top10 = count(array_filter($qs, fn($r) => $r[4] <= 10));
-        $okrs[] = ['objective' => 'Tăng khách tìm thấy WebSEO trên Google', 'kr' => "Click Google Search / 28 ngày ($site)", 'current' => $clicks, 'target' => max($clicks * 2, $clicks + 20), 'unit' => 'click', 'metric' => 'manual'];
-        $okrs[] = ['objective' => 'Tăng khách tìm thấy WebSEO trên Google', 'kr' => "Số từ khoá ở top 10 ($site)", 'current' => $top10, 'target' => $top10 + 5, 'unit' => 'từ khoá', 'metric' => 'manual'];
+        $okrs[] = ['objective' => "Tăng khách tìm thấy $pname trên Google", 'kr' => "Click Google Search / 28 ngày ($site)", 'current' => $clicks, 'target' => max($clicks * 2, $clicks + 20), 'unit' => 'click', 'metric' => 'manual'];
+        $okrs[] = ['objective' => "Tăng khách tìm thấy $pname trên Google", 'kr' => "Số từ khoá ở top 10 ($site)", 'current' => $top10, 'target' => $top10 + 5, 'unit' => 'từ khoá', 'metric' => 'manual'];
     }
 
     // ---- Kênh mạng xã hội: bình luận chưa trả lời + nhịp đăng ----
@@ -96,10 +102,10 @@ function pa_proposal(PDO $pdo): array {
 
     // ---- Đo lường còn thiếu ----
     $gap = [];
-    if (empty($byP['ga4'])) $gap[] = ['title' => 'Kết nối Google Analytics 4 cho webseo.com.vn (bật Analytics Admin + Data API rồi Chọn tài khoản)', 'pri' => 'P0'];
-    if (empty($byP['google_ads'])) $gap[] = ['title' => 'Xin Google Ads Developer Token + kết nối tài khoản 710-410-691 để đo chi phí / chuyển đổi thật', 'pri' => 'P1'];
+    if (empty($byP['ga4'])) $gap[] = ['title' => "Kết nối Google Analytics 4 cho $pdom (bật Analytics Admin + Data API rồi Chọn tài khoản)", 'pri' => 'P0'];
+    if (empty($byP['google_ads'])) $gap[] = ['title' => 'Xin Google Ads Developer Token + kết nối tài khoản Google Ads để đo chi phí / chuyển đổi thật', 'pri' => 'P1'];
     if (empty($byP['meta_ads'])) $gap[] = ['title' => 'Kết nối tài khoản quảng cáo Meta (token System User quyền ads_read)', 'pri' => 'P1'];
-    if (empty($byP['gbp'])) $gap[] = ['title' => 'Nộp đơn Business Profile API + kết nối Google Maps của WebSEO', 'pri' => 'P2'];
+    if (empty($byP['gbp'])) $gap[] = ['title' => "Nộp đơn Business Profile API + kết nối Google Maps của $pname", 'pri' => 'P2'];
     if (!setting_get('data.serpapi_key')) $gap[] = ['title' => 'Tạo khoá SerpApi để theo dõi Google Trends tự động', 'pri' => 'P3'];
     $gap[] = ['title' => 'Gắn sự kiện chuyển đổi (gửi form, bấm gọi, Zalo) trong GA4 / GTM', 'pri' => 'P1'];
     $camps[] = ['name' => "Hoàn thiện đo lường — $quarter", 'subject' => 'Đo lường', 'co' => 'co1', 'channels' => ['Website', 'Google', 'Facebook'], 'budget' => 0, 'start' => $start, 'end' => $end,
