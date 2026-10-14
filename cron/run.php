@@ -21,6 +21,7 @@ $steps = [
     'Cửa sổ chat' => [__DIR__ . '/../api/_inbox_lib.php', 'inbox_sync_all'],
     'Tự động hoá' => [__DIR__ . '/../api/_automation_lib.php', 'run_automations_tick'],
     'Robot duyệt web' => [__DIR__ . '/../api/_bot_lib.php', 'bot_tick'],
+    'Zalo cá nhân' => [__DIR__ . '/../api/_zalo_user_lib.php', 'zu_tick'],
 ];
 $exit = 0;
 foreach ($steps as $name => [$file, $fn]) {

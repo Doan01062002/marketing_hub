@@ -7,6 +7,10 @@ if (!empty($_GET['error'])) {
         $pdo->prepare("DELETE FROM connections WHERE id=? AND external_account_id IS NULL")->execute([$_SESSION['quick_web']['conn_id']]);
         unset($_SESSION['quick_web']);
     }
+    if (!empty($_SESSION['quick_ch']['conn_id'])) {
+        $pdo->prepare("DELETE FROM connections WHERE id=? AND external_account_id IS NULL")->execute([$_SESSION['quick_ch']['conn_id']]);
+        unset($_SESSION['quick_ch']);
+    }
     oauth_finish($CFG, ['conn_error' => $_GET['error'] === 'access_denied' ? 'Đã huỷ đăng nhập Google' : (string)$_GET['error']]);
 }
 
@@ -46,6 +50,12 @@ if (($_SESSION['quick_web']['conn_id'] ?? '') === $conn['id']) {
     require_once __DIR__ . '/_quick_web.php';
     $r = quick_web_finish($CFG, $conn, $tok);
     unset($_SESSION['quick_web']);
+    oauth_finish($CFG, $r);
+}
+if (($_SESSION['quick_ch']['conn_id'] ?? '') === $conn['id']) {
+    require_once __DIR__ . '/_quick_channel.php';
+    $r = qc_finish_youtube($CFG, $conn, $tok, $_SESSION['quick_ch']);
+    unset($_SESSION['quick_ch']);
     oauth_finish($CFG, $r);
 }
 oauth_finish($CFG, ['conn_ok' => $conn['id']]);

@@ -63,11 +63,11 @@ if (($_GET['action'] ?? '') === 'ai_jobs' || (($_SERVER['REQUEST_METHOD'] === 'P
     $st = $pdo->prepare("SELECT * FROM inbox_ai_jobs WHERE id=? AND status='taken'"); $st->execute([$id]); $j = $st->fetch();
     if (!$j) fail('Việc không tồn tại hoặc đã xử lý', 404);
     if (!empty($in['links']) && is_array($in['links']) && !empty($in['post_key'])) { require_once __DIR__ . '/_inbox_ai_lib.php'; ib_ai_links_store(preg_replace('/[^A-Za-z0-9_]/', '', (string)$in['post_key']), $in['links']); }
-    if (!empty($in['error']) || !is_array($in['result'] ?? null) || trim((string)($in['result']['reply'] ?? '')) === '') {
+    if (!empty($in['error']) || !is_array($in['result'] ?? null) || (trim((string)($in['result']['reply'] ?? '')) === '' && empty($in['result']['skip']))) {
         $pdo->prepare("UPDATE inbox_ai_jobs SET status='failed', error=?, done_at=datetime('now') WHERE id=?")->execute([mb_substr((string)($in['error'] ?? 'kết quả rỗng'), 0, 500), $id]);
         respond(['ok' => true, 'applied' => 'lỗi ghi nhận']);
     }
-    $res = ['reply' => trim((string)$in['result']['reply']), 'handoff' => !empty($in['result']['handoff']), 'reason' => (string)($in['result']['reason'] ?? ''), 'phone' => $in['result']['phone'] ?? null];
+    $res = ['reply' => trim((string)$in['result']['reply']), 'handoff' => !empty($in['result']['handoff']), 'reason' => (string)($in['result']['reason'] ?? ''), 'phone' => $in['result']['phone'] ?? null, 'skip' => !empty($in['result']['skip'])];
     $pdo->prepare("UPDATE inbox_ai_jobs SET status='done', result=?, done_at=datetime('now') WHERE id=?")->execute([json_encode($res, JSON_UNESCAPED_UNICODE), $id]);
     $tt = $pdo->prepare('SELECT * FROM inbox_threads WHERE id=?'); $tt->execute([$j['thread_id']]); $th = $tt->fetch();
     $applied = $th ? ib_ai_apply($CFG, $th, $res, $j['kind']) : 'hội thoại không còn';

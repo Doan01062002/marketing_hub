@@ -245,10 +245,13 @@ function inbox_send(array $CFG, array $th, string $text, array $u): array {
     global $pdo;
     $conn = get_connection($th['connection_id'], true);
     if (!$conn || $conn['status'] !== 'connected') return ['ok' => false, 'error' => 'Kênh của cuộc trò chuyện này đã ngắt kết nối'];
-    $r = $th['provider'] === 'facebook_page' ? ((($th['kind'] ?? 'message') === 'comment') ? ib_fb_comment_send($CFG, $conn, $th, $text) : ib_fb_send($CFG, $conn, $th, $text)) : ib_zalo_send($conn, $th, $text);
+    if ($th['provider'] === 'zalo_user') { require_once __DIR__ . '/_zalo_user_lib.php'; $r = zu_send((string)$th['customer_id'], $text); }
+    else $r = $th['provider'] === 'facebook_page' ? ((($th['kind'] ?? 'message') === 'comment') ? ib_fb_comment_send($CFG, $conn, $th, $text) : ib_fb_send($CFG, $conn, $th, $text)) : ib_zalo_send($conn, $th, $text);
     if (!$r['ok']) return $r;
     $pdo->prepare("INSERT OR IGNORE INTO inbox_messages(id,thread_id,direction,text,sent_at,sender_name,external_id,sent_by) VALUES (?,?,'out',?,?,?,?,?)")
         ->execute([$th['provider'] . ':' . $r['id'], $th['id'], $text, gmdate('Y-m-d H:i:s'), $u['name'] ?? 'Hub', $r['id'], $u['id'] ?? null]);
+    // Zalo cá nhân dội tin vừa gửi về rất nhanh → có thể đã lưu trước dưới dạng "gửi từ điện thoại": ghi đúng người gửi (AI / nhân viên)
+    $pdo->prepare("UPDATE inbox_messages SET sent_by=?, sender_name=? WHERE id=? AND sent_by IS NULL")->execute([$u['id'] ?? null, $u['name'] ?? 'Hub', $th['provider'] . ':' . $r['id']]);
     $pdo->prepare("UPDATE inbox_threads SET last_message=?, last_direction='out', last_time=?, unread=0, read_at=?, updated_at=datetime('now') WHERE id=?")
         ->execute([mb_substr($text, 0, 200), gmdate('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s'), $th['id']]);
     ib_touch();

@@ -151,7 +151,8 @@ function meta_page_token(array $CFG, array $conn): string {
         if (!$conn['secret']) throw new PublishError('Chưa có Page Access Token — vào Thiết lập > Kết nối kênh để dán token');
         return $conn['secret'];
     }
-    // Page token đã lưu (mã hoá) lúc đăng nhập / đồng bộ quyền; chưa có thì đổi từ token người dùng như cũ.
+    // Page token cất lúc kết nối OAuth (mã hoá, không hết hạn): ở connections.secret, hoặc trong meta_pages lúc đăng nhập / đồng bộ quyền.
+    if (!empty($conn['secret']) && ($pt = tok_dec($CFG, $conn['secret']))) return $pt;
     require_once __DIR__ . '/_meta_lib.php';
     if ($pt = meta_stored_page_token($CFG, $conn)) return $pt;
     $ut = meta_user_token($CFG, $conn);

@@ -1,0 +1,9 @@
+{
+  "name": "zalo-bridge",
+  "private": true,
+  "type": "module",
+  "description": "Cầu nối Zalo cá nhân cho Marketing Hub (zca-js, API không chính thức)",
+  "main": "server.mjs",
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": { "zca-js": "2.2.0" }
+}

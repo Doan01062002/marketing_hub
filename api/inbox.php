@@ -55,9 +55,9 @@ if ($method === 'GET') {
         if ((int)$t['unread'] > 0 || !$t['read_at']) { $pdo->prepare("UPDATE inbox_threads SET unread=0, read_at=? WHERE id=?")->execute([gmdate('Y-m-d H:i:s'), $t['id']]); $t['unread'] = 0; }
         $conn = get_connection($t['connection_id'], true);
         $lastIn = null; foreach (array_reverse($msgs) as $m) if ($m['dir'] === 'in') { $lastIn = $m['at']; break; }
-        $win = $t['provider'] === 'facebook_page' ? ((($t['kind'] ?? 'message') === 'comment') ? 168 : 24) : 48; $hoursLeft = $lastIn ? round($win - (time() - strtotime($lastIn . ' UTC')) / 3600, 1) : null;
+        $win = $t['provider'] === 'facebook_page' ? ((($t['kind'] ?? 'message') === 'comment') ? 168 : 24) : ($t['provider'] === 'zalo_user' ? null : 48); $hoursLeft = $lastIn && $win ? round($win - (time() - strtotime($lastIn . ' UTC')) / 3600, 1) : null;
         respond(['thread' => ib_public($t), 'messages' => $msgs, 'channel' => $conn ? ['label' => $conn['label'], 'status' => $conn['status']] : null,
-            'can_write' => ib_can_write($t['project_id'], $roleOf, $me), 'reply_window_hours' => $win, 'hours_left' => $hoursLeft, 'ai_project_mode' => $aiCfg['mode'], 'ai_ok' => ai_available()['ok'] || ib_hl_alive(), 'ai_via' => ai_available()['ok'] ? 'api' : (ib_hl_alive() ? 'hl' : 'none')]);
+            'can_write' => ib_can_write($t['project_id'], $roleOf, $me), 'reply_window_hours' => $win, 'hours_left' => $hoursLeft, 'ai_project_mode' => $aiCfg['mode'], 'zu_ai' => $t['provider'] === 'zalo_user' ? (function ($uid) { require_once __DIR__ . '/_zalo_ai_lib.php'; $c = zu_ai_cfg(); return ['enabled' => $c['enabled'], 'scope' => $c['scope'], 'allowed' => zu_ai_person_allowed($uid, $c) || (!$c['enabled'] && in_array($uid, array_column($c['people'], 'uid'), true))]; })((string)$t['customer_id']) : null, 'ai_ok' => ai_available()['ok'] || ib_hl_alive(), 'ai_via' => ai_available()['ok'] ? 'api' : (ib_hl_alive() ? 'hl' : 'none')]);
     }
     // threads
     $w = ["t.project_id IN ($in)"]; $v = $pids;
@@ -66,12 +66,13 @@ if ($method === 'GET') {
     if (($_GET['mine'] ?? '') === '1') { $w[] = 't.assigned_to=?'; $v[] = $me['id']; }
     if (!empty($_GET['project'])) { $w[] = 't.project_id=?'; $v[] = (string)$_GET['project']; }
     if (!empty($_GET['provider'])) { $w[] = 't.provider=?'; $v[] = (string)$_GET['provider']; }
+    if (in_array($_GET['kind'] ?? '', ['message', 'comment'], true)) { $w[] = "COALESCE(t.kind,'message')=?"; $v[] = $_GET['kind']; }
     if (trim((string)($_GET['q'] ?? '')) !== '') { $q = '%' . trim((string)$_GET['q']) . '%'; $w[] = '(t.customer_name LIKE ? OR t.last_message LIKE ? OR EXISTS (SELECT 1 FROM inbox_messages m WHERE m.thread_id=t.id AND m.text LIKE ?))'; array_push($v, $q, $q, $q); }
     $lim = max(10, min(300, (int)($_GET['limit'] ?? 120)));
     $st = $pdo->prepare('SELECT t.*, c.label conn_label FROM inbox_threads t LEFT JOIN connections c ON c.id=t.connection_id WHERE ' . implode(' AND ', $w) . " ORDER BY (t.unread>0) DESC, t.last_time DESC LIMIT $lim"); $st->execute($v);
     $threads = array_map(fn($t) => ib_public($t) + ['conn_label' => $t['conn_label']], $st->fetchAll());
     $cs = $pdo->prepare("SELECT COALESCE(SUM(unread>0),0) unread, COALESCE(SUM(status='open'),0) open, COALESCE(SUM(status='done'),0) done, COUNT(*) total FROM inbox_threads WHERE project_id IN ($in)"); $cs->execute($pids);
-    $conns = $pdo->prepare("SELECT id,project_id,provider,label,status,external_account_id,last_error FROM connections WHERE project_id IN ($in) AND provider IN ('facebook_page','zalo_oa') ORDER BY project_id,label"); $conns->execute($pids);
+    $conns = $pdo->prepare("SELECT id,project_id,provider,label,status,external_account_id,last_error FROM connections WHERE project_id IN ($in) AND provider IN ('facebook_page','zalo_oa','zalo_user') ORDER BY project_id,label"); $conns->execute($pids);
     $sources = array_map(fn($c) => $c + ['sync' => jdecode(setting_get('inbox.sync.' . $c['id']) ?: null, [])], $conns->fetchAll());
     respond(['threads' => $threads, 'counts' => $cs->fetch(), 'sources' => $sources, 'meta_app_live' => setting_get('meta.app_live', '1') !== '0', 'projects' => array_map(fn($p) => ['id' => $p['id'], 'name' => $p['name'], 'color' => $p['color'] ?? null, 'role' => $roleOf[$p['id']]], $myProjects),
         'last_cron' => setting_get('cron.last_run')]);
@@ -121,7 +122,7 @@ if ($action === 'to_lead') {
         foreach ($st->fetchAll() as $m) if (preg_match('/(?:\+?84|0)(?:3|5|7|8|9)\d{8}\b/', preg_replace('/[\s.\-]/', '', (string)$m['text']), $mm)) { $phone = $mm[0]; break; } }
     $id = gen_id('LD');
     $pdo->prepare("INSERT INTO leads(id,project_id,name,phone,source,subject,state,notes,source_ref) VALUES (?,?,?,?,?,?,'CREATED',?,?)")
-        ->execute([$id, $t['project_id'], $t['customer_name'], $phone ?: null, $t['provider'] === 'facebook_page' ? 'messenger' : 'zalo_oa', 'Tin nhắn ' . ($t['provider'] === 'facebook_page' ? 'Messenger' : 'Zalo OA'), mb_substr((string)$t['last_message'], 0, 500), $t['id']]);
+        ->execute([$id, $t['project_id'], $t['customer_name'], $phone ?: null, $t['provider'] === 'facebook_page' ? 'messenger' : $t['provider'], 'Tin nhắn ' . (['facebook_page' => 'Messenger', 'zalo_user' => 'Zalo cá nhân'][$t['provider']] ?? 'Zalo OA'), mb_substr((string)$t['last_message'], 0, 500), $t['id']]);
     $pdo->prepare('UPDATE inbox_threads SET lead_id=? WHERE id=?')->execute([$id, $t['id']]);
     log_activity('create', 'lead', $id, 'Tạo đầu mối từ cửa sổ chat: ' . $t['customer_name'], $me, $t['project_id']);
     respond(['ok' => true, 'lead_id' => $id, 'phone' => $phone ?: null], 201);

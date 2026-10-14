@@ -34,6 +34,10 @@ $failConn = function (string $msg) use ($pdo, $conn, $CFG, $hash): void {
 
 // Người dùng huỷ / Meta báo lỗi: không đổi token đang có (kênh đang chạy vẫn chạy).
 if (!empty($_GET['error'])) {
+    if (!empty($_SESSION['quick_ch']['conn_id'])) { // kết nối nhanh bị huỷ → bỏ kênh tạm
+        $pdo->prepare('DELETE FROM connections WHERE id=? AND external_account_id IS NULL')->execute([$_SESSION['quick_ch']['conn_id']]);
+        unset($_SESSION['quick_ch']);
+    }
     $e = (string)$_GET['error'];
     $msg = $e === 'access_denied' ? 'Bạn đã huỷ đăng nhập Facebook — chưa kết nối' : 'Facebook báo lỗi: ' . mb_substr((string)($_GET['error_description'] ?? $e), 0, 300);
     back_to_app($CFG, ['conn_error' => $msg], $hash);
@@ -76,6 +80,14 @@ catch (Throwable $e) { $perm = ['granted' => [], 'declined' => [], 'missing' => 
 $missing = $perm['missing'];
 $missNote = $missing ? ' · thiếu quyền: ' . implode(', ', $missing) . ' (bấm Kết nối lại và tick đủ quyền)' : '';
 
+// Kết nối nhanh bằng link Fanpage: chọn đúng Page theo link, lưu Page token (mã hoá, không hết hạn).
+if ($conn['provider'] === 'facebook_page' && ($_SESSION['quick_ch']['conn_id'] ?? '') === $conn['id']) {
+    require_once __DIR__ . '/_quick_channel.php';
+    $r = qc_finish_facebook($CFG, $conn, $accessToken, $_SESSION['quick_ch']);
+    unset($_SESSION['quick_ch']);
+    oauth_finish($CFG, $r);
+}
+
 // 4a) Fanpage: lưu mọi Page được cấp quyền (Page ID, tên, Page Access Token mã hoá), gắn Page cho kênh
 if ($conn['provider'] === 'facebook_page') {
     try { $list = meta_sync_pages($CFG, $conn, $accessToken); }
@@ -94,7 +106,8 @@ if ($conn['provider'] === 'facebook_page') {
         $pdo->prepare('UPDATE connections SET external_account_id=?, last_metrics=NULL WHERE id=?')->execute([$cur, $conn['id']]);
     }
     if ($cur !== '') {
-        $pdo->prepare('UPDATE connections SET account_name=?, last_error=? WHERE id=?')->execute([$pages[$cur], $missing ? ltrim($missNote, ' ·') : null, $conn['id']]);
+        $pt = meta_stored_page_token($CFG, ['external_account_id' => $cur] + $conn); // Page token (không hết hạn) → secret, mã hoá
+        $pdo->prepare('UPDATE connections SET account_name=?, last_error=?, secret=COALESCE(?, secret) WHERE id=?')->execute([$pages[$cur], $missing ? ltrim($missNote, ' ·') : null, $pt ? tok_enc($CFG, $pt) : null, $conn['id']]);
         $msg .= ' · Page ' . $pages[$cur];
         try { require_once __DIR__ . '/_metrics_lib.php'; sync_connection($CFG, get_connection($conn['id'], true)); } catch (Throwable $e) { /* đồng bộ lỗi đã ghi vào last_error */ }
     } else $msg .= ' · ' . count($pages) . ' Page được cấp quyền — chọn Page cần quản lý';

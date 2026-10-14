@@ -4,6 +4,7 @@
    Quyền: chủ / quản lý dự án (hoặc admin hệ thống). Phiên giữ state + conn_id + project_id để callback đối chiếu. */
 require __DIR__ . '/_boot.php';
 if (!current_user()) { header('Location: ' . rtrim($CFG['app_url'], '/') . '/'); exit; }
+$_SESSION['oauth_popup'] = !empty($_GET['popup']); // mở trong cửa sổ bật lên
 $pr = current_project();
 if (!$pr || !in_array($pr['member_role'] ?? '', PROJECT_ADMIN_ROLES, true)) back_to_app($CFG, ['conn_error' => 'Chỉ chủ / quản lý dự án được kết nối tài khoản TikTok'], 'channels/api');
 

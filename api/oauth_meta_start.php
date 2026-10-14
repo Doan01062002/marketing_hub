@@ -1,14 +1,15 @@
 <?php
 require __DIR__ . '/_boot.php';
 if (!current_user()) { header('Location: ' . rtrim($CFG['app_url'], '/') . '/'); exit; }
+$_SESSION['oauth_popup'] = !empty($_GET['popup']); // mở trong cửa sổ bật lên
 
-if (!in_array(project_role(), PROJECT_ADMIN_ROLES, true)) back_to_app($CFG, ['conn_error' => 'Chỉ chủ / quản lý dự án được kết nối kênh']);
+if (!in_array(project_role(), PROJECT_ADMIN_ROLES, true)) oauth_finish($CFG, ['conn_error' => 'Chỉ chủ / quản lý dự án được kết nối kênh']);
 $conn = get_connection((string)($_GET['conn_id'] ?? ''));
 if (!$conn || (PROVIDERS[$conn['provider']]['auth'] ?? '') !== 'meta') {
-    back_to_app($CFG, ['conn_error' => 'Không tìm thấy kênh cần kết nối']);
+    oauth_finish($CFG, ['conn_error' => 'Không tìm thấy kênh cần kết nối']);
 }
 if (!$CFG['meta_app_id'] || !$CFG['meta_app_secret']) {
-    back_to_app($CFG, ['conn_error' => 'Chưa cấu hình meta_app_id/meta_app_secret trong config.local.php (cạnh index.html) — xem README mục Meta.']);
+    oauth_finish($CFG, ['conn_error' => 'Chưa cấu hình meta_app_id/meta_app_secret trong config.local.php (cạnh index.html) — xem README mục Meta.']);
 }
 
 // state chống CSRF: ngẫu nhiên, dùng 1 lần, gắn với người dùng + kênh + dự án, hết hạn sau 15 phút.
@@ -21,10 +22,9 @@ $q = [
     'redirect_uri' => meta_redirect_uri($CFG),
     'scope' => ($CFG['meta_scope_' . $conn['provider']] ?? '') ?: PROVIDERS[$conn['provider']]['scope'],
     'response_type' => 'code',
+    'auth_type' => 'rerequest',
     'state' => $state,
 ];
-// Kết nối lại: hỏi lại các quyền người dùng từng bỏ chọn.
-if (!empty($conn['access_token']) || ($conn['status'] ?? '') === 'error') $q['auth_type'] = 'rerequest';
 
 header('Location: https://www.facebook.com/' . $CFG['meta_graph_version'] . '/dialog/oauth?' . http_build_query($q));
 exit;

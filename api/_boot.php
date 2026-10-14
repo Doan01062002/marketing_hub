@@ -94,16 +94,20 @@ foreach (['meta_app_id' => 'META_APP_ID', 'meta_app_secret' => 'META_APP_SECRET'
     if (is_string($__v) && trim($__v) !== '') { $CFG[$__ck] = trim($__v); $CFG['meta_app_source'] = 'env'; }
 }
 
-/** Kết thúc luồng OAuth: cửa sổ bật lên (kết nối nhanh) thì báo về trang chính rồi tự đóng; không thì quay về app như cũ. */
-function oauth_finish(array $CFG, array $q): void {
-    if (empty($_SESSION['oauth_popup'])) back_to_app($CFG, $q);
+/** Trang kết thúc cho OAuth mở trong cửa sổ bật lên: báo kết quả về trang chính rồi tự đóng. */
+function oauth_popup_page(array $q): void {
     unset($_SESSION['oauth_popup']);
     header('Content-Type: text/html; charset=utf-8');
     $msg = json_encode($q, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     $txt = htmlspecialchars($q['conn_error'] ?? $q['conn_msg'] ?? 'Đã kết nối', ENT_QUOTES);
-    echo "<!doctype html><meta charset=utf-8><title>Kết nối Google</title><body style=\"font-family:system-ui;padding:24px\"><p>$txt</p><p>Cửa sổ sẽ tự đóng…</p>"
+    echo "<!doctype html><meta charset=utf-8><title>Kết nối kênh</title><body style=\"font-family:system-ui;padding:24px\"><p>$txt</p><p>Cửa sổ sẽ tự đóng…</p>"
         . "<script>try{window.opener&&window.opener.postMessage({mktOauth:$msg},location.origin)}catch(e){}setTimeout(function(){window.close()},400)</script>";
     exit;
+}
+/** Kết thúc luồng OAuth: cửa sổ bật lên thì báo về trang chính rồi tự đóng; không thì quay về app như cũ. */
+function oauth_finish(array $CFG, array $q): void {
+    if (!empty($_SESSION['oauth_popup'])) oauth_popup_page($q);
+    back_to_app($CFG, $q);
 }
 
 function json_input(): array {
@@ -275,6 +279,7 @@ function gen_id(string $prefix): string {
  *  không phải endpoint JSON gọi bằng fetch, nên không dùng fail()/respond() ở đây,
  *  mà đưa người dùng quay lại đúng chỗ kèm thông báo lỗi/thành công qua query string. */
 function back_to_app(array $CFG, array $q, string $hash = 'settings'): void {
+    if (!empty($_SESSION['oauth_popup'])) oauth_popup_page($q);
     header('Location: ' . rtrim($CFG['app_url'], '/') . '/?' . http_build_query($q) . '#' . $hash);
     exit;
 }
@@ -326,7 +331,8 @@ const PROVIDERS = [
     'google_ads' => ['auth' => 'google', 'scope' => 'https://www.googleapis.com/auth/adwords'],
     'facebook_page' => ['auth' => 'meta', 'scope' => 'pages_show_list,pages_read_engagement,read_insights,pages_manage_posts,pages_read_user_content,pages_manage_engagement,instagram_basic,instagram_content_publish,instagram_manage_comments'],
     'meta_ads' => ['auth' => 'meta', 'scope' => 'ads_read,ads_management,business_management,pages_show_list,pages_read_engagement'], // 12/10: đủ quyền tạo quảng cáo + Conversions API
-    'zalo_oa' => ['auth' => 'zalo', 'scope' => ''], // Zalo Official Account: nhập tay App ID + Secret key + Refresh token
+    'zalo_oa' => ['auth' => 'zalo', 'scope' => ''],
+    'zalo_user' => ['auth' => 'zalo_user', 'scope' => ''], // 14/10: Zalo cá nhân qua zalo-bridge (QR, API không chính thức) — nội bộ, Cửa sổ chat + AI Chat // Zalo Official Account: nhập tay App ID + Secret key + Refresh token
     'tiktok' => ['auth' => 'tiktok', 'scope' => 'user.info.basic,user.info.profile,user.info.stats,video.list'],
     // 12/10/2026: X (Twitter) — OAuth 2.0 PKCE; scope cách nhau bằng dấu cách. offline.access để có refresh_token, media.write để tải ảnh/video.
     'x' => ['auth' => 'x', 'scope' => 'tweet.read tweet.write users.read offline.access media.write'],

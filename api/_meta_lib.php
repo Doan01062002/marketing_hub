@@ -29,7 +29,8 @@ function meta_wanted_scopes(array $CFG, string $provider): array {
 function meta_need_reconnect(array $conn, string $why): void {
     global $pdo;
     $msg = 'Facebook: ' . $why . ' — bấm Kết nối lại';
-    $pdo->prepare("UPDATE connections SET status='error', last_error=? WHERE id=?")->execute([$msg, $conn['id']]);
+    // Fanpage còn Page token (không hết hạn) thì vẫn đăng bài / nhận tin được — chỉ ghi lỗi, không chuyển trạng thái.
+    $pdo->prepare(!empty($conn['secret']) && $conn['provider'] === 'facebook_page' ? 'UPDATE connections SET last_error=? WHERE id=?' : "UPDATE connections SET status='error', last_error=? WHERE id=?")->execute([$msg, $conn['id']]);
     throw new MetaAuthError($msg);
 }
 
