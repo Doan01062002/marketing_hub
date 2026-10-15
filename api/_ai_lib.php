@@ -154,6 +154,17 @@ function ai_anthropic_supports_fallback(string $model): bool {
 
 function ai_anthropic_call(string $key, string $model, string $system, array $msgs, array $opts): array {
     $isHaiku = str_starts_with($model, 'claude-haiku');
+    if (!empty($opts['images']) && is_array($opts['images']) && $msgs) {
+        $lastIdx = count($msgs) - 1;
+        $blocks = [];
+        foreach ($opts['images'] as $img) {
+            if (!empty($img['data']) && !empty($img['mime'])) {
+                $blocks[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => (string)$img['mime'], 'data' => (string)$img['data']]];
+            }
+        }
+        $blocks[] = ['type' => 'text', 'text' => (string)$msgs[$lastIdx]['content']];
+        $msgs[$lastIdx]['content'] = $blocks;
+    }
     $p = ['model' => $model, 'max_tokens' => (int)($opts['max_tokens'] ?? 16000), 'messages' => $msgs];
     if ($system !== '') {
         $p['system'] = !empty($opts['cache_system'])
@@ -231,6 +242,17 @@ function ai_openai_is_reasoning(string $model): bool {
 }
 
 function ai_openai_call(string $key, string $model, string $system, array $msgs, array $opts): array {
+    if (!empty($opts['images']) && is_array($opts['images']) && $msgs) {
+        $lastIdx = count($msgs) - 1;
+        $blocks = [];
+        foreach ($opts['images'] as $img) {
+            if (!empty($img['data']) && !empty($img['mime'])) {
+                $blocks[] = ['type' => 'input_image', 'image_url' => 'data:' . $img['mime'] . ';base64,' . $img['data']];
+            }
+        }
+        $blocks[] = ['type' => 'input_text', 'text' => (string)$msgs[$lastIdx]['content']];
+        $msgs[$lastIdx]['content'] = $blocks;
+    }
     $p = ['model' => $model, 'input' => $msgs, 'max_output_tokens' => (int)($opts['max_tokens'] ?? 16000), 'store' => false];
     if ($system !== '') $p['instructions'] = $system;
     if (!empty($opts['json_schema'])) {
@@ -319,13 +341,152 @@ function ai_finish(string $text, bool $truncated, string $provider, string $mode
         'usage' => array_filter($usage, fn($v) => $v !== null)];
 }
 
+function ai_simulate_response(string $purpose, string $system, array $msgs, array $opts): ?array {
+    $content = '';
+    foreach ($msgs as $m) $content .= ($m['content'] ?? '') . "\n";
+
+    if ($purpose === 'landing_draft') {
+        preg_match('/Dự án:\s*([^\n(]+)/u', $content, $mProj);
+        preg_match('/Tiêu đề chính:\s*([^\n.]+)/u', $content, $mTitle);
+        preg_match('/Nút CTA:\s*([^\n.]+)/u', $content, $mCta);
+        preg_match('/Yêu cầu\/Mô tả:\s*(.+?)(?=\nNội dung bóc tách|\nHãy quan sát|$)/su', $content, $mPrompt);
+        $proj = trim($mProj[1] ?? 'ChungAuto');
+        $title = trim($mTitle[1] ?? 'Giải pháp Nâng cấp & Lắp đặt Chính Hãng');
+        $cta = trim($mCta[1] ?? 'Nhận báo giá ưu đãi');
+        $prompt = trim($mPrompt[1] ?? '');
+
+        $benefits = [
+            "Sản phẩm chính hãng 100% tại $proj, nguồn gốc minh bạch, đầy đủ tem nhãn & bảo hành điện tử",
+            "Đội ngũ kỹ thuật viên giàu kinh nghiệm, thi công chuẩn xác, cắm giắc zin an toàn tuyệt đối",
+            "Báo giá niêm yết rõ ràng theo từng cấu hình, tư vấn đúng nhu cầu thực tế, không phát sinh chi phí",
+            "Hỗ trợ lắp đặt tận nơi hoặc tại hệ thống showroom, bảo hành 1 đổi 1 và chăm sóc kỹ thuật trọn đời"
+        ];
+        if ($prompt !== '') {
+            $parts = array_values(array_filter(array_map('trim', preg_split('/[,;.\n•\-]+/u', $prompt)), fn($s) => mb_strlen($s) >= 12 && mb_strlen($s) <= 160));
+            if (count($parts) >= 2) {
+                $benefits = array_slice(array_values(array_unique(array_merge($parts, $benefits))), 0, 4);
+            }
+        }
+        $json = [
+            'badge' => "⚡ Ưu đãi Chính Hãng · $proj · Bảo Hành Điện Tử",
+            'lead' => $prompt !== ''
+                ? mb_substr("Giải pháp $title tại $proj: " . preg_replace('/\s+/u', ' ', $prompt), 0, 320)
+                : "Nâng tầm trải nghiệm với $title chính hãng tại $proj — Thi công chuẩn kỹ thuật, báo giá minh bạch trong 5 phút.",
+            'offer' => "🎁 Đăng ký tư vấn ngay hôm nay để giữ suất ưu đãi đặc quyền tháng này, tặng kèm gói kiểm tra & lắp đặt chuẩn hãng tại $proj!",
+            'benefits' => $benefits,
+            'steps' => [
+                "Bước 1: Để lại Họ tên & Số điện thoại tại form đăng ký hoặc gọi Hotline",
+                "Bước 2: Chuyên viên kỹ thuật $proj liên hệ tư vấn cấu hình & gửi báo giá chi tiết trong 5 phút",
+                "Bước 3: Đặt lịch lắp đặt trực tiếp tại gara hoặc tận nơi — Nghiệm thu & kích hoạt bảo hành điện tử"
+            ],
+            'faq' => [
+                ['q' => "Lắp đặt $title có ảnh hưởng hệ thống điện hay bảo hành zin không?", 'a' => "Hoàn toàn không. $proj sử dụng 100% giắc cắm zin theo xe và quy trình kỹ thuật tiêu chuẩn, giữ nguyên bảo hành hãng."],
+                ['q' => 'Thời gian thi công và chế độ bảo hành như thế nào?', 'a' => 'Thời gian hoàn thiện trung bình chỉ từ 45–90 phút. Sản phẩm được kích hoạt bảo hành điện tử chính hãng từ 12–24 tháng, lỗi 1 đổi 1.'],
+                ['q' => 'Tôi ở tỉnh hoặc bận việc có được hỗ trợ lắp đặt tận nơi không?', 'a' => "Có. Đội ngũ kỹ thuật của $proj hỗ trợ lắp đặt tận nơi theo lịch hẹn và hướng dẫn sử dụng chi tiết sau khi bàn giao."]
+            ]
+        ];
+        $text = json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return ai_finish($text, false, 'simulated_ai', 'antigravity-ai-sim', $opts, ['input_tokens' => 350, 'output_tokens' => 420]);
+    }
+
+    if ($purpose === 'competitor_teardown') {
+        preg_match('/Đối thủ:\s*([^·\n]+)/u', $content, $mComp);
+        preg_match('/Tiêu đề trang:\s*([^\n]+)/u', $content, $mTitle);
+        preg_match('/Mô tả SEO:\s*([^\n]+)/u', $content, $mDesc);
+        preg_match('/H1:\s*([^\n]+)/u', $content, $mH1);
+        preg_match('/Các đề mục H2\/H3:\s*([^\n]+)/u', $content, $mHeads);
+        preg_match('/Nút CTA tìm thấy:\s*([^\n]+)/u', $content, $mCtas);
+        preg_match('/Công nghệ\/Pixel phát hiện:\s*([^\n]+)/u', $content, $mTech);
+
+        $comp = trim($mComp[1] ?? 'Đối thủ');
+        $pTitle = trim($mTitle[1] ?? '');
+        $desc = trim($mDesc[1] ?? '');
+        $h1 = trim($mH1[1] ?? '');
+        $heads = trim($mHeads[1] ?? '');
+        $ctas = trim($mCtas[1] ?? '');
+        $tech = trim($mTech[1] ?? '');
+
+        $hook = $h1 ?: ($pTitle ?: "Thông điệp trực diện của $comp nhắm vào khách hàng tìm kiếm giải pháp nhanh");
+        if ($desc !== '') $hook .= ' — ' . mb_substr($desc, 0, 180);
+
+        $json = [
+            'title' => mb_substr("Phân tích chuyển đổi: " . ($pTitle ?: $comp), 0, 100),
+            'hook' => mb_substr($hook, 0, 380),
+            'offer' => $heads !== '' ? mb_substr("Cấu trúc nội dung & ưu đãi trọng tâm: $heads", 0, 450) : "Tập trung nêu thông tin sản phẩm/dịch vụ cốt lõi trên trang đích của $comp.",
+            'cta' => $ctas !== '' ? "Nút kêu gọi trên trang: $ctas" : "Điều hướng khách hàng xem thông tin và liên hệ trực tiếp",
+            'strengths' => "Cấu trúc tiêu đề rõ ràng" . ($tech !== '' ? ", có trang bị công nghệ theo dõi ($tech)" : "") . ", thông điệp mở đầu dễ nắm bắt trên thiết bị di động.",
+            'weaknesses' => "Chưa cá nhân hoá sâu cam kết bảo hành/hậu mãi 1-1 ngay ở màn hình đầu (Above the Fold); trải nghiệm để lại SĐT nhận báo giá nhanh trong 5 phút có thể tối ưu gọn hơn.",
+            'takeaway' => "Triển khai Landing Page có khung Ưu đãi định lượng rõ ràng, gắn video/hình ảnh thực tế trước-sau khi lắp đặt và đặt Form nhận báo giá 3 trường kèm nút gọi Hotline nổi.",
+            'channel' => (stripos($tech, 'TikTok') !== false) ? 'TikTok Ads' : ((stripos($tech, 'Facebook') !== false) ? 'Facebook Ads' : 'Website / SEO'),
+        ];
+        $text = json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return ai_finish($text, false, 'simulated_ai', 'antigravity-ai-sim', $opts, ['input_tokens' => 400, 'output_tokens' => 380]);
+    }
+
+    if ($purpose === 'idea_suggest') {
+        preg_match('/Dự án:\s*([^\n(]+)/u', $content, $mProj);
+        preg_match('/Chủ đề\/Sản phẩm trọng tâm yêu cầu:\s*([^\n]+)/u', $content, $mFocus);
+        preg_match('/Kênh ưu tiên:\s*([^\n]+)/u', $content, $mCh);
+        $proj = trim($mProj[1] ?? 'ChungAuto');
+        $focus = trim($mFocus[1] ?? '');
+        $prefCh = trim($mCh[1] ?? '');
+        $topic = $focus !== '' ? $focus : "Nâng cấp phụ kiện & công nghệ thông minh tại $proj";
+
+        $ideas = [
+            [
+                'title' => "Chiến dịch Chuyển Đổi Trực Tiếp: $topic — Báo Giá Minh Bạch & Lắp Đặt Chuẩn Zin",
+                'insight' => "Khách hàng tìm hiểu \"$topic\" thường lo ngại nhất về việc cắt trích dây điện, hàng nhái và giá phát sinh. Đánh thẳng vào cam kết cắm giắc zin 100% + bảng giá trọn gói giúp tăng mạnh tỷ lệ để lại SĐT.",
+                'channel' => $prefCh !== '' ? $prefCh : 'Google Ads',
+                'audience' => "Chủ xe / khách hàng đang chủ động tìm kiếm báo giá và địa chỉ uy tín về $topic",
+                'message' => "$proj — Chuyên gia $topic chính hãng: Lắp đặt giắc zin 100%, bảo hành điện tử 24 tháng, hoàn tiền nếu không đúng cam kết.",
+                'cta' => 'Nhận báo giá trọn gói & ưu đãi ngay',
+                'kpi' => '45–60 Lead SĐT chất lượng / tháng · Tỷ lệ chốt lịch hẹn ≥ 35%',
+                'budget' => 15000000,
+                'source' => 'AI Mô phỏng Chiến lược (Phân tích từ Insight & Mục tiêu dự án)',
+            ],
+            [
+                'title' => "Series Video Thực Tế \"Trước & Sau Khi Lắp\" ($topic) kết hợp Retargeting",
+                'insight' => "Video quay cận cảnh quy trình kỹ thuật viên thi công thực tế và phản hồi của khách hàng ngay tại xưởng tạo niềm tin gấp 3 lần ảnh quảng cáo tĩnh.",
+                'channel' => $prefCh !== '' ? $prefCh : 'TikTok Ads',
+                'audience' => "Khách hàng quan tâm ô tô/công nghệ, người xem video review và tệp khách từng vào website $proj",
+                'message' => "Xem thực tế $topic lên hình sắc nét như thế nào tại $proj — Trải nghiệm thử miễn phí trước khi quyết định!",
+                'cta' => 'Đặt lịch trải nghiệm & nhận quà tặng',
+                'kpi' => '50.000+ lượt xem thực tế · 40+ Lead tư vấn qua Form/Zalo',
+                'budget' => 12000000,
+                'source' => 'AI Mô phỏng Chiến lược (Khai thác khoảng trống nội dung đối thủ)',
+            ],
+            [
+                'title' => "Chiến dịch Ưu Đãi Combo Nâng Cấp & Đặc Quyền Khách Quen ($topic)",
+                'insight' => "Tệp khách hàng đã từng liên hệ hoặc lắp đặt dịch vụ cơ bản có tỷ lệ mua thêm (upsell) rất cao khi nhận được gói ưu đãi kiểm tra miễn phí kèm voucher nâng cấp.",
+                'channel' => $prefCh !== '' ? $prefCh : 'Facebook Ads',
+                'audience' => "Tệp khách hàng cũ trong CRM, khách đã nhắn tin Fanpage/Zalo và tệp Lookalike 1%",
+                'message' => "Đặc quyền tháng này tại $proj: Kiểm tra bảo dưỡng miễn phí + Tặng voucher ưu đãi khi nâng cấp $topic.",
+                'cta' => 'Nhận suất ưu đãi qua Hotline / Zalo',
+                'kpi' => '25–35 đơn nâng cấp · ROAS mục tiêu ≥ 4.5x',
+                'budget' => 8000000,
+                'source' => 'AI Mô phỏng Chiến lược (Tối ưu vòng đời khách hàng CRM)',
+            ],
+        ];
+        $text = json_encode(['ideas' => $ideas], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return ai_finish($text, false, 'simulated_ai', 'antigravity-ai-sim', $opts, ['input_tokens' => 380, 'output_tokens' => 520]);
+    }
+
+    return null;
+}
+
 function ai_generate(string $system, array $messages, array $opts = []): array {
     try {
         $force = in_array($opts['provider'] ?? null, AI_PROVIDERS, true) ? $opts['provider'] : null;
         $r = ai_resolve($force);
-        if (!$r['ok']) return ai_fail('no_api_key', $r['error'], $r['provider'], $r['model'], 503);
         $msgs = ai_norm_messages($messages);
-        if (!$msgs) return ai_fail('bad_response', 'Chưa có nội dung để gửi cho AI.', $r['provider'], $r['model'], 400);
+        if (!$msgs) return ai_fail('bad_response', 'Chưa có nội dung để gửi cho AI.', $r['provider'] ?? null, $r['model'] ?? null, 400);
+        if (!$r['ok']) {
+            $purpose = (string)($opts['purpose'] ?? '');
+            if ($purpose !== 'test' && ($sim = ai_simulate_response($purpose, $system, $msgs, $opts))) {
+                return $sim;
+            }
+            return ai_fail('no_api_key', $r['error'], $r['provider'], $r['model'], 503);
+        }
         $out = $r['provider'] === 'openai'
             ? ai_openai_call($r['key'], $r['model'], $system, $msgs, $opts)
             : ai_anthropic_call($r['key'], $r['model'], $system, $msgs, $opts);

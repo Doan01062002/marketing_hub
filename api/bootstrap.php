@@ -36,7 +36,7 @@ function row_task(array $r): array {
 function row_lead(array $r): array {
     return [
         'id' => $r['id'], 'name' => $r['name'], 'phone' => $r['phone'], 'email' => $r['email'] ?? null, 'notes' => $r['notes'] ?? null, 'co' => $r['co'], 'br' => $r['br'],
-        'camp' => $r['campaign_id'], 'source' => $r['source'], 'score' => (int)$r['score'],
+        'camp' => $r['campaign_id'], 'source' => $r['source'], 'source_ref' => $r['source_ref'] ?? null, 'score' => (int)$r['score'],
         'state' => $r['state'], 'subject' => $r['subject'], 'created' => $r['created_at'] ?? null,
     ];
 }
@@ -103,6 +103,7 @@ $competitors = array_map(fn($r) => [
     'move' => $r['latest_move'], 'threat' => $r['threat'],
     'website' => $r['website'] ?? null, 'web' => ($r['web_checked_at'] ?? null) ? ['at' => $r['web_checked_at'], 'change' => $r['web_change'], 'snap' => array_intersect_key(jdecode($r['web_snapshot']), array_flip(['title', 'desc', 'urls', 'new_urls', 'words', 'phones', 'tech']))] : null,
     'place' => $r['place_id'] ? ['id' => $r['place_id'], 'name' => $r['place_name'], 'rating' => $r['place_rating'] !== null ? (float)$r['place_rating'] : null, 'reviews' => (int)$r['place_reviews'], 'address' => $r['place_address'], 'url' => $r['place_url'], 'at' => $r['place_synced_at']] : null,
+    'teardowns' => array_values(array_filter(jdecode($r['teardowns'] ?? null), 'is_array')),
 ], $q('SELECT * FROM competitors WHERE project_id=? ORDER BY share_of_voice DESC'));
 
 // KPI tổng hợp theo dự án — tính từ campaigns/leads của dự án (không số tĩnh). CPL/CAC không có mẫu số → null (giao diện hiện "—").

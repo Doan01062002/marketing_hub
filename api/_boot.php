@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 16; // v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 17; // v17 (15/10/2026): competitors.teardowns (phiếu học hỏi đối thủ) · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -52,7 +52,8 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols('okrs', ['metric' => "TEXT NOT NULL DEFAULT 'manual'"]);
     $addCols('competitors', ['place_id' => 'TEXT', 'place_name' => 'TEXT', 'place_rating' => 'REAL', 'place_reviews' => 'INTEGER',
         'place_address' => 'TEXT', 'place_url' => 'TEXT', 'place_synced_at' => 'TEXT',
-        'website' => 'TEXT', 'web_snapshot' => 'TEXT', 'web_checked_at' => 'TEXT', 'web_change' => 'TEXT']);
+        'website' => 'TEXT', 'web_snapshot' => 'TEXT', 'web_checked_at' => 'TEXT', 'web_change' => 'TEXT',
+        'teardowns' => 'TEXT']);
     $addCols('leads', ['email' => 'TEXT', 'notes' => 'TEXT', 'source_ref' => 'TEXT']);
     // v11 (11/10/2026): tài khoản kênh nhiều môi trường (sandbox/production), quyền đã cấp, tên/ảnh tài khoản
     $addCols('connections', ['env' => 'TEXT', 'scopes' => 'TEXT', 'account_name' => 'TEXT', 'avatar' => 'TEXT']);

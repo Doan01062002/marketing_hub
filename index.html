@@ -1281,27 +1281,32 @@ async function submitVocInsight(){
  try{await apiPost('/api/insights.php',{q,ins,src:$('#ins-src').value.trim(),conf:$('#ins-conf').value,subject:$('#ins-subject').value.trim()});closeLayer();toast('Đã ghi VoC');await refreshData()}
  catch(e){toast('Lỗi',e.message)}
 }
-function newCompetitor(){
- openModal(`<div class="mh">${ic('shield')}<h3>Thêm đối thủ theo dõi</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+function newCompetitor(id){
+ const c=id?(DB.competitors||[]).find(x=>x.id===id):null;
+ openModal(`<div class="mh">${ic('shield')}<h3>${c?'Sửa đối thủ: '+esc(c.name):'Thêm đối thủ theo dõi'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
   <div class="mb">
-   <div class="frow"><div class="field"><label>Tên đối thủ</label><input id="cp-name" placeholder="VD: Công ty thiết kế web ABC"></div><div class="field"><label>Website (để theo dõi tự động)</label><input id="cp-web" placeholder="https://doithu.vn"></div></div>
-   <div class="frow"><div class="field"><label>Share of Voice (%)</label><input id="cp-sov" type="number" min="0" max="100" placeholder="20"></div><div class="field"><label>Ngân sách ước tính</label><input id="cp-spend" placeholder="VD: ~80tr/th"></div></div>
-   <div class="frow"><div class="field"><label>Động thái gần đây</label><input id="cp-move" placeholder="VD: Đẩy mạnh TikTok Ads"></div><div class="field"><label>Mức đe doạ</label><select id="cp-threat"><option value="Cao">Cao</option><option value="TB">TB</option><option value="—">—</option></select></div></div>
+   <div class="frow"><div class="field"><label>Tên đối thủ *</label><input id="cp-name" value="${esc(c?c.name:'')}" placeholder="VD: Nội thất ô tô ABC"></div><div class="field"><label>Website (để theo dõi & mổ xẻ)</label><input id="cp-web" value="${esc(c&&c.website?c.website:'')}" placeholder="https://doithu.vn"></div></div>
+   <div class="frow"><div class="field"><label>Share of Voice (%)</label><input id="cp-sov" type="number" min="0" max="100" value="${c?c.sov||0:''}" placeholder="20"></div><div class="field"><label>Ngân sách ước tính</label><input id="cp-spend" value="${esc(c&&c.spendEst?c.spendEst:'')}" placeholder="VD: ~80tr/th"></div></div>
+   <div class="frow"><div class="field"><label>Động thái gần đây</label><input id="cp-move" value="${esc(c&&c.move?c.move:'')}" placeholder="VD: Đẩy mạnh TikTok Ads / Landing page mới"></div><div class="field"><label>Mức đe doạ</label><select id="cp-threat"><option value="Cao"${c&&c.threat==='Cao'?' selected':''}>Cao</option><option value="TB"${!c||c.threat==='TB'?' selected':''}>TB</option><option value="—"${c&&c.threat==='—'?' selected':''}>—</option></select></div></div>
   </div>
-  <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitNewCompetitor()">${ic('plus')} Thêm đối thủ</button></div>`);
+  <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitNewCompetitor('${c?esc(c.id):''}')">${ic('check')} ${c?'Lưu cập nhật':'Thêm đối thủ'}</button></div>`);
 }
-async function submitNewCompetitor(){
+async function submitNewCompetitor(id){
  const name=$('#cp-name').value.trim();
  if(!name){toast('Thiếu tên đối thủ');return}
+ const web=$('#cp-web').value.trim();
  try{
-  const d=await apiPost('/api/competitors.php',{name,sov:Number($('#cp-sov').value||0),spendEst:$('#cp-spend').value.trim(),move:$('#cp-move').value.trim(),threat:$('#cp-threat').value});
-  const web=$('#cp-web').value.trim();if(web&&d.id){try{await apiPost('/api/competitors.php',{action:'web_set',id:d.id,website:web})}catch(e){toast('Đã thêm đối thủ, nhưng chưa đọc được website',e.message)}}
-  closeLayer();toast('Đã thêm đối thủ');await refreshData();go('research');
+  const payload={name,sov:Number($('#cp-sov').value||0),spendEst:$('#cp-spend').value.trim(),move:$('#cp-move').value.trim(),threat:$('#cp-threat').value,website:web};
+  if(id)payload.id=id;
+  const d=await apiPost('/api/competitors.php',payload);
+  const cid=id||d.id;
+  if(web&&cid&&(!id)){try{await apiPost('/api/competitors.php',{action:'web_set',id:cid,website:web})}catch(e){}}
+  closeLayer();toast(id?'Đã cập nhật đối thủ':'Đã thêm đối thủ');await refreshData();if(S.page!=='utilities'&&S.page!=='market')go('research');else render();
  }catch(e){toast('Lỗi',e.message)}
 }
 async function deleteCompetitor(id){
  if(!confirm('Xoá đối thủ này khỏi danh sách theo dõi?'))return;
- try{await apiDelete('/api/competitors.php?id='+id);toast('Đã xoá đối thủ');await refreshData();go('research')}
+ try{await apiDelete('/api/competitors.php?id='+encodeURIComponent(id));toast('Đã xoá đối thủ');await refreshData();if(S.page!=='utilities'&&S.page!=='market')go('research');else render()}
  catch(e){toast('Lỗi',e.message)}
 }
 
@@ -4233,7 +4238,7 @@ function resetProjectCaches(){
  try{STX.users=null;STX.stats={};STX.act=[];STX.actLoaded=false}catch(e){}
  try{OKR_LIVE.loaded=false}catch(e){}
  try{AP.d=null}catch(e){}
- UT.ideas=null;UT.landings=null;UT.members=null;
+ UT.ideas=null;UT.landings=null;UT.members=null;UT.editId=null;UT.aiIdeas=null;UT.prefillLanding=null;
  CRM.sum=null;CRM.leads=null;CRM.exp=null;CRM.err=null;HL.d=null;TT.d=null;TT.chk={};XS.d=null;XS.chk={};REF.d=null;
 }
 /* Bộ chọn dự án: thanh trên (select) + hộp đầu sidebar. */
@@ -4621,7 +4626,7 @@ function pgReportsMenu(){
 }
 
 /* ================= TIỆN ÍCH: landing · đối thủ · ý tưởng ================= */
-const UT={ideas:null,landings:null,busy:false,lmode:'prompt',members:null};
+const UT={ideas:null,landings:null,busy:false,lmode:'prompt',members:null,editId:null,previewDev:'desktop',previewTs:0,prefillLanding:null,ideaFlt:'all',ideaQ:'',aiIdeas:null,tdComp:'all',tdVer:'all'};
 /* ---- Dữ liệu thật: CRM webseo.vn (chỉ đọc) + báo cáo máy HL ---- */
 const CRM={sum:null,leads:null,exp:null,busy:{},err:null};const HL={d:null,busy:false};
 function crmOn(){const p=proj();return !!(p&&p.settings&&p.settings.crm)}
@@ -4845,12 +4850,12 @@ function crmLeadsTab(){
 }
 function pgUtilities(){
  const t=tabOf('utilities','landing');
- const tabs=[['landing','Tạo landing page','globe'],['competitor','Học hỏi đối thủ','search'],['ideas','Ý tưởng chiến dịch','zap',UT.ideas?UT.ideas.length:null]];
+ const tabs=[['landing','Tạo landing page','globe',UT.landings?UT.landings.length:null],['competitor','Học hỏi đối thủ','search',(DB.competitors||[]).length||null],['ideas','Ý tưởng chiến dịch','zap',UT.ideas?UT.ideas.length:null]];
  let body='';
- if(t==='competitor'){S.tab.research='competitor';body=`<div class="card" style="margin-bottom:12px"><div class="card-b mini">Phiếu đối thủ phải ghi <b>nguồn, thời điểm quan sát và mức xác minh</b> (user_provided / verified / inferred / unavailable). Không kết luận đối thủ có/không chạy quảng cáo chỉ từ website. Dùng nút "Theo dõi web" và "Google Maps" để lấy bằng chứng thật.</div></div>`+pgResearch()}
+ if(t==='competitor')body=utCompetitor();
  else if(t==='ideas')body=utIdeas();
  else body=utLanding();
- return `<div class="menuhead"><h1>Tiện ích</h1><div class="sub">${esc((proj()||{}).name||'')}</div></div>${seg('utilities',tabs,t)}${body}`;
+ return `<div class="menuhead"><h1>Tiện ích</h1><div class="sub">${esc((proj()||{}).name||'')} · Các công cụ độc lập hỗ trợ triển khai & nghiên cứu</div></div>${seg('utilities',tabs,t)}${body}`;
 }
 async function utLoad(kind){
  if(UT.busy)return;UT.busy=true;const seq=S.projSeq||0;
@@ -4858,56 +4863,612 @@ async function utLoad(kind){
  catch(e){toast('Lỗi',e.message);if(kind==='ideas')UT.ideas=[];else UT.landings=[]}
  finally{UT.busy=false;render()}
 }
+
+/* ---------------- 1. TẠO LANDING PAGE (Công cụ độc lập) ---------------- */
+const LD_TPLS=[
+ {k:'modern',name:'Bento Hiện Đại & Bảng So Sánh',tag:'Bento SaaS',desc:'Menu viên thuốc nổi, Hero Bento Dashboard 99.4%, Lưới Bento bất đối xứng & Bảng So sánh Trước/Sau.',bg:'linear-gradient(135deg,#ecfdf5,#eff6ff)',acc:'#168164',dark:false,mini:`<div style="height:48px;border-radius:6px;background:#f8fafc;padding:5px;display:grid;grid-template-columns:1.1fr .9fr;gap:4px;border:1px solid #cbd5e1"><div style="display:flex;flex-direction:column;justify-content:space-between"><div style="width:85%;height:5px;background:#0f172a;border-radius:2px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><div style="height:12px;background:#168164;border-radius:3px;grid-column:span 2"></div></div><div style="width:50%;height:6px;background:#0f172a;border-radius:99px"></div></div><div style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:3px;display:flex;flex-direction:column;justify-content:space-between"><div style="font-size:7px;font-weight:800;color:#168164">99.4% ★</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:2px"><div style="height:8px;background:#ecfdf5;border-radius:2px"></div><div style="height:8px;background:#ecfdf5;border-radius:2px"></div></div></div></div>`},
+ {k:'luxury_dark',name:'Showroom Đêm & HUD Kỹ Thuật',tag:'Độ xe · Công nghệ',desc:'Nền Carbon Obsidian, Bảng thông số HUD kỹ thuật 100%, Thẻ Black Card VIP viền Vàng Gold.',bg:'linear-gradient(135deg,#050811,#1e293b)',acc:'#f59e0b',dark:true,mini:`<div style="height:48px;border-radius:6px;background:#050811;padding:5px;display:grid;grid-template-columns:1fr 1fr;gap:4px;border:1px solid #f59e0b"><div style="display:flex;flex-direction:column;justify-content:space-between"><div style="width:60%;height:4px;background:#f59e0b;border-radius:1px"></div><div style="width:90%;height:6px;background:#fff;border-radius:2px"></div><div style="width:70%;height:7px;background:linear-gradient(90deg,#f59e0b,#d97706);border-radius:2px"></div></div><div style="background:#0d1322;border:1px solid rgba(245,158,11,.4);border-radius:4px;padding:3px;display:flex;flex-direction:column;gap:3px"><div style="font-size:6px;color:#10b981;font-family:monospace">PASS 100%</div><div style="height:3px;background:#f59e0b;width:100%"></div><div style="height:3px;background:#10b981;width:90%"></div><div style="height:8px;background:#111827;border:1px solid #f59e0b;border-radius:2px"></div></div></div>`},
+ {k:'split_lead',name:'Phễu 2 Cột Sticky Chốt Lead',tag:'Chạy Ads chuyển đổi',desc:'Bố cục 2 cột song song: Cột trái phân tích lợi ích & quy trình, Cột phải neo cố định Form 2 bước.',bg:'linear-gradient(135deg,#0f172a,#1e293b)',acc:'#10b981',dark:true,mini:`<div style="height:48px;border-radius:6px;background:#f1f5f9;padding:4px;display:grid;grid-template-columns:1.3fr .9fr;gap:4px;border:1px solid #94a3b8"><div style="background:#fff;border-radius:4px;padding:3px;display:flex;flex-direction:column;gap:2px"><div style="width:85%;height:5px;background:#0f172a;border-radius:2px"></div><div style="height:4px;background:#dcfce7;border-radius:2px"></div><div style="height:4px;background:#dcfce7;border-radius:2px"></div><div style="height:7px;background:#fef3c7;border:1px solid #f59e0b;border-radius:2px"></div></div><div style="background:#fff;border:2px solid #168164;border-radius:4px;padding:3px;display:flex;flex-direction:column;justify-content:space-between"><div style="height:3px;background:#10b981;border-radius:99px"></div><div style="height:4px;background:#e2e8f0"></div><div style="height:4px;background:#e2e8f0"></div><div style="height:7px;background:#168164;border-radius:2px"></div></div></div>`},
+ {k:'promo_flash',name:'Sự Kiện Flash Sale & Vé Voucher',tag:'Săn Deal · Khuyến mãi',desc:'Đồng hồ đếm ngược 4 ô, Thanh tiến độ suất còn lại (42/50) & Phiếu Voucher cắt răng cưa.',bg:'linear-gradient(135deg,#7f1d1d,#c2410c)',acc:'#dc2626',dark:false,mini:`<div style="height:48px;border-radius:6px;background:linear-gradient(135deg,#7f1d1d,#c2410c);padding:4px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid #dc2626"><div style="display:flex;gap:2px;justify-content:center"><div style="width:9px;height:10px;background:#111827;border:1px solid #facc15;border-radius:2px"></div><div style="width:9px;height:10px;background:#111827;border:1px solid #facc15;border-radius:2px"></div><div style="width:9px;height:10px;background:#111827;border:1px solid #facc15;border-radius:2px"></div></div><div style="height:4px;background:#facc15;border-radius:99px;width:80%;margin:0 auto"></div><div style="height:12px;background:#fff;border:1.5px dashed #dc2626;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:6px;font-weight:900;color:#dc2626">VOUCHER VIP</div></div>`},
+ {k:'editorial',name:'Ấn Phẩm Chuyên Gia & Chứng Nhận',tag:'Tạp chí · Uy tín',desc:'Bố cục Tạp chí Serif cao cấp, Chữ cái lớn Drop-cap, Mục lục số La Mã (I, II, III) & Khung Chứng Nhận.',bg:'#faf8f5',acc:'#9a3412',dark:false,mini:`<div style="height:48px;border-radius:6px;background:#faf8f5;padding:4px;display:flex;flex-direction:column;justify-content:space-between;border:1px solid #a8a29e"><div style="border-bottom:2px double #1c1917;height:6px;text-align:center;font-size:5px;font-weight:800">EDITORIAL</div><div style="display:grid;grid-template-columns:1.3fr .9fr;gap:3px"><div style="display:flex;gap:2px;align-items:center"><span style="font-size:10px;font-weight:800;color:#168164;line-height:1">A</span><div style="flex:1;height:8px;background:#e7e5e4"></div></div><div style="background:#f3efe6;border-left:2px solid #168164;height:12px"></div></div><div style="height:10px;background:#fff;border:2px double #1c1917"></div></div>`}
+];
+function ldTplMeta(k){return LD_TPLS.find(t=>t.k===k)||LD_TPLS[0]}
+
 function utLanding(){
  if(!UT.landings){utLoad('landings');return '<div class="empty">Đang tải…</div>'}
- const m=UT.lmode;const p=proj()||{};
- const modeBtn=[['prompt','Từ prompt'],['link','Từ link tham chiếu'],['image','Từ ảnh']].map(([k,l])=>`<button class="seg ${m===k?'on':''}" onclick="UT.lmode='${k}';render()">${l}</button>`).join('');
- return `<div class="grid2"><div class="card" style="margin:0"><div class="card-h"><h3>Tạo landing page cho ${esc(p.name||'dự án')}</h3><span class="badge b-vio">Bản nháp · chưa xuất bản</span></div><div class="card-b">
-  <div class="segbar" style="margin-bottom:12px">${modeBtn}</div>
-  ${m==='link'?`<div class="field"><label>Link trang tham chiếu</label><input id="ld-ref" type="url" placeholder="https://..."><div class="mini">Máy chủ đọc tiêu đề, mô tả, các khối nội dung của trang (chặn địa chỉ nội bộ, giới hạn kích thước, không chạy script).</div></div>`:''}
-  ${m==='image'?`<div class="field"><label>Ảnh giao diện tham chiếu</label><input id="ld-img" type="file" accept="image/png,image/jpeg,image/webp"><div class="mini">PNG/JPG/WebP ≤ 5 MB. Ảnh được lưu kèm bản nháp làm tài liệu tham chiếu cho người thiết kế; nhận diện bố cục bằng AI sẽ bổ sung khi có khoá AI.</div></div>`:''}
-  <div class="field"><label>${m==='prompt'?'Mô tả trang muốn tạo':'Yêu cầu bổ sung'}</label><textarea id="ld-prompt" rows="4">${esc('Tạo trang đích cho '+(p.name||'')+'. '+(p.goal||'')+' Giao diện rõ ràng, ưu tiên điện thoại, có lợi ích, quy trình, câu hỏi thường gặp và nút tư vấn.')}</textarea></div>
-  <div class="grid2"><div class="field"><label>Tiêu đề chính</label><input id="ld-title" placeholder="Website chuyên nghiệp cho doanh nghiệp của bạn"></div><div class="field"><label>Nút kêu gọi hành động</label><input id="ld-cta" value="Đăng ký tư vấn"></div></div>
-  <div class="grid2"><div class="field"><label>Kênh sử dụng</label><select id="ld-ch">${CH_TABS.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')}</select></div><div class="field"><label>Gắn chiến dịch (tuỳ chọn)</label><select id="ld-camp"><option value="">—</option>${DB.campaigns.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')}</select></div></div>
-  ${projWrite()?`<button class="btn primary" onclick="ldCreate()">${ic('zap')} Tạo bản nháp</button>`:'<div class="mini">Vai trò của bạn chỉ xem.</div>'}
+ if(UT.editId){
+  const cur=UT.landings.find(x=>x.id===UT.editId);
+  if(cur)return ldStudio(cur);
+  UT.editId=null;
+ }
+ const m=UT.lmode;const curTpl=UT.ltpl||'modern';const p=proj()||{};const pf=UT.prefillLanding||{};
+ const modeBtn=[['prompt','Từ prompt'],['link','Từ link tham chiếu'],['image','Từ ảnh (AI Vision)']].map(([k,l])=>`<button class="seg ${m===k?'on':''}" onclick="UT.lmode='${k}';render()">${l}</button>`).join('');
+ const defPrompt=pf.prompt||('Tạo trang đích cho '+(p.name||'')+'. '+(p.goal||'')+' Giao diện rõ ràng, ưu tiên điện thoại, có lợi ích, quy trình, câu hỏi thường gặp và nút tư vấn.');
+ const tplCards=LD_TPLS.map(t=>{
+  const on=curTpl===t.k;
+  return `<div onclick="UT.ltpl='${t.k}';render()" style="cursor:pointer;border:${on?'2px solid var(--pri)':'1px solid var(--bd)'};background:${on?'#f0fdf4':'#fff'};border-radius:10px;padding:8px;transition:.15s;position:relative">
+   ${t.mini}
+   <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between;gap:4px">
+    <b style="font-size:12px;color:#0f172a;line-height:1.25">${esc(t.name)}</b>
+    ${on?`<span class="badge b-ok" style="font-size:10px;padding:1px 5px">Đang chọn</span>`:`<span class="chip" style="font-size:10px;padding:1px 5px">${esc(t.tag)}</span>`}
+   </div>
+   <div class="mini" style="margin-top:3px;font-size:11px;line-height:1.35">${esc(t.desc)}</div>
+  </div>`;
+ }).join('');
+ return `<div class="grid2"><div class="card" style="margin:0"><div class="card-h"><h3>Tạo landing page cho ${esc(p.name||'dự án')}</h3><span class="badge b-vio">5 mẫu giao diện chuyên nghiệp</span></div><div class="card-b">
+  ${pf.title?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px"><span class="mini" style="color:#166534">Đang điền sẵn thông tin bổ trợ từ <b>${esc(pf.from||'Ý tưởng')}</b> (bạn có thể chỉnh sửa tuỳ ý).</span><button class="btn xs" onclick="UT.prefillLanding=null;render()">Xoá điền sẵn</button></div>`:''}
+  <div class="field"><label>1. Chọn mẫu giao diện (5 phong cách thiết kế)</label>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;margin-top:4px">${tplCards}</div>
+  </div>
+  <div class="field"><label>2. Nguồn nội dung khởi tạo</label><div class="segbar" style="margin-top:4px">${modeBtn}</div></div>
+  ${m==='link'?`<div class="field"><label>Link trang tham chiếu</label><input id="ld-ref" type="url" placeholder="https://..."><div class="mini">Máy chủ đọc tiêu đề, mô tả, các đề mục H1-H3, danh sách lợi ích và nút CTA của trang mẫu (chặn địa chỉ nội bộ, không chạy script).</div></div>`:''}
+  ${m==='image'?`<div class="field"><label>Ảnh giao diện tham chiếu (AI Vision)</label><input id="ld-img" type="file" accept="image/png,image/jpeg,image/webp"><div class="mini">PNG/JPG/WebP ≤ 5 MB. Khi có khoá AI, hệ thống dùng AI Vision đọc trực tiếp bố cục, tiêu đề, lợi ích và quy trình trên ảnh mẫu.</div></div>`:''}
+  <div class="field"><label>${m==='prompt'?'Mô tả trang muốn tạo':'Yêu cầu bổ sung'}</label><textarea id="ld-prompt" rows="3">${esc(defPrompt)}</textarea></div>
+  <div class="grid2"><div class="field"><label>Tiêu đề chính *</label><input id="ld-title" value="${esc(pf.title||'')}" placeholder="VD: Lắp màn hình Android ô tô chính hãng tại ${esc(p.name||'Chung Auto')}"></div><div class="field"><label>Nút kêu gọi hành động (CTA)</label><input id="ld-cta" value="${esc(pf.cta||'Đăng ký tư vấn')}"></div></div>
+  <div class="grid2"><div class="field"><label>Kênh sử dụng</label><select id="ld-ch">${CH_TABS.map(x=>`<option value="${x[0]}"${pf.channel===x[0]||pf.channel===x[1]?' selected':''}>${x[1]}</option>`).join('')}</select></div><div class="field"><label>Gắn chiến dịch (tuỳ chọn)</label><select id="ld-camp"><option value="">— Không gắn —</option>${DB.campaigns.map(c=>`<option value="${esc(c.id)}"${pf.campaign_id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}</select></div></div>
+  ${projWrite()?`<button class="btn primary" id="ld-create-btn" onclick="ldCreate()">${ic('zap')} Tạo với mẫu "${esc(ldTplMeta(curTpl).name)}"</button>`:'<div class="mini">Vai trò của bạn chỉ xem.</div>'}
  </div></div>
- <div class="card" style="margin:0"><div class="card-h"><h3>Landing page của dự án</h3><span class="sub">${UT.landings.length} bản</span></div><div class="card-b">
-  ${UT.landings.length?UT.landings.map(l=>`<div class="minirow"><div><b>${esc(l.title)}</b><small>${{link:'Từ link',prompt:'Từ prompt',image:'Từ ảnh'}[l.source_type]||''} · ${esc(l.state)} · v${l.version} · ${esc(fmtTs(l.updated_at))}${l.published_url?` · <a href="${esc(l.published_url)}" target="_blank">đã xuất bản</a>`:''}</small></div><div class="hact"><a class="btn sm" href="${APP_BASE}api/landings.php?id=${esc(l.id)}&preview=1&project_id=${esc(S.project)}" target="_blank" rel="noopener">Xem thử</a>${projAdmin()?`<button class="btn sm" onclick="ldDelete('${esc(l.id)}')">${ic('trash')}</button>`:''}</div></div>`).join(''):'<div class="empty">Chưa có landing page.</div>'}
-  <div class="mini" style="margin-top:10px">Bản nháp dựng từ mẫu HTML theo tiêu đề/CTA/mô tả và thông tin dự án; có khoá AI (Cài đặt → Hệ thống → AI) thì phần nội dung được AI viết. Xem thử mở trong khung cách ly, không phải URL hoạt động cho tới khi xuất bản.</div>
- </div></div>`;
+ <div class="card" style="margin:0"><div class="card-h"><h3>Landing page của dự án</h3><span class="sub">${UT.landings.length} trang</span></div><div class="card-b">
+  ${UT.landings.length?UT.landings.map(l=>{
+   const isPub=l.state==='published'||l.state==='approved';
+   const pubLink=l.published_url||(APP_BASE+'api/landings.php?id='+encodeURIComponent(l.id)+'&public=1');
+   const tm=ldTplMeta((l.sections||{}).template||'modern');
+   return `<div class="card" style="margin:0 0 10px;padding:12px;border:1px solid var(--bd)"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div>
+     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><b>${esc(l.title)}</b><span class="badge ${isPub?'b-ok':'b-vio'}">${isPub?'Đã xuất bản':'Bản nháp'}</span><span class="chip" title="Mẫu giao diện">🎨 ${esc(tm.name)}</span><span class="chip">v${l.version||1}</span>${l.lead_count?`<span class="badge b-info" style="cursor:pointer" onclick="go('leadsmenu')" title="Bấm để xem danh sách đầu mối">${l.lead_count} lead</span>`:''}</div>
+     <div class="mini" style="margin-top:4px">${{link:'Từ link',prompt:'Từ prompt',image:'Từ ảnh'}[l.source_type]||'Từ prompt'}${l.channel?' · Kênh: '+esc(l.channel):''} · Cập nhật ${esc(fmtTs(l.updated_at))}</div>
+     ${isPub?`<div class="mini" style="margin-top:4px;color:var(--ok)">🔗 Link thu Lead thật: <a href="${esc(pubLink)}" target="_blank" rel="noopener"><b>${esc(pubLink)}</b></a> <button class="btn xs" onclick="ldCopyUrl('${esc(pubLink)}')">Copy link</button></div>`:''}
+    </div>
+    <div class="hact">
+     <button class="btn sm primary" onclick="ldEdit('${esc(l.id)}')">${ic('edit')} Sửa & Đổi mẫu</button>
+     ${projWrite()?`<button class="btn sm" onclick="ldPublishModal('${esc(l.id)}')">${ic('globe')} ${isPub?'Cấu hình xuất bản':'Xuất bản'}</button>`:''}
+     <a class="btn sm" href="${APP_BASE}api/landings.php?id=${esc(l.id)}&download=1&project_id=${esc(S.project)}" title="Tải file HTML độc lập">${ic('download')} HTML</a>
+     ${projWrite()?`<button class="iconbtn sm" title="Xoá" onclick="ldDelete('${esc(l.id)}')">${ic('trash')}</button>`:''}
+    </div>
+   </div></div>`;
+  }).join(''):'<div class="empty">Chưa có landing page nào. Hãy chọn mẫu và tạo trang đích ở khung bên trái.</div>'}
+  <div class="mini" style="margin-top:10px">Mỗi Landing Page có thể chuyển đổi linh hoạt giữa <b>5 mẫu giao diện</b> (Hiện đại, Showroom Đêm, Chốt Lead Màn Đầu, Flash Sale, Chuyên Gia), chỉnh sửa từng khối nội dung, xem thử Mobile/Desktop và xuất bản thành đường dẫn thu Lead thật.</div>
+ </div></div></div>`;
 }
+
+function ldStudio(l){
+ const s=l.sections||{};const p=proj()||{};
+ const curTpl=s.template||'modern';
+ const isPub=l.state==='published'||l.state==='approved';
+ const pubLink=l.published_url||(location.origin+APP_BASE+'api/landings.php?id='+encodeURIComponent(l.id)+'&public=1');
+ const prevUrl=`${APP_BASE}api/landings.php?id=${encodeURIComponent(l.id)}&preview=1&project_id=${encodeURIComponent(S.project)}&_t=${UT.previewTs||0}`;
+ const faqs=Array.isArray(s.faq)&&s.faq.length?s.faq:[['Chi phí tính như thế nào?','Báo giá minh bạch theo hạng mục, gửi trong 5 phút.']];
+ const studioTplBar=LD_TPLS.map(t=>{
+  const on=curTpl===t.k;
+  return `<div onclick="ldQuickTpl('${esc(l.id)}','${t.k}')" style="cursor:pointer;border:${on?'2px solid var(--pri)':'1px solid var(--bd)'};background:${on?'#f0fdf4':'#fff'};border-radius:8px;padding:6px;transition:.15s" title="${esc(t.desc)}">
+   ${t.mini}
+   <div style="margin-top:5px;font-size:11px;font-weight:700;color:${on?'var(--pri)':'#0f172a'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${on?'✓ ':''}${esc(t.name)}</div>
+  </div>`;
+ }).join('');
+ return `<div class="card" style="margin-bottom:12px"><div class="card-h" style="flex-wrap:wrap;gap:10px">
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+   <button class="btn sm" onclick="UT.editId=null;render()">← Danh sách</button>
+   <h3 style="margin:0">${esc(l.title)}</h3>
+   <span class="badge ${isPub?'b-ok':'b-vio'}">${isPub?'Đã xuất bản':'Bản nháp'}</span>
+   <span class="chip">🎨 ${esc(ldTplMeta(curTpl).name)}</span>
+   <span class="chip">Phiên bản v${l.version||1}</span>
+   <span class="badge b-info" style="cursor:pointer" onclick="go('leadsmenu')">${l.lead_count||0} lead đã thu</span>
+  </div>
+  <div class="hact">
+   <div class="segbar" style="margin:0">
+    <button class="seg ${UT.previewDev!=='mobile'?'on':''}" onclick="UT.previewDev='desktop';render()">🖥 Máy tính</button>
+    <button class="seg ${UT.previewDev==='mobile'?'on':''}" onclick="UT.previewDev='mobile';render()">📱 Điện thoại</button>
+   </div>
+   <a class="btn sm" href="${esc(prevUrl)}" target="_blank" rel="noopener">${ic('eye')} Mở tab mới</a>
+   <a class="btn sm" href="${APP_BASE}api/landings.php?id=${esc(l.id)}&download=1&project_id=${esc(S.project)}">${ic('download')} Tải HTML</a>
+   ${projWrite()?`<button class="btn sm primary" onclick="ldPublishModal('${esc(l.id)}')">${ic('globe')} ${isPub?'Đã xuất bản (Lấy link)':'Xuất bản thu Lead'}</button>`:''}
+  </div>
+ </div></div>
+ <div class="grid2" style="align-items:start">
+  <div class="card" style="margin:0"><div class="card-h"><h3>Chỉnh sửa giao diện & nội dung</h3><span class="sub">Bấm Lưu để dựng phiên bản v${(l.version||1)+1}</span></div><div class="card-b" style="max-height:760px;overflow-y:auto">
+   <div class="field"><label>Mẫu giao diện (Bấm vào mẫu bất kỳ để đổi & xem thử ngay)</label>
+    <input type="hidden" id="le-tpl" value="${esc(curTpl)}">
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(105px,1fr));gap:6px;margin-top:4px;overflow-x:auto">${studioTplBar}</div>
+   </div>
+   <div class="field"><label>Tiêu đề chính (H1) *</label><input id="le-title" value="${esc(l.title||'')}"></div>
+   <div class="grid2">
+    <div class="field"><label>Nhãn nổi bật phía trên (Badge)</label><input id="le-badge" value="${esc(s.badge||'')}" placeholder="VD: Chính hãng · Bảo hành điện tử"></div>
+    <div class="field"><label>Nút kêu gọi hành động (CTA)</label><input id="le-cta" value="${esc(l.cta||'Đăng ký tư vấn')}"></div>
+   </div>
+   <div class="field"><label>Mô tả mở đầu dưới tiêu đề (Hero Lead)</label><textarea id="le-lead" rows="2">${esc(s.lead||'')}</textarea></div>
+   <div class="grid2">
+    <div class="field"><label>Màu chủ đạo</label><input id="le-color" type="color" value="${esc(s.color||p.color||'#168164')}"></div>
+    <div class="field"><label>Hotline hiển thị trên trang</label><input id="le-hotline" value="${esc(s.hotline||'')}" placeholder="VD: 0925588666"></div>
+   </div>
+   <div class="field"><label>Ảnh minh hoạ Hero (URL hoặc tải ảnh lên)</label>
+    <div style="display:flex;gap:8px;align-items:center"><input id="le-img" value="${esc(s.hero_img||'')}" placeholder="/uploads/... hoặc https://..." style="flex:1"><label class="btn sm" style="margin:0;cursor:pointer">Tải ảnh<input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="ldUploadHero(this)"></label></div>
+   </div>
+   <div class="field"><label>Khối Cam kết & Ưu đãi đặc biệt</label><textarea id="le-offer" rows="2" placeholder="VD: Giảm ngay 10% + Tặng camera hành trình khi đặt lịch trong tuần này">${esc(s.offer||'')}</textarea></div>
+   <div class="field"><label>Các điểm Lợi ích nổi bật (mỗi dòng 1 lợi ích)</label><textarea id="le-benefits" rows="4">${esc((s.benefits||[]).join('\n'))}</textarea></div>
+   <div class="field"><label>Các bước Quy trình triển khai (mỗi dòng 1 bước)</label><textarea id="le-steps" rows="3">${esc((s.steps||[]).join('\n'))}</textarea></div>
+   <div class="field"><label>Câu hỏi thường gặp (FAQ — mỗi dòng: Câu hỏi | Câu trả lời)</label><textarea id="le-faq" rows="4" placeholder="Chi phí thế nào? | Báo giá minh bạch trong 5 phút.">${esc(faqs.map(f=>(f[0]||'')+' | '+(f[1]||'')).join('\n'))}</textarea><div class="mini">Ngăn cách câu hỏi và câu trả lời bằng dấu <b>|</b> trên mỗi dòng.</div></div>
+   <div class="grid2">
+    <div class="field"><label>Kênh sử dụng</label><select id="le-ch">${CH_TABS.map(x=>`<option value="${x[0]}"${l.channel===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
+    <div class="field"><label>Gắn chiến dịch (Lead tự đổ về chiến dịch này)</label><select id="le-camp"><option value="">— Không gắn —</option>${DB.campaigns.map(c=>`<option value="${esc(c.id)}"${l.campaign_id===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+   </div>
+   ${projWrite()?`<div class="hact" style="margin-top:12px"><button class="btn primary" id="le-save-btn" onclick="ldSaveEdit('${esc(l.id)}')">${ic('check')} Lưu & Cập nhật Xem thử (v${(l.version||1)+1})</button></div>`:''}
+  </div></div>
+  <div class="card" style="margin:0"><div class="card-h"><h3>Xem thử trực tiếp (${UT.previewDev==='mobile'?'📱 Điện thoại 390px':'🖥 Máy tính'} · Mẫu ${esc(ldTplMeta(curTpl).name)})</h3><span class="sub">Form đăng ký hoạt động thật</span></div><div class="card-b" style="background:#f1f5f9;padding:12px">
+   ${isPub?`<div style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:10px 14px;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap"><div class="mini" style="color:#166534"><b>Trang đã xuất bản!</b> Khách điền form tại link này sẽ tự động đổ về mục <b>Khách hàng & lead</b>:<br><a href="${esc(pubLink)}" target="_blank" rel="noopener" style="color:#15803d;font-weight:700">${esc(pubLink)}</a></div><button class="btn sm primary" onclick="ldCopyUrl('${esc(pubLink)}')">Sao chép link</button></div>`:''}
+   <div style="display:flex;justify-content:center">
+    <iframe src="${esc(prevUrl)}" style="width:${UT.previewDev==='mobile'?'390px':'100%'};max-width:100%;box-sizing:border-box;height:680px;border:${UT.previewDev==='mobile'?'8px solid #1e293b':'1px solid #cbd5e1'};border-radius:${UT.previewDev==='mobile'?'24px':'10px'};background:#fff"></iframe>
+   </div>
+  </div></div>
+ </div>`;
+}
+
+async function ldQuickTpl(id,tpl){
+ const el=$('#le-tpl');if(el)el.value=tpl;
+ if(!projWrite())return;
+ await ldSaveEdit(id,tpl);
+}
+
 async function ldCreate(){
- const b={source_type:UT.lmode,prompt:($('#ld-prompt')||{}).value||'',title:($('#ld-title')||{}).value||'',cta:($('#ld-cta')||{}).value||'',channel:($('#ld-ch')||{}).value||'',campaign_id:($('#ld-camp')||{}).value||''};
+ const pf=UT.prefillLanding||{};
+ const b={source_type:UT.lmode,template:UT.ltpl||'modern',prompt:($('#ld-prompt')||{}).value||'',title:($('#ld-title')||{}).value||'',cta:($('#ld-cta')||{}).value||'',channel:($('#ld-ch')||{}).value||'',campaign_id:($('#ld-camp')||{}).value||'',idea_id:pf.idea_id||''};
  if(UT.lmode==='link')b.source_ref=($('#ld-ref')||{}).value||'';
  if(UT.lmode==='image'){const f=($('#ld-img')||{}).files;if(!f||!f[0]){toast('Chọn ảnh tham chiếu');return}if(f[0].size>5*1024*1024){toast('Ảnh quá 5 MB');return}
   const fd=new FormData();fd.append('file',f[0]);const r=await fetch('/api/upload.php',{method:'POST',credentials:'same-origin',headers:PH(),body:fd});const d=await r.json().catch(()=>({}));if(!r.ok){toast('Lỗi tải ảnh',d.error||r.status);return}b.source_ref=d.path||d.url||''}
  if(!b.title.trim()){toast('Nhập tiêu đề chính');return}
- try{await apiPost('/api/landings.php',b);toast('Đã tạo bản nháp landing');UT.landings=null;render()}catch(e){toast('Lỗi',e.message)}
+ const btn=$('#ld-create-btn');if(btn){btn.disabled=true;btn.textContent='Đang dựng trang…'}
+ try{
+  const d=await apiPost('/api/landings.php',b);
+  toast('Đã tạo trang đích',d.note||'Mở trình chỉnh sửa trực quan');
+  UT.prefillLanding=null;UT.editId=d.id;UT.previewTs=Date.now();UT.landings=null;UT.ideas=null;render();
+ }catch(e){toast('Lỗi',e.message);if(btn){btn.disabled=false;btn.textContent='Tạo & Mở trình chỉnh sửa'}}
 }
-async function ldDelete(id){if(!confirm('Xoá bản nháp landing này?'))return;try{await apiDelete('/api/landings.php?id='+encodeURIComponent(id));UT.landings=null;render()}catch(e){toast('Lỗi',e.message)}}
+
+function ldEdit(id){UT.editId=id;UT.previewTs=Date.now();render()}
+
+async function ldUploadHero(inp){
+ const f=inp&&inp.files&&inp.files[0];if(!f)return;
+ if(f.size>5*1024*1024){toast('Ảnh quá 5 MB');return}
+ toast('Đang tải ảnh lên…');
+ try{
+  const fd=new FormData();fd.append('file',f);
+  const r=await fetch('/api/upload.php',{method:'POST',credentials:'same-origin',headers:PH(),body:fd});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||r.status);
+  const el=$('#le-img');if(el)el.value='/'+(d.path||'').replace(/^\/+/,'');
+  toast('Đã tải ảnh lên — bấm Lưu để cập nhật vào trang');
+ }catch(e){toast('Lỗi tải ảnh',e.message)}
+}
+
+async function ldSaveEdit(id,forceTpl){
+ const title=($('#le-title')||{}).value.trim();
+ if(!title){toast('Tiêu đề chính không được để trống');return}
+ const tpl=forceTpl||($('#le-tpl')||{}).value||'modern';
+ const benefits=(($('#le-benefits')||{}).value||'').split('\n').map(x=>x.trim()).filter(Boolean);
+ const steps=(($('#le-steps')||{}).value||'').split('\n').map(x=>x.trim()).filter(Boolean);
+ const faq=(($('#le-faq')||{}).value||'').split('\n').map(line=>{const p=line.split('|');return [ (p[0]||'').trim(), p.slice(1).join('|').trim() ]}).filter(x=>x[0]&&x[1]);
+ const sections={
+  template:tpl,
+  badge:($('#le-badge')||{}).value.trim(),
+  lead:($('#le-lead')||{}).value.trim(),
+  color:($('#le-color')||{}).value||'#168164',
+  hotline:($('#le-hotline')||{}).value.trim(),
+  hero_img:($('#le-img')||{}).value.trim(),
+  offer:($('#le-offer')||{}).value.trim(),
+  benefits,steps,faq
+ };
+ const btn=$('#le-save-btn');if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}
+ try{
+  await apiPost('/api/landings.php',{action:'update',id,title,cta:($('#le-cta')||{}).value.trim(),channel:($('#le-ch')||{}).value,campaign_id:($('#le-camp')||{}).value,sections});
+  toast(forceTpl?`Đã đổi sang mẫu "${ldTplMeta(tpl).name}"`:'Đã lưu phiên bản mới');UT.previewTs=Date.now();UT.landings=null;render();
+ }catch(e){toast('Lỗi',e.message);if(btn){btn.disabled=false;btn.textContent='Lưu & Cập nhật Xem thử'}}
+}
+
+function ldPublishModal(id){
+ const l=(UT.landings||[]).find(x=>x.id===id)||{};
+ const isPub=l.state==='published'||l.state==='approved';
+ const defUrl=location.origin+APP_BASE+'api/landings.php?id='+encodeURIComponent(id)+'&public=1';
+ const curUrl=l.published_url?(l.published_url.startsWith('http')?l.published_url:location.origin+l.published_url):defUrl;
+ openModal(`<div class="mh">${ic('globe')}<h3>Xuất bản Landing Page: ${esc(l.title||'')}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
+  <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:10px;margin-bottom:12px">
+   <b>Đường dẫn hoạt động trực tiếp trên hệ thống:</b>
+   <div style="display:flex;gap:8px;margin-top:6px"><input value="${esc(defUrl)}" readonly style="flex:1" class="mono"><button class="btn sm" onclick="ldCopyUrl('${esc(defUrl)}')">Copy</button></div>
+   <div class="mini" style="margin-top:6px">Khi ở trạng thái <b>Đã xuất bản</b>, khách truy cập đường dẫn này (không cần đăng nhập) và điền form tư vấn sẽ tự động tạo đầu mối mới trong mục <b>Khách hàng & lead</b> của dự án.</div>
+  </div>
+  <div class="field"><label>URL tên miền riêng (tuỳ chọn — để trống để dùng link trực tiếp ở trên)</label><input id="lp-pub-url" value="${esc(l.published_url&&l.published_url.startsWith('http')?l.published_url:'')}" placeholder="https://chungauto.vn/khuyen-mai-man-hinh"><div class="mini">Nếu bạn tải file HTML lên tên miền riêng, dán URL vào đây để theo dõi.</div></div>
+ </div><div class="mf">
+  <button class="btn" onclick="closeLayer()">Đóng</button>
+  ${isPub?`<button class="btn" onclick="ldPublishSubmit('${esc(id)}','draft')">Chuyển về Bản nháp</button>`:''}
+  <button class="btn primary" onclick="ldPublishSubmit('${esc(id)}','published')">${ic('check')} ${isPub?'Cập nhật xuất bản':'Xuất bản ngay'}</button>
+ </div>`);
+}
+
+async function ldPublishSubmit(id,state){
+ const customUrl=($('#lp-pub-url')||{}).value.trim();
+ try{
+  const d=await apiPost('/api/landings.php',{action:'publish',id,state,published_url:customUrl});
+  closeLayer();
+  toast(state==='published'?'Đã xuất bản Landing Page!':'Đã chuyển về bản nháp');
+  UT.previewTs=Date.now();UT.landings=null;render();
+ }catch(e){toast('Lỗi',e.message)}
+}
+
+function ldCopyUrl(url){
+ const full=url.startsWith('http')?url:(location.origin+(url.startsWith('/')?'':'/')+url);
+ if(navigator.clipboard)navigator.clipboard.writeText(full).then(()=>toast('Đã sao chép đường dẫn',full)).catch(()=>prompt('Sao chép đường dẫn:',full));
+ else prompt('Sao chép đường dẫn:',full);
+}
+
+async function ldDelete(id){
+ if(!confirm('Xoá landing page này?'))return;
+ try{await apiDelete('/api/landings.php?id='+encodeURIComponent(id));if(UT.editId===id)UT.editId=null;UT.landings=null;render()}catch(e){toast('Lỗi',e.message)}
+}
+
+/* ---------------- 2. HỌC HỎI ĐỐI THỦ (Công cụ độc lập) ---------------- */
+const VERIFY_BADGE={
+ verified:{t:'Đã xác minh (verified)',c:'ok'},
+ user_provided:{t:'Người dùng cung cấp (user_provided)',c:'info'},
+ inferred:{t:'AI / Suy luận (inferred)',c:'vio'},
+ unavailable:{t:'Chưa xác minh (unavailable)',c:'mut'}
+};
+const SRC_LABELS={landing:'Trang đích (Landing Page)',website:'Website đối thủ',ads:'Thư viện Quảng cáo (Meta/Google)',maps:'Google Maps / Điểm bán',social:'Kênh Mạng xã hội',manual:'Quan sát trực tiếp'};
+
+function utCompetitor(){
+ const comps=DB.competitors||[];
+ const allTds=[];
+ comps.forEach(c=>{(c.teardowns||[]).forEach(td=>allTds.push({comp:c,td}))});
+ allTds.sort((a,b)=>String(b.td.observed_at||'').localeCompare(String(a.td.observed_at||'')));
+ const fltTds=allTds.filter(x=>(UT.tdComp==='all'||x.comp.id===UT.tdComp)&&(UT.tdVer==='all'||x.td.verify_level===UT.tdVer));
+
+ return `<div class="card" style="margin-bottom:12px"><div class="card-b mini" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+  <div>Phiếu học hỏi đối thủ ghi rõ <b>nguồn, thời điểm quan sát và mức xác minh</b> (<code>verified</code> / <code>user_provided</code> / <code>inferred</code> / <code>unavailable</code>). Dùng công cụ <b>Quét & Mổ xẻ trang đối thủ</b> hoặc <b>Kiểm tra web / Google Maps</b> để lấy bằng chứng thực tế.</div>
+  ${projWrite()?`<div class="hact">
+   <button class="btn sm primary" onclick="compScanModal()">${ic('search')} Quét & Mổ xẻ trang đối thủ (URL)</button>
+   <button class="btn sm" onclick="compTdModal()">${ic('plus')} Lập phiếu quan sát thủ công</button>
+  </div>`:''}
+ </div></div>
+
+ <div class="card" style="margin-bottom:14px"><div class="card-h" style="flex-wrap:wrap;gap:8px">
+  <div>${ic('shield')}<h3 style="display:inline;margin-left:6px">Danh sách đối thủ đang theo dõi</h3> <span class="sub">${comps.length} đối thủ</span></div>
+  <div class="hact">
+   <button class="btn sm" onclick="compImportBot()">${ic('search')} Lấy đối thủ từ Google</button>
+   <button class="btn sm" onclick="compWebCheck()">${ic('globe')} Kiểm tra tất cả web</button>
+   <button class="btn sm" onclick="compPlaceRefresh()">${ic('pin')} Cập nhật Google Maps</button>
+   ${projWrite()?`<button class="btn sm primary" onclick="newCompetitor()">${ic('plus')} Thêm đối thủ</button>`:''}
+  </div>
+ </div>
+ <div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Đối thủ</th><th>Website & Quảng cáo</th><th>Google Maps</th><th class="tar">Share of Voice</th><th>Động thái gần đây</th><th>Mức đe doạ</th><th class="tar">Phiếu học hỏi</th><th></th></tr></thead><tbody>
+  ${comps.length?comps.map(c=>`<tr>
+   <td><b>${esc(c.name)}</b></td>
+   <td>${compWebCell(c)}</td>
+   <td>${compPlaceCell(c)}</td>
+   <td class="tar"><div style="display:flex;align-items:center;gap:8px;justify-content:flex-end"><div class="prog" style="width:70px"><div style="width:${Math.min(100,Math.max(0,c.sov))}%"></div></div><b class="mono">${c.sov}%</b></div></td>
+   <td class="r-mut" style="max-width:240px">${esc(c.move||'—')}</td>
+   <td>${badge({['Cao']:{t:'Cao',c:'bad'},['TB']:{t:'Trung bình',c:'warn'},['—']:{t:'Chính ta',c:'vio'}},c.threat)}</td>
+   <td class="tar"><span class="badge ${(c.teardowns||[]).length?'b-info':'b-mut'}">${(c.teardowns||[]).length} phiếu</span></td>
+   <td style="white-space:nowrap">
+    ${projWrite()?`<button class="btn xs primary" title="Quét & Mổ xẻ website/landing của đối thủ này" onclick="compScanModal('${esc(c.id)}')">Mổ xẻ</button>
+    <button class="btn xs" title="Tạo phiếu quan sát cho đối thủ này" onclick="compTdModal('${esc(c.id)}')">+ Phiếu</button>
+    <button class="iconbtn sm" title="Sửa đối thủ" onclick="newCompetitor('${esc(c.id)}')">${ic('edit')}</button>
+    <button class="iconbtn sm" title="Xoá đối thủ" onclick="deleteCompetitor('${esc(c.id)}')">${ic('trash')}</button>`:''}
+   </td>
+  </tr>`).join(''):`<tr><td colspan="8"><div class="empty" style="padding:24px">Chưa có đối thủ nào trong danh sách. Bấm <b>+ Thêm đối thủ</b> hoặc <b>Quét & Mổ xẻ trang đối thủ (URL)</b> để bắt đầu.</div></td></tr>`}
+ </tbody></table></div></div>
+
+ <div class="card" style="margin:0"><div class="card-h" style="flex-wrap:wrap;gap:10px">
+  <div><h3>Phiếu học hỏi & Mổ xẻ đối thủ (Competitive Teardowns)</h3><span class="sub">${fltTds.length} / ${allTds.length} phiếu phân tích</span></div>
+  <div class="hact">
+   <select onchange="UT.tdComp=this.value;render()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--bd);font-size:13px">
+    <option value="all">Tất cả đối thủ (${allTds.length})</option>
+    ${comps.map(c=>`<option value="${esc(c.id)}"${UT.tdComp===c.id?' selected':''}>${esc(c.name)} (${(c.teardowns||[]).length})</option>`).join('')}
+   </select>
+   <select onchange="UT.tdVer=this.value;render()" style="padding:6px 10px;border-radius:8px;border:1px solid var(--bd);font-size:13px">
+    <option value="all">Mọi mức xác minh</option>
+    <option value="verified"${UT.tdVer==='verified'?' selected':''}>Đã xác minh (verified)</option>
+    <option value="user_provided"${UT.tdVer==='user_provided'?' selected':''}>Người dùng cung cấp (user_provided)</option>
+    <option value="inferred"${UT.tdVer==='inferred'?' selected':''}>AI / Suy luận (inferred)</option>
+    <option value="unavailable"${UT.tdVer==='unavailable'?' selected':''}>Chưa xác minh (unavailable)</option>
+   </select>
+  </div>
+ </div><div class="card-b">
+  ${fltTds.length?`<div class="grid2">${fltTds.map(({comp,td})=>{
+   const vb=VERIFY_BADGE[td.verify_level]||VERIFY_BADGE.user_provided;
+   return `<div class="card" style="margin:0;border:1px solid var(--bd)"><div class="card-h" style="align-items:flex-start;gap:8px">
+    <div>
+     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span class="badge b-vio">${esc(comp.name)}</span><b>${esc(td.title||'Phiếu phân tích')}</b></div>
+     <div class="mini" style="margin-top:4px">Nguồn: <b>${esc(SRC_LABELS[td.source_type]||td.source_type||'Quan sát')}</b>${td.source_url?` · <a href="${esc(td.source_url)}" target="_blank" rel="noopener">${esc(td.source_url.replace(/^https?:\/\//,'').slice(0,45))} ↗</a>`:''} · Quan sát lúc: ${esc(fmtTs(td.observed_at))}</div>
+    </div>
+    <span class="badge b-${vb.c}" style="white-space:nowrap">${esc(vb.t)}</span>
+   </div><div class="card-b" style="display:grid;gap:8px;font-size:13.5px">
+    ${td.hook?`<div><b>🎯 Thông điệp / Hook chính:</b> ${esc(td.hook)}</div>`:''}
+    ${td.offer?`<div><b>🎁 Ưu đãi / USP đối thủ:</b> ${esc(td.offer)}</div>`:''}
+    ${td.cta?`<div><b>👆 CTA & Phễu thu Lead:</b> ${esc(td.cta)}${td.forms!=null?` <span class="mini">(${td.forms} form trên trang${(td.phones||[]).length?' · SĐT: '+esc(td.phones.join(', ')):''})</span>`:''}</div>`:''}
+    ${(td.tech||[]).length?`<div><b>🛠 Công nghệ & Pixel:</b> ${(td.tech||[]).map(t=>`<span class="chip" style="margin:2px">${esc(t)}</span>`).join('')}</div>`:''}
+    <div class="grid2" style="gap:8px;margin-top:4px">
+     <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:8px"><b style="color:#166534;font-size:12px">✅ ĐIỂM MẠNH ĐỐI THỦ</b><div class="mini" style="color:#14532d;margin-top:3px">${esc(td.strengths||'—')}</div></div>
+     <div style="background:#fffbeb;border:1px solid #fde68a;padding:8px 10px;border-radius:8px"><b style="color:#92400e;font-size:12px">⚠️ ĐIỂM YẾU / KẼ HỞ</b><div class="mini" style="color:#78350f;margin-top:3px">${esc(td.weaknesses||'—')}</div></div>
+    </div>
+    ${td.takeaway?`<div style="background:#f8fafc;border-left:3px solid var(--pri);padding:8px 10px;border-radius:4px"><b>💡 Bài học / Áp dụng cho ta:</b> ${esc(td.takeaway)}</div>`:''}
+    <div class="hact" style="margin-top:6px;padding-top:8px;border-top:1px solid var(--bd)">
+     ${projWrite()?`<button class="btn sm" onclick="compTdToIdea('${esc(comp.id)}','${esc(td.id)}')" title="Bổ trợ: Tạo ý tưởng chiến dịch từ phiếu này">${ic('zap')} Lưu thành Ý tưởng</button>
+     <button class="btn sm" onclick="compTdModal('${esc(comp.id)}','${esc(td.id)}')">${ic('edit')} Sửa phiếu</button>
+     <button class="btn sm" onclick="compTdDel('${esc(comp.id)}','${esc(td.id)}')">${ic('trash')}</button>`:''}
+    </div>
+   </div></div>`;
+  }).join('')}</div>`:`<div class="empty" style="padding:28px"><h4>Chưa có phiếu học hỏi đối thủ nào</h4><div class="mini" style="margin-bottom:12px">Bấm <b>Quét & Mổ xẻ trang đối thủ (URL)</b> để máy chủ đọc tự động tiêu đề, ưu đãi, nút CTA, Pixel và điểm mạnh/yếu từ URL đối thủ; hoặc lập phiếu quan sát thủ công.</div>${projWrite()?`<button class="btn primary" onclick="compScanModal()">${ic('search')} Quét & Mổ xẻ trang đối thủ ngay</button>`:''}</div>`}
+ </div></div>`;
+}
+
+function compScanModal(cid){
+ const comps=DB.competitors||[];
+ const selComp=cid?comps.find(x=>x.id===cid):null;
+ openModal(`<div class="mh">${ic('search')}<h3>Quét & Mổ xẻ trang đích / Website đối thủ</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
+  <div class="grid2">
+   <div class="field"><label>Chọn đối thủ</label><select id="cs-comp" onchange="const c=(DB.competitors||[]).find(x=>x.id===this.value);if(c&&c.website&&!$('#cs-url').value)$('#cs-url').value=c.website;$('#cs-new-wrap').style.display=this.value==='new'?'block':'none'">
+    ${comps.map(c=>`<option value="${esc(c.id)}"${cid===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}
+    <option value="new"${!comps.length||!cid&&!comps.length?' selected':''}>+ Đối thủ mới (tự tạo từ tên/URL)</option>
+   </select></div>
+   <div class="field"><label>Loại trang quan sát</label><select id="cs-type"><option value="landing">Trang đích (Landing Page)</option><option value="website">Website / Trang chủ</option><option value="ads">Trang đích Quảng cáo</option></select></div>
+  </div>
+  <div class="field" id="cs-new-wrap" style="display:${comps.length?'none':'block'}"><label>Tên đối thủ mới (để trống = tự lấy theo tên miền)</label><input id="cs-name" placeholder="VD: Nội thất ô tô XYZ"></div>
+  <div class="field"><label>URL trang cần mổ xẻ *</label><input id="cs-url" type="url" value="${esc(selComp&&selComp.website?selComp.website:'')}" placeholder="https://doithu.vn/landing-page-khuyen-mai"><div class="mini">Hệ thống truy cập URL thật, xác minh (<code>verified</code>) Tiêu đề, H1-H3, Nút CTA, số lượng Form, Hotline, Công nghệ/Pixel (Meta, TikTok, GA4…) và phân tích Điểm mạnh / Điểm yếu.</div></div>
+  <div class="field"><label>Ghi chú quan sát thêm (tuỳ chọn)</label><input id="cs-note" placeholder="VD: Thấy trang này đang chạy quảng cáo Facebook mạnh tuần nay"></div>
+ </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" id="cs-btn" onclick="compScanSubmit()">${ic('zap')} Quét & Lập phiếu mổ xẻ</button></div>`);
+}
+
+async function compScanSubmit(){
+ const cid=$('#cs-comp').value;
+ const url=$('#cs-url').value.trim();
+ if(!url){toast('Nhập URL trang đối thủ cần mổ xẻ');return}
+ const btn=$('#cs-btn');if(btn){btn.disabled=true;btn.textContent='Đang đọc & phân tích trang…'}
+ try{
+  const d=await apiPost('/api/competitors.php',{action:'teardown_url',competitor_id:cid,competitor_name:($('#cs-name')||{}).value||'',source_type:$('#cs-type').value,url,note:$('#cs-note').value.trim()});
+  closeLayer();toast('Đã lập phiếu mổ xẻ đối thủ!',d.teardown?d.teardown.title:'');
+  await refreshData();render();
+ }catch(e){toast('Không quét được trang',e.message);if(btn){btn.disabled=false;btn.textContent='Quét & Lập phiếu mổ xẻ'}}
+}
+
+function compTdModal(cid,tdId){
+ const comps=DB.competitors||[];
+ const comp=cid?comps.find(x=>x.id===cid):null;
+ const td=(comp&&tdId)?(comp.teardowns||[]).find(x=>x.id===tdId):null;
+ openModal(`<div class="mh">${ic('clipboard')}<h3>${td?'Sửa phiếu học hỏi đối thủ':'Lập phiếu học hỏi đối thủ'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
+  <div class="grid2">
+   <div class="field"><label>Đối thủ *</label><select id="ct-comp"${td?' disabled':''}>
+    ${comps.map(c=>`<option value="${esc(c.id)}"${cid===c.id?' selected':''}>${esc(c.name)}</option>`).join('')}
+    ${!td?`<option value="new"${!comps.length?' selected':''}>+ Thêm đối thủ mới</option>`:''}
+   </select></div>
+   <div class="field"><label>Mức xác minh *</label><select id="ct-ver">
+    <option value="user_provided"${!td||td.verify_level==='user_provided'?' selected':''}>user_provided — Người dùng quan sát & nhập</option>
+    <option value="verified"${td&&td.verify_level==='verified'?' selected':''}>verified — Đã xác minh có bằng chứng trực tiếp</option>
+    <option value="inferred"${td&&td.verify_level==='inferred'?' selected':''}>inferred — Suy luận từ dấu hiệu gián tiếp</option>
+    <option value="unavailable"${td&&td.verify_level==='unavailable'?' selected':''}>unavailable — Chưa đủ dữ liệu xác minh</option>
+   </select></div>
+  </div>
+  ${!comps.length&&!td?`<div class="field"><label>Tên đối thủ mới *</label><input id="ct-cname" placeholder="VD: Đối thủ A"></div>`:''}
+  <div class="grid2">
+   <div class="field"><label>Tiêu đề phiếu quan sát *</label><input id="ct-title" value="${esc(td?td.title:'')}" placeholder="VD: Phân tích chiến dịch khuyến mãi tháng 10"></div>
+   <div class="field"><label>Nguồn quan sát</label><select id="ct-stype">${Object.entries(SRC_LABELS).map(([k,v])=>`<option value="${k}"${td&&td.source_type===k?' selected':''}>${v}</option>`).join('')}</select></div>
+  </div>
+  <div class="grid2">
+   <div class="field"><label>Link bằng chứng / Nguồn (URL)</label><input id="ct-url" value="${esc(td?td.source_url||'':'')}" placeholder="https://..."></div>
+   <div class="field"><label>Kênh đối thủ triển khai</label><select id="ct-ch">${['Website / SEO','Google Ads','Facebook Ads','TikTok Ads','Zalo OA','YouTube'].map(ch=>`<option${td&&td.channel===ch?' selected':''}>${ch}</option>`).join('')}</select></div>
+  </div>
+  <div class="field"><label>Thông điệp chính / Câu dẫn (Hook) của đối thủ</label><input id="ct-hook" value="${esc(td?td.hook||'':'')}" placeholder="VD: Lắp đặt tận nhà miễn phí trong 2 giờ"></div>
+  <div class="grid2">
+   <div class="field"><label>Ưu đãi / USP (Offer)</label><input id="ct-offer" value="${esc(td?td.offer||'':'')}" placeholder="VD: Giảm 15%, tặng phụ kiện, dùng thử 7 ngày"></div>
+   <div class="field"><label>Cách thu Lead / CTA</label><input id="ct-cta" value="${esc(td?td.cta||'':'')}" placeholder="VD: Form báo giá qua Zalo, nút gọi nhanh"></div>
+  </div>
+  <div class="grid2">
+   <div class="field"><label>Điểm mạnh của đối thủ</label><textarea id="ct-str" rows="2">${esc(td?td.strengths||'':'')}</textarea></div>
+   <div class="field"><label>Điểm yếu / Kẽ hở để ta khai thác</label><textarea id="ct-weak" rows="2">${esc(td?td.weaknesses||'':'')}</textarea></div>
+  </div>
+  <div class="field"><label>Bài học / Đề xuất hành động cho dự án của ta</label><textarea id="ct-take" rows="2">${esc(td?td.takeaway||'':'')}</textarea></div>
+ </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="compTdSave('${esc(cid||'')}','${esc(tdId||'')}')">${ic('check')} Lưu phiếu</button></div>`);
+}
+
+async function compTdSave(cid,tdId){
+ const selComp=($('#ct-comp')||{}).value||cid;
+ const payload={
+  action:'teardown_save',
+  competitor_id:selComp,
+  competitor_name:($('#ct-cname')||{}).value||'',
+  td_id:tdId||'',
+  title:($('#ct-title')||{}).value.trim(),
+  verify_level:($('#ct-ver')||{}).value,
+  source_type:($('#ct-stype')||{}).value,
+  source_url:($('#ct-url')||{}).value.trim(),
+  channel:($('#ct-ch')||{}).value,
+  hook:($('#ct-hook')||{}).value.trim(),
+  offer:($('#ct-offer')||{}).value.trim(),
+  cta:($('#ct-cta')||{}).value.trim(),
+  strengths:($('#ct-str')||{}).value.trim(),
+  weaknesses:($('#ct-weak')||{}).value.trim(),
+  takeaway:($('#ct-take')||{}).value.trim()
+ };
+ if(!payload.title){toast('Nhập tiêu đề phiếu quan sát');return}
+ try{
+  await apiPost('/api/competitors.php',payload);
+  closeLayer();toast('Đã lưu phiếu học hỏi đối thủ');await refreshData();render();
+ }catch(e){toast('Lỗi',e.message)}
+}
+
+async function compTdDel(cid,tdId){
+ if(!confirm('Xoá phiếu học hỏi đối thủ này?'))return;
+ try{await apiPost('/api/competitors.php',{action:'teardown_delete',competitor_id:cid,td_id:tdId});toast('Đã xoá phiếu');await refreshData();render()}catch(e){toast('Lỗi',e.message)}
+}
+
+function compTdToIdea(cid,tdId){
+ const comp=(DB.competitors||[]).find(x=>x.id===cid);
+ const td=comp?(comp.teardowns||[]).find(x=>x.id===tdId):null;
+ if(!td)return;
+ ideaForm('',{
+  title:'Đối ứng '+(comp.name||'đối thủ')+': '+(td.title||'Chiến dịch mới'),
+  insight:`Quan sát từ ${comp.name} (${td.verify_level}): Hook "${td.hook||''}". Điểm yếu đối thủ: ${td.weaknesses||'—'}`,
+  channel:td.channel||'Facebook Ads',
+  audience:'Khách hàng đang cân nhắc dịch vụ cùng phân khúc với '+comp.name,
+  message:td.takeaway||('Vượt trội hơn về cam kết chất lượng và trải nghiệm dịch vụ'),
+  cta:td.cta||'Đăng ký tư vấn & nhận ưu đãi',
+  source:`Phiếu đối thủ: ${comp.name}`,
+  research_id:td.id
+ });
+}
+
+/* ---------------- 3. Ý TƯỞNG CHIẾN DỊCH (Công cụ độc lập) ---------------- */
 function utIdeas(){
  if(!UT.ideas){utLoad('ideas');return '<div class="empty">Đang tải…</div>'}
- return `<div class="ph-act" style="margin-bottom:12px">${projWrite()?`<button class="btn primary" onclick="ideaForm()">${ic('plus')} Lưu ý tưởng</button>`:''}</div>
- <div class="grid2">${UT.ideas.map(i=>`<div class="card" style="margin:0"><div class="card-h"><div><h3>${esc(i.title)}</h3><div class="sub">${esc(i.channel||'')}${i.audience?' · '+esc(i.audience):''} · ${esc(i.state)}</div></div>${i.campaign_id?`<span class="badge b-ok">Đã thành chiến dịch</span>`:''}</div><div class="card-b">
-  ${i.insight?`<div><b>Insight:</b> ${esc(i.insight)}</div>`:''}${i.message?`<div><b>Thông điệp:</b> ${esc(i.message)}</div>`:''}${i.cta?`<div><b>CTA:</b> ${esc(i.cta)}</div>`:''}${i.kpi?`<div><b>KPI:</b> ${esc(i.kpi)}</div>`:''}${i.budget?`<div><b>Ngân sách đề xuất:</b> ${money(i.budget)}</div>`:''}${i.source?`<div class="mini">Nguồn: ${esc(i.source)}</div>`:''}
-  <div class="hact" style="margin-top:10px">${projWrite()&&!i.campaign_id?`<button class="btn sm primary" onclick="ideaConvert('${esc(i.id)}')">${ic('mega')} Chuyển thành chiến dịch nháp</button>`:''}${i.campaign_id?`<button class="btn sm" onclick="go('ads')">Xem chiến dịch</button>`:''}${projWrite()?`<button class="btn sm" onclick="ideaTask('${esc(i.id)}')">${ic('clipboard')} Giao việc</button>`:''}${projAdmin()?`<button class="btn sm" onclick="ideaDelete('${esc(i.id)}')">${ic('trash')}</button>`:''}</div>
- </div></div>`).join('')||noData('Chưa có ý tưởng nào','Lưu ý tưởng từ phiếu nghiên cứu đối thủ, insight khách hàng hoặc đề xuất của trợ lý AI; sau đó chuyển thành chiến dịch nháp (ngân sách 0, chờ duyệt).')}</div>`;
+ const q=(UT.ideaQ||'').toLowerCase().trim();
+ const list=UT.ideas.filter(i=>{
+  if(UT.ideaFlt==='new'&&i.state!=='new')return false;
+  if(UT.ideaFlt==='converted'&&!i.campaign_id&&i.state!=='converted')return false;
+  if(UT.ideaFlt==='archived'&&i.state!=='archived')return false;
+  if(UT.ideaFlt==='all'&&i.state==='archived')return false;
+  if(q&&!((i.title||'')+' '+(i.insight||'')+' '+(i.message||'')+' '+(i.channel||'')).toLowerCase().includes(q))return false;
+  return true;
+ });
+ const cntNew=UT.ideas.filter(x=>x.state==='new').length;
+ const cntConv=UT.ideas.filter(x=>x.campaign_id||x.state==='converted').length;
+ const cntArch=UT.ideas.filter(x=>x.state==='archived').length;
+
+ return `<div class="card" style="margin-bottom:12px"><div class="card-b" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+   <div class="segbar" style="margin:0">
+    <button class="seg ${UT.ideaFlt==='all'?'on':''}" onclick="UT.ideaFlt='all';render()">Đang mở (${UT.ideas.length-cntArch})</button>
+    <button class="seg ${UT.ideaFlt==='new'?'on':''}" onclick="UT.ideaFlt='new';render()">Mới (${cntNew})</button>
+    <button class="seg ${UT.ideaFlt==='converted'?'on':''}" onclick="UT.ideaFlt='converted';render()">Đã lên chiến dịch (${cntConv})</button>
+    <button class="seg ${UT.ideaFlt==='archived'?'on':''}" onclick="UT.ideaFlt='archived';render()">Lưu trữ (${cntArch})</button>
+   </div>
+   <input placeholder="Tìm ý tưởng, kênh, thông điệp…" value="${esc(UT.ideaQ||'')}" oninput="UT.ideaQ=this.value;render()" style="padding:7px 12px;border:1px solid var(--bd);border-radius:8px;font-size:13px;min-width:210px">
+  </div>
+  ${projWrite()?`<div class="hact">
+   <button class="btn" onclick="ideaAiModal()">${ic('cpu')} ✨ Gợi ý ý tưởng (AI)</button>
+   <button class="btn primary" onclick="ideaForm()">${ic('plus')} Lưu ý tưởng mới</button>
+  </div>`:''}
+ </div></div>
+ <div class="grid2">${list.map(i=>`<div class="card" style="margin:0"><div class="card-h" style="align-items:flex-start;gap:8px">
+  <div>
+   <h3>${esc(i.title)}</h3>
+   <div class="sub">${esc(i.channel||'Đa kênh')}${i.audience?' · '+esc(i.audience):''} · ${esc(fmtTs(i.created_at))}</div>
+  </div>
+  <div style="display:flex;gap:4px;flex-wrap:wrap">
+   ${i.campaign_id?`<span class="badge b-ok" style="cursor:pointer" onclick="go('ads')" title="Bấm để mở Chiến dịch quảng cáo">Đã lên chiến dịch</span>`:`<span class="badge b-info">${esc(i.state==='archived'?'Lưu trữ':'Mới')}</span>`}
+   ${i.landing_id?`<span class="badge b-vio" style="cursor:pointer" onclick="UT.editId='${esc(i.landing_id)}';setTab('utilities','landing')" title="Bấm để mở Landing Page">Có Landing Page</span>`:''}
+  </div>
+ </div><div class="card-b" style="display:grid;gap:6px">
+  ${i.insight?`<div><b>💡 Insight / Bằng chứng:</b> ${esc(i.insight)}</div>`:''}
+  ${i.message?`<div><b>📣 Thông điệp chủ đạo:</b> ${esc(i.message)}</div>`:''}
+  <div style="display:flex;gap:14px;flex-wrap:wrap">
+   ${i.cta?`<div><b>CTA:</b> ${esc(i.cta)}</div>`:''}
+   ${i.kpi?`<div><b>KPI:</b> ${esc(i.kpi)}</div>`:''}
+   ${i.budget?`<div><b>Ngân sách đề xuất:</b> ${money(i.budget)}</div>`:''}
+  </div>
+  ${i.source?`<div class="mini">Nguồn: ${esc(i.source)}</div>`:''}
+  <div class="hact" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">
+   ${projWrite()?`<button class="btn sm" onclick="ideaForm('${esc(i.id)}')">${ic('edit')} Sửa</button>`:''}
+   ${projWrite()&&!i.campaign_id?`<button class="btn sm primary" onclick="ideaConvert('${esc(i.id)}')">${ic('mega')} Tạo chiến dịch nháp</button>`:''}
+   ${i.campaign_id?`<button class="btn sm" onclick="go('ads')">Xem chiến dịch</button>`:''}
+   ${projWrite()?`<button class="btn sm" onclick="ideaToLanding('${esc(i.id)}')" title="Bổ trợ: Mở trình tạo Landing Page với thông tin từ ý tưởng này">${ic('globe')} ${i.landing_id?'Mở Landing Page':'Dựng Landing Page'}</button>`:''}
+   ${projWrite()?`<button class="btn sm" onclick="ideaTask('${esc(i.id)}')">${ic('clipboard')} Giao việc</button>`:''}
+   ${projWrite()?`<button class="btn sm" onclick="ideaArchive('${esc(i.id)}','${i.state==='archived'?'new':'archived'}')">${i.state==='archived'?'Khôi phục':'Lưu trữ'}</button>`:''}
+   ${projWrite()?`<button class="iconbtn sm" title="Xoá" onclick="ideaDelete('${esc(i.id)}')">${ic('trash')}</button>`:''}
+  </div>
+ </div></div>`).join('')||noData('Chưa có ý tưởng nào trong mục này','Bạn có thể bấm "+ Lưu ý tưởng mới" để tự ghi nhận, hoặc bấm "✨ Gợi ý ý tưởng (AI)" để hệ thống đề xuất.')}</div>`;
 }
-function ideaForm(){
- openModal(`<div class="mh"><h3>Lưu ý tưởng chiến dịch</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
-  <div class="field"><label>Tiêu đề *</label><input id="id-title"></div>
-  <div class="field"><label>Insight / bằng chứng</label><textarea id="id-insight" rows="2"></textarea></div>
-  <div class="grid2"><div class="field"><label>Kênh đề xuất</label><select id="id-ch"><option>Google Ads</option><option>Facebook Ads</option><option>TikTok Ads</option><option>Website / SEO</option><option>Email</option><option>Zalo OA</option><option>YouTube</option></select></div><div class="field"><label>Đối tượng</label><input id="id-aud"></div></div>
-  <div class="field"><label>Thông điệp</label><input id="id-msg"></div>
-  <div class="grid2"><div class="field"><label>CTA</label><input id="id-cta"></div><div class="field"><label>KPI</label><input id="id-kpi" placeholder="VD: 30 lead / tháng, CPL ≤ 150.000đ"></div></div>
-  <div class="grid2"><div class="field"><label>Ngân sách đề xuất (₫)</label><input id="id-budget" type="number" min="0" value="0"></div><div class="field"><label>Nguồn</label><input id="id-src" placeholder="Phiếu đối thủ / insight / AI"></div></div>
- </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="ideaSave()">${ic('check')} Lưu</button></div>`);
+
+function ideaForm(id,prefill){
+ const cur=id?(UT.ideas||[]).find(x=>x.id===id):null;
+ const d=cur||prefill||{};
+ const chs=['Google Ads','Facebook Ads','TikTok Ads','Website / SEO','Email','Zalo OA','YouTube'];
+ openModal(`<div class="mh"><h3>${cur?'Sửa ý tưởng chiến dịch':'Lưu ý tưởng chiến dịch'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
+  <div class="field"><label>Tiêu đề ý tưởng *</label><input id="id-title" value="${esc(d.title||'')}" placeholder="VD: Chiến dịch Độ đèn tăng sáng an toàn mùa mưa"></div>
+  <div class="field"><label>Insight / Bằng chứng thực tế</label><textarea id="id-insight" rows="2" placeholder="Khách hàng phàn nàn gì? Kẽ hở đối thủ là gì?">${esc(d.insight||'')}</textarea></div>
+  <div class="grid2"><div class="field"><label>Kênh đề xuất</label><select id="id-ch">${chs.map(c=>`<option${d.channel===c?' selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label>Đối tượng mục tiêu</label><input id="id-aud" value="${esc(d.audience||'')}" placeholder="VD: Chủ xe gia đình tại Hà Nội & TP.HCM"></div></div>
+  <div class="field"><label>Thông điệp chủ đạo</label><input id="id-msg" value="${esc(d.message||'')}" placeholder="Thông điệp cốt lõi truyền tải tới khách hàng"></div>
+  <div class="grid2"><div class="field"><label>Nút CTA</label><input id="id-cta" value="${esc(d.cta||'Đăng ký tư vấn')}"></div><div class="field"><label>KPI mục tiêu</label><input id="id-kpi" value="${esc(d.kpi||'')}" placeholder="VD: 30 lead / tháng, CPL ≤ 150.000đ"></div></div>
+  <div class="grid2"><div class="field"><label>Ngân sách đề xuất (₫)</label><input id="id-budget" type="number" min="0" value="${d.budget||0}"></div><div class="field"><label>Nguồn ý tưởng</label><input id="id-src" value="${esc(d.source||'')}" placeholder="Tự đề xuất / Phiếu đối thủ / VoC / AI"></div></div>
+  <input type="hidden" id="id-res" value="${esc(d.research_id||'')}">
+ </div><div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="ideaSave('${esc(id||'')}')">${ic('check')} ${cur?'Lưu cập nhật':'Lưu ý tưởng'}</button></div>`);
 }
-async function ideaSave(){
- const b={title:$('#id-title').value.trim(),insight:$('#id-insight').value,channel:$('#id-ch').value,audience:$('#id-aud').value,message:$('#id-msg').value,cta:$('#id-cta').value,kpi:$('#id-kpi').value,budget:+$('#id-budget').value||0,source:$('#id-src').value};
- if(!b.title){toast('Nhập tiêu đề');return}
- try{await apiPost('/api/ideas.php',b);closeLayer();toast('Đã lưu ý tưởng');UT.ideas=null;render()}catch(e){toast('Lỗi',e.message)}
+
+async function ideaSave(id){
+ const b={title:$('#id-title').value.trim(),insight:$('#id-insight').value.trim(),channel:$('#id-ch').value,audience:$('#id-aud').value.trim(),message:$('#id-msg').value.trim(),cta:$('#id-cta').value.trim(),kpi:$('#id-kpi').value.trim(),budget:+$('#id-budget').value||0,source:$('#id-src').value.trim(),research_id:($('#id-res')||{}).value||null};
+ if(id)b.id=id;
+ if(!b.title){toast('Nhập tiêu đề ý tưởng');return}
+ try{await apiPost('/api/ideas.php',b);closeLayer();toast(id?'Đã cập nhật ý tưởng':'Đã lưu ý tưởng');UT.ideas=null;render()}catch(e){toast('Lỗi',e.message)}
 }
+
+function ideaAiModal(){
+ const p=proj()||{};
+ openModal(`<div class="mh">${ic('cpu')}<h3>✨ Đề xuất ý tưởng chiến dịch cho ${esc(p.name||'dự án')}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
+  <div class="grid2">
+   <div class="field"><label>Chủ đề / Sản phẩm trọng tâm (tuỳ chọn)</label><input id="ia-focus" placeholder="Để trống = tổng hợp từ mục tiêu dự án & dữ liệu hiện có"></div>
+   <div class="field"><label>Kênh ưu tiên</label><select id="ia-ch"><option value="">Tất cả các kênh phù hợp</option><option>Google Ads</option><option>Facebook Ads</option><option>TikTok Ads</option><option>Website / SEO</option><option>Zalo OA</option><option>YouTube</option></select></div>
+  </div>
+  <button class="btn primary" id="ia-btn" onclick="ideaAiGenerate()">${ic('zap')} Phân tích & Tạo 3 gợi ý</button>
+  <div id="ia-out" style="margin-top:14px">${UT.aiIdeas?ideaAiListHtml():'<div class="mini">Hệ thống kết hợp mục tiêu dự án, dữ liệu đối thủ và insight khách hàng để gợi ý 3 ý tưởng chiến dịch khả thi.</div>'}</div>
+ </div><div class="mf"><button class="btn" onclick="closeLayer()">Đóng</button>${UT.aiIdeas&&UT.aiIdeas.length?`<button class="btn primary" onclick="ideaAiSaveAll()">${ic('check')} Lưu cả ${UT.aiIdeas.length} ý tưởng</button>`:''}</div>`);
+}
+
+function ideaAiListHtml(){
+ const arr=UT.aiIdeas||[];
+ if(!arr.length)return '<div class="mini">Chưa có gợi ý.</div>';
+ return `<div style="display:grid;gap:10px">${arr.map((it,idx)=>`<div class="card" style="margin:0;padding:12px;border:1px solid var(--bd)">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+   <div><b>${esc(it.title)}</b><div class="mini">${esc(it.channel)} · Đối tượng: ${esc(it.audience||'—')} · Ngân sách: ${money(it.budget||0)}</div></div>
+   <button class="btn xs primary" onclick="ideaAiPick(${idx})">+ Lưu ý tưởng này</button>
+  </div>
+  <div class="mini" style="margin-top:6px"><b>Insight:</b> ${esc(it.insight)}</div>
+  <div class="mini"><b>Thông điệp:</b> ${esc(it.message)} · <b>CTA:</b> ${esc(it.cta)} · <b>KPI:</b> ${esc(it.kpi)}</div>
+ </div>`).join('')}</div>`;
+}
+
+async function ideaAiGenerate(){
+ const btn=$('#ia-btn');if(btn){btn.disabled=true;btn.textContent='Đang phân tích & sinh ý tưởng…'}
+ try{
+  const d=await apiPost('/api/ideas.php',{action:'ai_suggest',focus:($('#ia-focus')||{}).value||'',channel:($('#ia-ch')||{}).value||''});
+  UT.aiIdeas=d.suggestions||[];
+  const out=$('#ia-out');if(out)out.innerHTML=ideaAiListHtml();
+ }catch(e){toast('Lỗi',e.message)}
+ finally{if(btn){btn.disabled=false;btn.textContent='Phân tích & Tạo 3 gợi ý'}}
+}
+
+async function ideaAiPick(idx){
+ const it=(UT.aiIdeas||[])[idx];if(!it)return;
+ try{
+  await apiPost('/api/ideas.php',it);
+  toast('Đã lưu ý tưởng',it.title);
+  UT.aiIdeas.splice(idx,1);
+  UT.ideas=null;
+  const out=$('#ia-out');if(out)out.innerHTML=ideaAiListHtml();
+  render();
+ }catch(e){toast('Lỗi',e.message)}
+}
+
+async function ideaAiSaveAll(){
+ const arr=UT.aiIdeas||[];if(!arr.length)return;
+ try{
+  for(const it of arr)await apiPost('/api/ideas.php',it);
+  UT.aiIdeas=null;UT.ideas=null;closeLayer();toast('Đã lưu tất cả ý tưởng đề xuất');render();
+ }catch(e){toast('Lỗi',e.message)}
+}
+
+function ideaToLanding(id){
+ const i=(UT.ideas||[]).find(x=>x.id===id);if(!i)return;
+ if(i.landing_id){UT.editId=i.landing_id;setTab('utilities','landing');return}
+ UT.prefillLanding={
+  idea_id:i.id,
+  from:'Ý tưởng: '+i.title,
+  title:i.title,
+  cta:i.cta||'Đăng ký tư vấn',
+  channel:i.channel||'website',
+  campaign_id:i.campaign_id||'',
+  prompt:`Tạo trang đích cho chiến dịch "${i.title}". Thông điệp chủ đạo: ${i.message||''}. Đối tượng: ${i.audience||''}. Insight khách hàng: ${i.insight||''}. Kêu gọi hành động: ${i.cta||'Đăng ký tư vấn'}.`
+ };
+ UT.editId=null;UT.lmode='prompt';
+ setTab('utilities','landing');
+ toast('Đã chuyển thông tin sang công cụ Tạo Landing Page');
+}
+
+async function ideaArchive(id,st){try{await apiPost('/api/ideas.php',{id,state:st});toast(st==='archived'?'Đã đưa vào lưu trữ':'Đã khôi phục ý tưởng');UT.ideas=null;render()}catch(e){toast('Lỗi',e.message)}}
 async function ideaConvert(id){try{const d=await apiPost('/api/ideas.php',{action:'campaign_draft',id});toast(d.created?'Đã tạo chiến dịch nháp':'Ý tưởng này đã có chiến dịch',d.campaign_id);UT.ideas=null;await refreshData()}catch(e){toast('Lỗi',e.message)}}
 async function ideaTask(id){const i=(UT.ideas||[]).find(x=>x.id===id);if(!i)return;try{await apiPost('/api/tasks.php',{title:'Triển khai ý tưởng: '+i.title,board:'research',col:'REQUEST',type:'research',pri:'P2'});toast('Đã tạo công việc');await refreshData()}catch(e){toast('Lỗi',e.message)}}
 async function ideaDelete(id){if(!confirm('Xoá ý tưởng này?'))return;try{await apiDelete('/api/ideas.php?id='+encodeURIComponent(id));UT.ideas=null;render()}catch(e){toast('Lỗi',e.message)}}
