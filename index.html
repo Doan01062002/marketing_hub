@@ -4714,7 +4714,7 @@ function pgAutomationMenu(){
 /* ================= KHÁCH HÀNG & LEAD ================= */
 const PIPE=[['CREATED','Mới'],['VALIDATING','Đang kiểm tra'],['ROUTED','Đã định tuyến'],['DELIVERED','Bàn giao CRM'],['ACCEPTED','CRM đã nhận'],['REJECTED','CRM từ chối']];
 /* ---- CSKH: khách từ website chungauto.vn (liên hệ + đơn hàng) — api/care.php 16/10/2026 ---- */
-const CK={f:{q:'',kind:'',care:'',web:'',assignee:'',due:'',from:'',to:'',sort:'new'},page:1,per:50,d:null,busy:false,err:'',key:'',_pid:null};
+const CK={f:{q:'',kind:'',care:'',web:'',assignee:'',branch:'',due:'',from:'',to:'',sort:'new'},page:1,per:50,d:null,busy:false,err:'',key:'',_pid:null};
 const CK_C={new:'mut',contacting:'info',callback:'warn',consulted:'vio',won:'ok',lost:'bad',invalid:'mut'};
 function ckMap(){const st=(CK.d&&CK.d.care_statuses)||{};const m={};Object.keys(st).forEach(k=>m[k]={t:st[k],c:CK_C[k]||'mut'});return m}
 function ckQS(extra){const q=Object.assign({},CK.f,{page:CK.page,per:CK.per},extra||{});Object.keys(q).forEach(k=>{if(q[k]===''||q[k]==null)delete q[k]});return new URLSearchParams(q).toString()}
@@ -4806,6 +4806,12 @@ function ckFmtDate(s){if(!s)return '—';const p=s.slice(0,10).split('-');return
 function ckFollow(r){if(!r.next_follow_at)return '';const done=['won','lost','invalid'].includes(r.care_status);const now=new Date();const today=now.toISOString().slice(0,10);const nf=r.next_follow_at;const cls=done?'later':nf.slice(0,10)<today||(nf.slice(0,10)===today&&nf.length>10&&nf.slice(11,16)<now.toTimeString().slice(0,5))?'late':nf.slice(0,10)===today?'today':'later';return `<span class="ck-follow ${cls}">${ic('calendar')} ${cls==='late'?'Quá hẹn · ':cls==='today'?'Hôm nay · ':''}${esc(ckFmtDate(nf))}${nf.length>10?' '+esc(nf.slice(11,16)):''}</span>`}
 function ckPillSel(r,W){const M=ckMap();const c=CK_COL[r.care_status]||'#64748b';return W?`<select class="ck-pill" style="--pc:${c}" onclick="event.stopPropagation()" onchange="ckUpd('${esc(r.id)}',{care_status:this.value})">${Object.keys(M).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(M[k].t)}</option>`).join('')}</select>`:`<span class="ck-pill-ro" style="--pc:${c}">${esc((M[r.care_status]||{}).t||r.care_status)}</span>`}
 const CK_PHONE='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
+function ckBranchOpts(cur,list){return `<option value="">— Chưa chuyển —</option>${(list||[]).map(b=>`<option value="${esc(b.id)}" ${cur===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}<option value="__new">+ Tạo chi nhánh mới…</option>`}
+function ckBranchSel(r,W){const L=(CK.d&&CK.d.branches)||[];if(!W)return esc((L.find(b=>b.id===r.branch_id)||{}).name||'—');return `<select class="ck-sel sm" onclick="event.stopPropagation()" onchange="ckBranchPick('${esc(r.id)}',this)">${ckBranchOpts(r.branch_id||'',L)}</select>`}
+async function ckNewBranch(){const name=(prompt('Tên chi nhánh mới (VD: Chung Auto Hà Đông):')||'').trim();if(!name)return null;
+ try{const d=await apiPost('/api/care.php',{action:'branch_create',name});if(CK.d)CK.d.branches=d.branches;toast('Đã tạo chi nhánh',d.branch.name);return d.branch}catch(e){toast('Lỗi',e.message);return null}}
+async function ckBranchPick(id,el){let v=el.value;if(v==='__new'){const b=await ckNewBranch();if(!b){render();return}v=b.id}await ckUpd(id,{branch_id:v},true);toast('Đã chuyển chi nhánh',v?((CK.d.branches||[]).find(b=>b.id===v)||{}).name||'':'Bỏ chi nhánh')}
+async function ckDrawerBranch(el){if(el.value!=='__new')return;const b=await ckNewBranch();if(!b){el.value='';return}const o=document.createElement('option');o.value=b.id;o.textContent=b.name;el.insertBefore(o,el.lastElementChild);el.value=b.id}
 function ckDigits(p){return String(p||'').replace(/\D/g,'')}
 function pgCareWeb(){
  ckCss();
@@ -4817,7 +4823,7 @@ function pgCareWeb(){
  if(!totalAll&&!CK.busy)return `<div class="ck-shell">${noData('Chưa có khách từ website','Kéo liên hệ và đơn hàng từ trang quản trị chungauto.vn về đây để CSKH chăm sóc (chỉ đọc, không thay đổi gì trên web).',D.can_sync&&D.sync_configured?`<button class="btn primary" onclick="ckSync(true)" ${CK.syncing?'disabled':''}>${ic('download')} ${CK.syncing?'Đang kéo dữ liệu…':'Kéo toàn bộ khách từ chungauto.vn'}</button>`:'')}</div>`;
  const stat=(l,v,icn,c,fn)=>`<div class="ck-stat" style="--c:${c}" onclick="${fn}"><div class="ic">${ic(icn)}</div><div><div class="n">${v}</div><div class="l">${l}</div></div></div>`;
  const stats=`<div class="ck-stats">
-  ${stat('Khách từ website',num(totalAll),'users','#2563eb',"CK.f={q:'',kind:'',care:'',web:'',assignee:'',due:'',from:'',to:'',sort:'new'};ckPage(1)")}
+  ${stat('Khách từ website',num(totalAll),'users','#2563eb',"CK.f={q:'',kind:'',care:'',web:'',assignee:'',branch:'',due:'',from:'',to:'',sort:'new'};ckPage(1)")}
   ${stat('Mới trong 7 ngày',num(st.last7||0),'zap','#7c3aed',`CK.f.from='${new Date(Date.now()-7*864e5).toISOString().slice(0,10)}';CK.f.due='';CK.f.care='';ckPage(1)`)}
   ${stat('Chưa giao người phụ trách',num(st.unassigned||0),'route','#d97706',"CK.f.due='';CK.f.care='';ckSet('assignee','_none')")}
   ${stat('Doanh thu đơn thành công',money(st.revenue||0),'chart','#0d9488',"CK.f.due='';CK.f.care='';CK.f.kind='order';ckSet('web','Thành công')")}
@@ -4832,6 +4838,8 @@ function pgCareWeb(){
   ${sel('kind',[['','Liên hệ + đơn hàng'],['contact','Liên hệ ('+num(kd.contact||0)+')'],['order','Đơn hàng ('+num(kd.order||0)+')']],'Loại')}
   ${sel('web',[['','Trạng thái web']].concat(webs.map(w=>[w,w])),'Trạng thái trên web')}
   ${sel('assignee',[['','Người phụ trách'],['_none','— Chưa giao —']].concat(staff.map(s=>[s.id,s.name])),'Phụ trách')}
+  ${sel('branch',[['','Chi nhánh'],['_none','— Chưa chuyển —']].concat((D.branches||[]).map(b=>[b.id,b.name])),'Chi nhánh')}
+  ${W?`<button class="btn sm" onclick="ckNewBranch().then(b=>b&&render())" title="Tạo nhanh chi nhánh">${ic('plus')} Chi nhánh</button>`:''}
   <input class="ck-date" type="date" value="${esc(F.from)}" onchange="ckSet('from',this.value)" title="Từ ngày"><input class="ck-date" type="date" value="${esc(F.to)}" onchange="ckSet('to',this.value)" title="Đến ngày">
   ${sel('sort',[['new','Mới nhất'],['old','Cũ nhất'],['follow','Hẹn gọi gần nhất'],['value','Giá trị cao nhất'],['updated','Vừa chăm sóc']],'Sắp xếp')}
   <div class="hact">${CK.busy?'<span class="mini">Đang tải…</span>':ls?`<span class="mini">${ls}</span>`:''}
@@ -4850,6 +4858,7 @@ function pgCareWeb(){
   <td class="ck-date-c">${esc(ckFmtDate(r.ext_created_at))}<div class="t">${esc((r.ext_created_at||'').slice(11,16))} · ${esc(ckDay(r.ext_created_at))}</div></td>
   <td>${ckPillSel(r,W)}</td>
   <td onclick="event.stopPropagation()">${W?`<select class="ck-sel sm" onchange="ckUpd('${esc(r.id)}',{assignee_id:this.value})"><option value="">— Chưa giao —</option>${staff.map(s=>`<option value="${esc(s.id)}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select>`:esc((staff.find(s=>s.id===r.assignee_id)||{}).name||'—')}</td>
+  <td onclick="event.stopPropagation()">${ckBranchSel(r,W)}</td>
   <td>${ckFollow(r)||'<span class="r-mut" style="font-size:12px">Chưa hẹn</span>'}${last?`<div class="ck-last" title="${esc(last.at+' · '+(last.name||'')+': '+last.text)}">${esc(last.name||'')}: ${esc(last.text)}</div>`:''}</td>
   <td onclick="event.stopPropagation()"><div class="ck-acts">${ph?`<a class="ck-ib call" href="tel:${ph}" title="Gọi ${esc(r.phone)}">${CK_PHONE}</a><a class="ck-ib zalo" href="https://zalo.me/${ph}" target="_blank" rel="noopener" title="Nhắn Zalo">Zalo</a>`:''}<button class="ck-ib" title="Ghi chú / chăm sóc" onclick="ckOpen('${esc(r.id)}')">${ic('edit')}</button></div></td></tr>`}).join('');
  const pages=Math.max(1,Math.ceil(D.total/D.per)),from=D.total?(D.page-1)*D.per+1:0,to=Math.min(D.total,D.page*D.per);
@@ -4858,8 +4867,8 @@ function pgCareWeb(){
   <button class="btn sm" ${D.page<=1?'disabled':''} onclick="ckPage(1)">«</button><button class="btn sm" ${D.page<=1?'disabled':''} onclick="ckPage(${D.page-1})">‹ Trước</button>
   <span class="mini" style="padding:0 6px">Trang <b>${D.page}</b> / ${pages}</span>
   <button class="btn sm" ${D.page>=pages?'disabled':''} onclick="ckPage(${D.page+1})">Sau ›</button><button class="btn sm" ${D.page>=pages?'disabled':''} onclick="ckPage(${pages})">»</button></div></div>`;
- return stats+`<div class="ck-shell">${tabs}${tools}<div style="overflow:auto"><table class="ck-tbl"><thead><tr><th>Khách hàng</th><th>Nhu cầu / đơn hàng</th><th style="text-align:right">Giá trị</th><th>Ngày tạo</th><th>Trạng thái CSKH</th><th>Phụ trách</th><th>Lịch hẹn &amp; chăm sóc</th><th></th></tr></thead>
-  <tbody>${rows||`<tr><td colspan="8" style="box-shadow:none"><div class="ck-empty">${CK.busy?'Đang tải…':'Không có khách nào khớp bộ lọc.'}</div></td></tr>`}</tbody></table></div>${foot}</div>`;
+ return stats+`<div class="ck-shell">${tabs}${tools}<div style="overflow:auto"><table class="ck-tbl"><thead><tr><th>Khách hàng</th><th>Nhu cầu / đơn hàng</th><th style="text-align:right">Giá trị</th><th>Ngày tạo</th><th>Trạng thái CSKH</th><th>Phụ trách</th><th>Chuyển chi nhánh</th><th>Lịch hẹn &amp; chăm sóc</th><th></th></tr></thead>
+  <tbody>${rows||`<tr><td colspan="9" style="box-shadow:none"><div class="ck-empty">${CK.busy?'Đang tải…':'Không có khách nào khớp bộ lọc.'}</div></td></tr>`}</tbody></table></div>${foot}</div>`;
 }
 async function ckOpen(id){
  ckCss();
@@ -4875,13 +4884,14 @@ async function ckOpen(id){
   <div class="card" style="margin:0"><div class="card-b"><div class="ck-grid">
    ${kv('Số điện thoại',esc(r.phone||'—'))}${kv('Email',esc(r.email||'—'))}
    ${kv('Ngày tạo',esc(ckFmtDate(r.ext_created_at))+' '+esc((r.ext_created_at||'').slice(11,16))+` <span class="r-mut">(${esc(ckDay(r.ext_created_at))})</span>`)}${kv('Trạng thái trên web',esc(r.web_status||'—'))}
-   ${kv('Địa chỉ',esc(r.address||'—'),true)}
+   ${kv('Địa chỉ',esc(r.address||'—'),true)}${r.branch_id?kv('Chi nhánh xử lý',esc(((d.branches||[]).find(b=>b.id===r.branch_id)||{}).name||'—')):''}
    ${r.kind==='order'?kv('Tổng tiền',`<b style="font-size:16px">${money(r.total||0)}</b>`)+kv('Giảm giá / mã',(r.discount?money(r.discount):'0₫')+(r.coupon?' · '+esc(r.coupon):'')):''}
   </div>${r.message?`<div class="ck-msg"><b>${r.kind==='order'?'Khách ghi chú':'Khách để lại'}:</b> ${esc(r.message)}</div>`:''}</div></div>
   ${it.length?`<div class="card" style="margin:14px 0 0"><div class="card-h"><h3>Sản phẩm (${it.length})</h3></div><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Sản phẩm</th><th class="tar">SL</th><th class="tar">Đơn giá</th><th class="tar">Thành tiền</th></tr></thead><tbody>${it.map(i=>`<tr><td>${esc(i.name)}${i.note?`<div class="r-mut">${esc(i.note)}</div>`:''}</td><td class="tar">${i.qty}</td><td class="tar mono">${money(i.price)}</td><td class="tar mono"><b>${money(i.total)}</b></td></tr>`).join('')}</tbody></table></div></div>`:''}
   <div class="card" style="margin:14px 0 0;border-color:${c}55"><div class="card-h">${ic('edit')}<h3>Cập nhật chăm sóc</h3></div><div class="card-b">
    ${W?`<div class="frow f2"><div class="field"><label>Trạng thái CSKH</label><select id="ck-st">${Object.keys(stt).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(stt[k])}</option>`).join('')}</select></div>
    <div class="field"><label>Người phụ trách</label><select id="ck-as"><option value="">— Chưa giao —</option>${(d.staff||[]).map(s=>`<option value="${esc(s.id)}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div></div>
+   <div class="field"><label>Chuyển chi nhánh</label><select id="ck-br" onchange="ckDrawerBranch(this)">${ckBranchOpts(r.branch_id||'',d.branches)}</select></div>
    <div class="field"><label>Hẹn gọi lại</label><input id="ck-nf" type="datetime-local" value="${esc((r.next_follow_at||'').replace(' ','T'))}"></div>
    <div class="field"><label>Ghi chú cuộc gọi</label><textarea id="ck-note" rows="3" placeholder="VD: Đã gọi, khách hẹn cuối tuần qua lắp; quan tâm gói phim cách nhiệt…"></textarea></div>
    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${['Không nghe máy','Thuê bao','Đã tư vấn, khách suy nghĩ','Khách đã mua','Không có nhu cầu'].map(t=>`<button class="ck-tag w" style="border:1px solid var(--line);cursor:pointer;padding:5px 10px" onclick="const n=$('#ck-note');n.value=(n.value?n.value+'; ':'')+'${t}'">+ ${t}</button>`).join('')}</div>
@@ -4892,7 +4902,7 @@ async function ckOpen(id){
  </div>`);
 }
 async function ckSaveDrawer(id){
- const p={care_status:$('#ck-st').value,assignee_id:$('#ck-as').value,next_follow_at:$('#ck-nf').value,note:$('#ck-note').value};
+ const p={care_status:$('#ck-st').value,assignee_id:$('#ck-as').value,branch_id:$('#ck-br').value==='__new'?'':$('#ck-br').value,next_follow_at:$('#ck-nf').value,note:$('#ck-note').value};
  const r=await ckUpd(id,p);if(r)ckOpen(id);
 }
 function pgLeadsMenu(){

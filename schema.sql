@@ -505,6 +505,7 @@ CREATE TABLE IF NOT EXISTS care_records (
   ext_created_at TEXT,                       -- giờ tạo trên web (giờ VN)
   care_status TEXT NOT NULL DEFAULT 'new',   -- new | contacting | callback | consulted | won | lost | invalid
   assignee_id TEXT,
+  branch_id TEXT,                            -- chi nhánh xử lý (bảng branches)
   next_follow_at TEXT,                       -- hẹn gọi lại (YYYY-MM-DD HH:MM)
   last_contact_at TEXT,
   care_log TEXT,                             -- JSON [{at, by, name, status, text}]
@@ -516,3 +517,13 @@ CREATE TABLE IF NOT EXISTS care_records (
 CREATE INDEX IF NOT EXISTS idx_care_phone ON care_records(project_id, phone_norm);
 CREATE INDEX IF NOT EXISTS idx_care_status ON care_records(project_id, care_status);
 CREATE INDEX IF NOT EXISTS idx_care_created ON care_records(project_id, ext_created_at);
+
+-- v19 (16/10/2026): chi nhánh của dự án (CSKH chuyển khách về chi nhánh xử lý) + care_records.branch_id
+CREATE TABLE IF NOT EXISTS branches (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(project_id, name)
+);

@@ -3,7 +3,8 @@
    GET  ?q&kind&care&web&assignee&due=today|overdue|none&from&to&sort&page&per   → {rows, total, page, per, counts, kinds, web_statuses, staff, stats, last_sync}
    GET  ?id=…                    → {record, history:[cùng SĐT]}
    GET  ?export=1&(bộ lọc như trên) → CSV toàn bộ kết quả lọc
-   POST {action:'update', id, care_status?, assignee_id?, next_follow_at?, note?}   → ghi nhật ký chăm sóc
+   POST {action:'update', id, care_status?, assignee_id?, branch_id?, next_follow_at?, note?}   → ghi nhật ký chăm sóc
+   POST {action:'branch_create', name} → tạo nhanh chi nhánh của dự án → {branch, branches}
    POST {action:'sync', full?}   → kéo dữ liệu mới từ chungauto.vn (chủ / quản lý dự án) */
 require __DIR__ . '/_boot.php';
 $me = require_login();
@@ -15,6 +16,10 @@ function care_staff(string $pid): array {
     global $pdo;
     $st = $pdo->prepare("SELECT u.id, u.name FROM users u WHERE u.active=1 AND (u.role='admin' OR u.id IN (SELECT user_id FROM project_members WHERE project_id=?)) ORDER BY u.name");
     $st->execute([$pid]); return $st->fetchAll();
+}
+function care_branches(string $pid): array {
+    global $pdo;
+    $st = $pdo->prepare('SELECT id, name FROM branches WHERE project_id=? ORDER BY name'); $st->execute([$pid]); return $st->fetchAll();
 }
 function care_row(array $r): array {
     $r['items'] = jdecode($r['items'] ?? null); $r['care_log'] = jdecode($r['care_log'] ?? null);
@@ -32,6 +37,8 @@ function care_where(array $g, string $pid): array {
     if (in_array($g['kind'] ?? '', ['contact', 'order'], true)) { $w[] = 'kind=?'; $a[] = $g['kind']; }
     if (isset(CARE_ST[$g['care'] ?? ''])) { $w[] = 'care_status=?'; $a[] = $g['care']; }
     if (($g['web'] ?? '') !== '') { $w[] = 'web_status=?'; $a[] = (string)$g['web']; }
+    if (($g['branch'] ?? '') === '_none') $w[] = "COALESCE(branch_id,'')=''";
+    elseif (($g['branch'] ?? '') !== '') { $w[] = 'branch_id=?'; $a[] = (string)$g['branch']; }
     if (($g['assignee'] ?? '') === '_none') $w[] = "COALESCE(assignee_id,'')=''";
     elseif (($g['assignee'] ?? '') !== '') { $w[] = 'assignee_id=?'; $a[] = (string)$g['assignee']; }
     $now = date('Y-m-d H:i');
@@ -51,22 +58,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $h = $pdo->prepare('SELECT id, kind, ext_id, name, web_status, care_status, total, ext_created_at, items, message FROM care_records WHERE project_id=? AND phone_norm=? AND id<>? ORDER BY ext_created_at DESC LIMIT 50');
             $h->execute([$PID, $r['phone_norm'], $r['id']]); $hist = array_map('care_row', $h->fetchAll());
         }
-        respond(['record' => care_row($r), 'history' => $hist, 'staff' => care_staff($PID), 'care_statuses' => CARE_ST]);
+        respond(['record' => care_row($r), 'history' => $hist, 'staff' => care_staff($PID), 'branches' => care_branches($PID), 'care_statuses' => CARE_ST]);
     }
     [$w, $a] = care_where($_GET, $PID);
     $sorts = ['new' => 'ext_created_at DESC', 'old' => 'ext_created_at ASC', 'follow' => "CASE WHEN next_follow_at IS NULL THEN 1 ELSE 0 END, next_follow_at ASC", 'value' => 'COALESCE(total,0) DESC', 'updated' => 'updated_at DESC'];
     $order = $sorts[$_GET['sort'] ?? 'new'] ?? $sorts['new'];
     if (!empty($_GET['export'])) {
         $st = $pdo->prepare("SELECT * FROM care_records WHERE $w ORDER BY $order"); $st->execute($a);
-        $names = array_column(care_staff($PID), 'name', 'id');
+        $names = array_column(care_staff($PID), 'name', 'id'); $brs = array_column(care_branches($PID), 'name', 'id');
         header('Content-Type: text/csv; charset=utf-8'); header('Content-Disposition: attachment; filename="CSKH_chungauto_' . date('Ymd_Hi') . '.csv"');
         $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF");
-        fputcsv($o, ['Loại', 'ID web', 'Ngày tạo', 'Tên', 'SĐT', 'Email', 'Địa chỉ', 'Nội dung / ghi chú khách', 'Sản phẩm', 'Tạm tính', 'Giảm giá', 'Tổng tiền', 'Mã giảm giá', 'Trạng thái web', 'Trạng thái CSKH', 'Phụ trách', 'Hẹn gọi lại', 'Liên hệ gần nhất', 'Ghi chú CSKH gần nhất']);
+        fputcsv($o, ['Loại', 'ID web', 'Ngày tạo', 'Tên', 'SĐT', 'Email', 'Địa chỉ', 'Nội dung / ghi chú khách', 'Sản phẩm', 'Tạm tính', 'Giảm giá', 'Tổng tiền', 'Mã giảm giá', 'Trạng thái web', 'Trạng thái CSKH', 'Phụ trách', 'Chi nhánh', 'Hẹn gọi lại', 'Liên hệ gần nhất', 'Ghi chú CSKH gần nhất']);
         foreach ($st as $r) {
             $items = implode('; ', array_map(fn($i) => $i['name'] . ' x' . $i['qty'], jdecode($r['items'] ?? null)));
             $log = jdecode($r['care_log'] ?? null); $lastNote = $log ? end($log)['text'] ?? '' : '';
             fputcsv($o, [$r['kind'] === 'order' ? 'Đơn hàng' : 'Liên hệ', $r['ext_id'], $r['ext_created_at'], $r['name'], $r['phone'], $r['email'], $r['address'], $r['message'], $items,
-                $r['subtotal'], $r['discount'], $r['total'], $r['coupon'], $r['web_status'], CARE_ST[$r['care_status']] ?? $r['care_status'], $names[$r['assignee_id']] ?? '', $r['next_follow_at'], $r['last_contact_at'], $lastNote]);
+                $r['subtotal'], $r['discount'], $r['total'], $r['coupon'], $r['web_status'], CARE_ST[$r['care_status']] ?? $r['care_status'], $names[$r['assignee_id']] ?? '', $brs[$r['branch_id']] ?? '', $r['next_follow_at'], $r['last_contact_at'], $lastNote]);
         }
         fclose($o); exit;
     }
@@ -89,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         SUM(CASE WHEN ext_created_at>=? THEN 1 ELSE 0 END) last7 FROM care_records WHERE project_id=?");
     $q->execute([date('Y-m-d'), date('Y-m-d H:i'), date('Y-m-d 00:00:00', strtotime('-7 days')), $PID]); $stats = $q->fetch();
     respond(['rows' => $rows, 'total' => $total, 'page' => $page, 'per' => $per, 'counts' => $cnt, 'kinds' => $kinds, 'web_statuses' => $webs->fetchAll(),
-        'stats' => array_map(fn($v) => (float)$v, $stats ?: []), 'staff' => care_staff($PID), 'care_statuses' => CARE_ST,
+        'stats' => array_map(fn($v) => (float)$v, $stats ?: []), 'staff' => care_staff($PID), 'branches' => care_branches($PID), 'care_statuses' => CARE_ST,
         'last_sync' => jdecode(setting_get('care.last_sync.' . $PID) ?: null), 'can_sync' => in_array(project_role(), PROJECT_ADMIN_ROLES, true) || $me['role'] === 'admin',
         'sync_configured' => !empty($CFG['chungauto_admin_email']) && !empty($CFG['chungauto_admin_password'])]);
 }
@@ -114,6 +121,12 @@ if ($action === 'update') {
         if ($aid !== (string)$r['assignee_id']) { $set[] = 'assignee_id=?'; $vals[] = $aid ?: null; $logText[] = 'Giao cho: ' . ($staff[$aid] ?? 'bỏ giao');
             if ($aid && $aid !== $me['id']) notify($aid, 'Bạn được giao chăm sóc ' . ($r['name'] ?: 'khách') . ' (' . ($r['kind'] === 'order' ? 'đơn #' : 'liên hệ #') . $r['ext_id'] . ')', (string)$r['phone'], '#leadsmenu/care', $PID); }
     }
+    if (array_key_exists('branch_id', $in)) {
+        $bid = (string)($in['branch_id'] ?? '');
+        $brs = array_column(care_branches($PID), 'name', 'id');
+        if ($bid !== '' && !isset($brs[$bid])) fail('Chi nhánh không thuộc dự án');
+        if ($bid !== (string)$r['branch_id']) { $set[] = 'branch_id=?'; $vals[] = $bid ?: null; $logText[] = $bid ? 'Chuyển chi nhánh: ' . $brs[$bid] : 'Bỏ chi nhánh'; }
+    }
     if (array_key_exists('next_follow_at', $in)) {
         $nf = trim((string)($in['next_follow_at'] ?? ''));
         if ($nf !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?$/', $nf = str_replace('T', ' ', $nf))) fail('Ngày hẹn không hợp lệ');
@@ -130,6 +143,20 @@ if ($action === 'update') {
     $pdo->prepare('UPDATE care_records SET ' . implode(', ', $set) . ' WHERE id=?')->execute($vals);
     $st->execute([$r['id'], $PID]);
     respond(['ok' => true, 'record' => care_row($st->fetch())]);
+}
+
+if ($action === 'branch_create') {
+    require_project_write();
+    $name = trim(preg_replace('/\s+/u', ' ', (string)($in['name'] ?? '')));
+    if ($name === '' || mb_strlen($name) > 80) fail('Tên chi nhánh 1–80 ký tự');
+    $st = $pdo->prepare('SELECT id, name FROM branches WHERE project_id=? AND lower(name)=lower(?)'); $st->execute([$PID, $name]);
+    $b = $st->fetch();
+    if (!$b) {
+        $b = ['id' => 'BR' . strtoupper(bin2hex(random_bytes(5))), 'name' => $name];
+        $pdo->prepare('INSERT INTO branches(id,project_id,name,created_by) VALUES (?,?,?,?)')->execute([$b['id'], $PID, $name, $me['id']]);
+        log_activity('create', 'branch', $b['id'], 'Tạo chi nhánh ' . $name, $me, $PID);
+    }
+    respond(['ok' => true, 'branch' => $b, 'branches' => care_branches($PID)]);
 }
 
 if ($action === 'sync') {
