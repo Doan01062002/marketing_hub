@@ -25,8 +25,14 @@ final class CaHttp {
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_COOKIEJAR => $this->jar, CURLOPT_COOKIEFILE => $this->jar, CURLOPT_TIMEOUT => 30,
             CURLOPT_FOLLOWLOCATION => false, CURLOPT_USERAGENT => 'MarketingHub-CSKH-Sync/1.0 (+mkt.chunggroup.vn)', CURLOPT_ENCODING => '']);
         if ($post !== null) { curl_setopt($ch, CURLOPT_POST, true); curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($post)); }
-        $body = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $loc = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL); curl_close($ch);
-        if ($body === false) throw new CaSyncError('Không kết nối được chungauto.vn');
+        // Rớt mạng / máy chủ web bận (5xx, 429): thử lại tối đa 3 lần, chờ 3s, 9s, 27s.
+        for ($try = 0; ; $try++) {
+            $body = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if (($body !== false && $code < 500 && $code !== 429) || $try >= 3) break;
+            sleep(3 ** ($try + 1));
+        }
+        $loc = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL); curl_close($ch);
+        if ($body === false) throw new CaSyncError('Không kết nối được chungauto.vn (đã thử lại 3 lần)');
         return [$code, (string)$body, $loc];
     }
     public function page(string $url): string {
