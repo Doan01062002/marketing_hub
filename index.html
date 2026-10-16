@@ -4731,7 +4731,7 @@ function pgAutomationMenu(){
 const PIPE=[['CREATED','Mới'],['VALIDATING','Đang kiểm tra'],['ROUTED','Đã định tuyến'],['DELIVERED','Bàn giao CRM'],['ACCEPTED','CRM đã nhận'],['REJECTED','CRM từ chối']];
 /* ---- CSKH: khách từ website chungauto.vn (liên hệ + đơn hàng) — api/care.php 16/10/2026 ---- */
 const CK={f:{q:'',kind:'',care:'',web:'',assignee:'',branch:'',due:'',from:'',to:'',sort:'new'},page:1,per:50,d:null,busy:false,err:'',key:'',_pid:null};
-const CK_C={new:'mut',contacting:'info',callback:'warn',consulted:'vio',won:'ok',lost:'bad',invalid:'mut'};
+const CK_C={new:'mut',contacting:'info',callback:'warn',consulted:'vio',transferred:'info',won:'ok',lost:'bad',invalid:'mut'};
 function ckMap(){const st=(CK.d&&CK.d.care_statuses)||{};const m={};Object.keys(st).forEach(k=>m[k]={t:st[k],c:CK_C[k]||'mut'});return m}
 function ckQS(extra){const q=Object.assign({},CK.f,{page:CK.page,per:CK.per},extra||{});Object.keys(q).forEach(k=>{if(q[k]===''||q[k]==null)delete q[k]});return new URLSearchParams(q).toString()}
 async function ckLoad(){
@@ -4759,7 +4759,7 @@ async function ckSync(full){
  try{const d=await apiPost('/api/care.php',{action:'sync',full:!!full});toast('Đã đồng bộ',`${d.contacts.new} liên hệ mới · ${d.orders.new} đơn mới · ${d.orders.upd+d.contacts.upd} cập nhật${d.complete?'':' · còn tiếp, bấm lại để chạy nốt'}`)}
  catch(e){toast('Đồng bộ lỗi',e.message)}finally{CK.syncing=false;ckLoad()}
 }
-const CK_COL={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
+const CK_COL={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',transferred:'#0891b2',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
 function ckCss(){if(document.getElementById('ck-css'))return;const s=document.createElement('style');s.id='ck-css';s.textContent=`
 .ck-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .ck-stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:border-color .12s,box-shadow .12s;display:flex;gap:12px;align-items:center}
@@ -4820,14 +4820,24 @@ function ckCss(){if(document.getElementById('ck-css'))return;const s=document.cr
 function ckDay(s){if(!s)return '';const d=new Date(s.replace(' ','T'));if(isNaN(d))return s;const days=Math.floor((Date.now()-d)/864e5);return days<=0?'hôm nay':days===1?'hôm qua':days<30?days+' ngày trước':days<365?Math.floor(days/30)+' tháng trước':Math.floor(days/365)+' năm trước'}
 function ckFmtDate(s){if(!s)return '—';const p=s.slice(0,10).split('-');return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s}
 function ckFollow(r){if(!r.next_follow_at)return '';const done=['won','lost','invalid'].includes(r.care_status);const now=new Date();const today=now.toISOString().slice(0,10);const nf=r.next_follow_at;const cls=done?'later':nf.slice(0,10)<today||(nf.slice(0,10)===today&&nf.length>10&&nf.slice(11,16)<now.toTimeString().slice(0,5))?'late':nf.slice(0,10)===today?'today':'later';return `<span class="ck-follow ${cls}">${ic('calendar')} ${cls==='late'?'Quá hẹn · ':cls==='today'?'Hôm nay · ':''}${esc(ckFmtDate(nf))}${nf.length>10?' '+esc(nf.slice(11,16)):''}</span>`}
-function ckPillSel(r,W){const M=ckMap();const c=CK_COL[r.care_status]||'#64748b';return W?`<select class="ck-pill" style="--pc:${c}" onclick="event.stopPropagation()" onchange="ckUpd('${esc(r.id)}',{care_status:this.value})">${Object.keys(M).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(M[k].t)}</option>`).join('')}</select>`:`<span class="ck-pill-ro" style="--pc:${c}">${esc((M[r.care_status]||{}).t||r.care_status)}</span>`}
+function ckPillSel(r,W){const M=ckMap();const c=CK_COL[r.care_status]||'#64748b';return W?`<select class="ck-pill" style="--pc:${c}" onclick="event.stopPropagation()" onchange="ckPillChange('${esc(r.id)}',this)">${Object.keys(M).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(M[k].t)}</option>`).join('')}</select>`:`<span class="ck-pill-ro" style="--pc:${c}">${esc((M[r.care_status]||{}).t||r.care_status)}</span>`}
 const CK_PHONE='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>';
-function ckBranchOpts(cur,list){return `<option value="">— Chưa chuyển —</option>${(list||[]).map(b=>`<option value="${esc(b.id)}" ${cur===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}<option value="__new">+ Tạo chi nhánh mới…</option>`}
+function ckBranchOpts(cur,list){return `<option value="">— Chưa chuyển —</option>${(list||[]).map(b=>`<option value="${esc(b.id)}" ${cur===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}<option value="__new">+ Tạo chi nhánh / cơ sở mới…</option>`}
 function ckBranchSel(r,W){const L=(CK.d&&CK.d.branches)||[];if(!W)return esc((L.find(b=>b.id===r.branch_id)||{}).name||'—');return `<select class="ck-sel sm" onclick="event.stopPropagation()" onchange="ckBranchPick('${esc(r.id)}',this)">${ckBranchOpts(r.branch_id||'',L)}</select>`}
-async function ckNewBranch(){const name=(prompt('Tên chi nhánh mới (VD: Chung Auto Hà Đông):')||'').trim();if(!name)return null;
+async function ckNewBranch(){const name=(prompt('Tên chi nhánh / cơ sở mới (VD: Chung Auto Hà Đông):')||'').trim();if(!name)return null;
  try{const d=await apiPost('/api/care.php',{action:'branch_create',name});if(CK.d)CK.d.branches=d.branches;toast('Đã tạo chi nhánh',d.branch.name);return d.branch}catch(e){toast('Lỗi',e.message);return null}}
-async function ckBranchPick(id,el){let v=el.value;if(v==='__new'){const b=await ckNewBranch();if(!b){render();return}v=b.id}await ckUpd(id,{branch_id:v},true);toast('Đã chuyển chi nhánh',v?((CK.d.branches||[]).find(b=>b.id===v)||{}).name||'':'Bỏ chi nhánh')}
+async function ckBranchPick(id,el){let v=el.value;if(v==='__new'){const b=await ckNewBranch();if(!b){render();return}v=b.id}const row=(CK.d.rows||[]).find(x=>x.id===id)||{};const patch={branch_id:v};if(v&&['new','contacting','consulted','callback'].includes(row.care_status))patch.care_status='transferred';await ckUpd(id,patch,true);toast('Đã chuyển chi nhánh',v?((CK.d.branches||[]).find(b=>b.id===v)||{}).name||'':'Bỏ chi nhánh')}
 async function ckDrawerBranch(el){if(el.value!=='__new')return;const b=await ckNewBranch();if(!b){el.value='';return}const o=document.createElement('option');o.value=b.id;o.textContent=b.name;el.insertBefore(o,el.lastElementChild);el.value=b.id}
+async function ckPillChange(id,el){const v=el.value;const r=(CK.d.rows||[]).find(x=>x.id===id)||{};
+ if(v==='transferred'&&!r.branch_id){const b=await ckPickBranchModal(r);if(!b){render();return}await ckUpd(id,{care_status:v,branch_id:b},true);toast('Đã chuyển',((CK.d.branches||[]).find(x=>x.id===b)||{}).name||'');return}
+ ckUpd(id,{care_status:v})}
+function ckPickBranchModal(r){return new Promise(res=>{const L=(CK.d&&CK.d.branches)||[];window._ckBrRes=res;
+ openModal(`<div class="mh">${ic('route')}<h3>Chuyển chi nhánh / cơ sở</h3><button class="x" onclick="closeLayer();window._ckBrRes&&window._ckBrRes(null)">${ic('x')}</button></div>
+  <div class="mb"><div class="mini" style="margin-bottom:10px">Khách <b>${esc(r.name||'')}</b> ${esc(r.phone||'')} sẽ được chuyển cho:</div>
+   <div class="field"><label>Chi nhánh / cơ sở</label><select id="ck-pick-br">${L.map(b=>`<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('')}<option value="__new">+ Tạo chi nhánh / cơ sở mới…</option></select></div></div>
+  <div class="mf"><button class="btn" onclick="closeLayer();window._ckBrRes(null)">Huỷ</button><button class="btn primary" onclick="ckPickBranchGo()">${ic('check')} Chuyển</button></div>`)})}
+async function ckPickBranchGo(){let v=$('#ck-pick-br').value;if(v==='__new'){const b=await ckNewBranch();if(!b)return;v=b.id}closeLayer();const f=window._ckBrRes;window._ckBrRes=null;f&&f(v)}
+function ckInterest(r){if(!r.interest)return '';return `<div class="ck-what" style="-webkit-line-clamp:1;color:var(--ink)">${r.interest_type==='post'?'📰':'🛒'} ${r.interest_url?`<a href="${esc(r.interest_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="${r.interest_type==='post'?'Bài viết':'Sản phẩm'} khách đang xem: ${esc(r.interest)}">${esc(r.interest)}</a>`:esc(r.interest)}</div>`}
 function ckDigits(p){return String(p||'').replace(/\D/g,'')}
 function pgCareWeb(){
  ckCss();
@@ -4845,12 +4855,12 @@ function pgCareWeb(){
   ${stat('Doanh thu đơn thành công',money(st.revenue||0),'chart','#0d9488',"CK.f.due='';CK.f.care='';CK.f.kind='order';ckSet('web','Thành công')")}
  </div>`;
  const tab=(lbl,n,due,care,c)=>{const on=(F.due||'')===due&&(F.care||'')===care;return `<button class="ck-tab ${on?'on':''}" style="--c:${c}" onclick="ckQuick('${due}','${care}')">${lbl}<span class="cnt">${num(n)}</span></button>`};
- const tabs=`<div class="ck-tabs">${tab('Tất cả',totalAll,'','','#2563eb')}${tab('Chưa chăm sóc',cn.new||0,'','new',CK_COL.new)}${tab('Cần gọi hôm nay',st.due_today||0,'today','','#c2410c')}${tab('Quá hẹn',st.overdue||0,'overdue','','#dc2626')}${tab('Hẹn gọi lại',cn.callback||0,'','callback',CK_COL.callback)}${tab('Đang liên hệ',cn.contacting||0,'','contacting',CK_COL.contacting)}${tab('Đã tư vấn',cn.consulted||0,'','consulted',CK_COL.consulted)}${tab('Đã chốt',cn.won||0,'','won',CK_COL.won)}${tab('Không nhu cầu',cn.lost||0,'','lost',CK_COL.lost)}</div>`;
+ const tabs=`<div class="ck-tabs">${tab('Tất cả',totalAll,'','','#2563eb')}${tab('Chưa chăm sóc',cn.new||0,'','new',CK_COL.new)}${tab('Cần gọi hôm nay',st.due_today||0,'today','','#c2410c')}${tab('Quá hẹn',st.overdue||0,'overdue','','#dc2626')}${tab('Hẹn gọi lại',cn.callback||0,'','callback',CK_COL.callback)}${tab('Đang liên hệ',cn.contacting||0,'','contacting',CK_COL.contacting)}${tab('Đã tư vấn',cn.consulted||0,'','consulted',CK_COL.consulted)}${tab('Chuyển chi nhánh / cơ sở',cn.transferred||0,'','transferred',CK_COL.transferred)}${tab('Đã chốt',cn.won||0,'','won',CK_COL.won)}${tab('Không nhu cầu',cn.lost||0,'','lost',CK_COL.lost)}</div>`;
  const webs=[...new Set((D.web_statuses||[]).map(w=>w.web_status))];
  const sel=(k,opts,lbl)=>`<select class="ck-sel" onchange="ckSet('${k}',this.value)" title="${lbl}">${opts.map(o=>`<option value="${esc(o[0])}" ${F[k]===o[0]?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
  const ls=D.last_sync&&D.last_sync.at?`Đồng bộ ${esc(D.last_sync.at.slice(0,16))}`:'';
  const tools=`<div class="ck-tools">
-  <div class="ck-search">${ic('search')}<input id="ck-q" placeholder="Tìm tên, SĐT, địa chỉ, sản phẩm, mã đơn…" value="${esc(F.q)}" oninput="ckSearch(this.value)"></div>
+  <div class="ck-search">${ic('search')}<input id="ck-q" placeholder="Tìm tên, SĐT, địa chỉ, sản phẩm quan tâm, mã đơn…" value="${esc(F.q)}" oninput="ckSearch(this.value)"></div>
   ${sel('kind',[['','Liên hệ + đơn hàng'],['contact','Liên hệ ('+num(kd.contact||0)+')'],['order','Đơn hàng ('+num(kd.order||0)+')']],'Loại')}
   ${sel('web',[['','Trạng thái web']].concat(webs.map(w=>[w,w])),'Trạng thái trên web')}
   ${sel('assignee',[['','Người phụ trách'],['_none','— Chưa giao —']].concat(staff.map(s=>[s.id,s.name])),'Phụ trách')}
@@ -4869,7 +4879,7 @@ function pgCareWeb(){
    <div class="ck-name">${esc(r.name||'(không tên)')}${r.same_phone>1?`<span class="ck-tag q" title="Số này đã liên hệ / đặt đơn ${r.same_phone} lần">★ khách quen ×${r.same_phone}</span>`:''}</div>
    <div class="ck-phone">${esc(r.phone||'—')}</div>${r.address?`<div class="ck-addr" title="${esc(r.address)}">${esc(r.address)}</div>`:''}</div></div></td>
   <td><div style="display:flex;gap:5px;flex-wrap:wrap">${r.kind==='order'?`<span class="ck-tag o">Đơn #${esc(r.ext_id)}</span>`:`<span class="ck-tag c">Liên hệ #${esc(r.ext_id)}</span>`}${r.web_status?`<span class="ck-tag w">${esc(r.web_status)}</span>`:''}</div>
-   <div class="ck-what ${what?'':'mut'}" title="${esc(what)}">${what?esc(what):'Khách không ghi nội dung'}</div></td>
+   ${ckInterest(r)}${what||!r.interest?`<div class="ck-what ${what?'':'mut'}" title="${esc(what)}">${what?esc(what):'Khách không ghi nội dung'}</div>`:''}</td>
   <td class="ck-money">${r.kind==='order'&&r.total!=null?money(r.total):'<span class="r-mut">—</span>'}</td>
   <td class="ck-date-c">${esc(ckFmtDate(r.ext_created_at))}<div class="t">${esc((r.ext_created_at||'').slice(11,16))} · ${esc(ckDay(r.ext_created_at))}</div></td>
   <td>${ckPillSel(r,W)}</td>
@@ -4883,7 +4893,7 @@ function pgCareWeb(){
   <button class="btn sm" ${D.page<=1?'disabled':''} onclick="ckPage(1)">«</button><button class="btn sm" ${D.page<=1?'disabled':''} onclick="ckPage(${D.page-1})">‹ Trước</button>
   <span class="mini" style="padding:0 6px">Trang <b>${D.page}</b> / ${pages}</span>
   <button class="btn sm" ${D.page>=pages?'disabled':''} onclick="ckPage(${D.page+1})">Sau ›</button><button class="btn sm" ${D.page>=pages?'disabled':''} onclick="ckPage(${pages})">»</button></div></div>`;
- return stats+`<div class="ck-shell">${tabs}${tools}<div style="overflow:auto"><table class="ck-tbl"><thead><tr><th>Khách hàng</th><th>Nhu cầu / đơn hàng</th><th style="text-align:right">Giá trị</th><th>Ngày tạo</th><th>Trạng thái CSKH</th><th>Phụ trách</th><th>Chuyển chi nhánh</th><th>Lịch hẹn &amp; chăm sóc</th><th></th></tr></thead>
+ return stats+`<div class="ck-shell">${tabs}${tools}<div style="overflow:auto"><table class="ck-tbl"><thead><tr><th>Khách hàng</th><th>Nhu cầu / đơn hàng</th><th style="text-align:right">Giá trị</th><th>Ngày tạo</th><th>Trạng thái CSKH</th><th>Phụ trách</th><th>Chi nhánh / cơ sở</th><th>Lịch hẹn &amp; chăm sóc</th><th></th></tr></thead>
   <tbody>${rows||`<tr><td colspan="9" style="box-shadow:none"><div class="ck-empty">${CK.busy?'Đang tải…':'Không có khách nào khớp bộ lọc.'}</div></td></tr>`}</tbody></table></div>${foot}</div>`;
 }
 async function ckOpen(id){
@@ -4900,6 +4910,7 @@ async function ckOpen(id){
   <div class="card" style="margin:0"><div class="card-b"><div class="ck-grid">
    ${kv('Số điện thoại',esc(r.phone||'—'))}${kv('Email',esc(r.email||'—'))}
    ${kv('Ngày tạo',esc(ckFmtDate(r.ext_created_at))+' '+esc((r.ext_created_at||'').slice(11,16))+` <span class="r-mut">(${esc(ckDay(r.ext_created_at))})</span>`)}${kv('Trạng thái trên web',esc(r.web_status||'—'))}
+   ${r.interest?kv(r.interest_type==='post'?'Bài viết khách đang xem':'Sản phẩm khách quan tâm',(r.interest_url?`<a href="${esc(r.interest_url)}" target="_blank" rel="noopener">${esc(r.interest)} ↗</a>`:esc(r.interest)),true):''}
    ${kv('Địa chỉ',esc(r.address||'—'),true)}${r.branch_id?kv('Chi nhánh xử lý',esc(((d.branches||[]).find(b=>b.id===r.branch_id)||{}).name||'—')):''}
    ${r.kind==='order'?kv('Tổng tiền',`<b style="font-size:16px">${money(r.total||0)}</b>`)+kv('Giảm giá / mã',(r.discount?money(r.discount):'0₫')+(r.coupon?' · '+esc(r.coupon):'')):''}
   </div>${r.message?`<div class="ck-msg"><b>${r.kind==='order'?'Khách ghi chú':'Khách để lại'}:</b> ${esc(r.message)}</div>`:''}</div></div>
@@ -4907,7 +4918,7 @@ async function ckOpen(id){
   <div class="card" style="margin:14px 0 0;border-color:${c}55"><div class="card-h">${ic('edit')}<h3>Cập nhật chăm sóc</h3></div><div class="card-b">
    ${W?`<div class="frow f2"><div class="field"><label>Trạng thái CSKH</label><select id="ck-st">${Object.keys(stt).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(stt[k])}</option>`).join('')}</select></div>
    <div class="field"><label>Người phụ trách</label><select id="ck-as"><option value="">— Chưa giao —</option>${(d.staff||[]).map(s=>`<option value="${esc(s.id)}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div></div>
-   <div class="field"><label>Chuyển chi nhánh</label><select id="ck-br" onchange="ckDrawerBranch(this)">${ckBranchOpts(r.branch_id||'',d.branches)}</select></div>
+   <div class="field"><label>Chuyển chi nhánh / cơ sở</label><select id="ck-br" onchange="ckDrawerBranch(this)">${ckBranchOpts(r.branch_id||'',d.branches)}</select></div>
    <div class="field"><label>Hẹn gọi lại</label><input id="ck-nf" type="datetime-local" value="${esc((r.next_follow_at||'').replace(' ','T'))}"></div>
    <div class="field"><label>Ghi chú cuộc gọi</label><textarea id="ck-note" rows="3" placeholder="VD: Đã gọi, khách hẹn cuối tuần qua lắp; quan tâm gói phim cách nhiệt…"></textarea></div>
    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${['Không nghe máy','Thuê bao','Đã tư vấn, khách suy nghĩ','Khách đã mua','Không có nhu cầu'].map(t=>`<button class="ck-tag w" style="border:1px solid var(--line);cursor:pointer;padding:5px 10px" onclick="const n=$('#ck-note');n.value=(n.value?n.value+'; ':'')+'${t}'">+ ${t}</button>`).join('')}</div>
@@ -4968,7 +4979,7 @@ function pgCareReport(){
  const CM=[['new','Khách mới',x=>x.contacts+x.orders,'#2563eb'],['transfers','Chuyển chi nhánh',x=>x.transfers,'#d97706'],['actions','Lượt chăm sóc',x=>x.actions,'#0d9488'],['won','Chốt',x=>x.won,'#16a34a']];
  const cm=CM.find(x=>x[0]===CR.m)||CM[0];const G=crGroup(D.series),S2=G.rows;
  const chart=S2.length>1?`<div class="card"><div class="card-h"><h3>Diễn biến theo ${G.by}</h3><div class="segbar" style="margin:0">${CM.map(x=>`<button class="seg ${x[0]===cm[0]?'on':''}" onclick="CR.m='${x[0]}';render()">${x[1]}</button>`).join('')}</div></div><div class="card-b">${chLine(G.by==='ngày'?stThin(S2.map(x=>x.lb)):S2.map(x=>x.lb),cm[0]==='new'?[{name:'Liên hệ',color:'#2563eb',values:S2.map(x=>x.contacts)},{name:'Đơn hàng',color:'#7c3aed',values:S2.map(x=>x.orders)}]:[{name:cm[1],color:cm[3],values:S2.map(cm[2])}])}</div></div>`:'';
- const sk=Object.keys(st),SC={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
+ const sk=Object.keys(st),SC={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',transferred:'#0891b2',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
  const B=D.branches,tot=k=>B.reduce((s,b)=>s+(typeof k==='function'?k(b):b[k]),0);
  const brTbl=`<div class="card"><div class="card-h">${ic('building')}<h3>Phân bố theo chi nhánh</h3><span class="sub">khách mới trong kỳ (theo ngày tạo) · lượt chuyển theo thời điểm chuyển</span><div class="hact"><button class="btn sm" onclick="crExport('branches')">${ic('download')} Excel</button></div></div>
   <div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl" style="white-space:nowrap"><thead><tr><th>Chi nhánh</th><th class="tar">Khách mới</th><th class="tar">Liên hệ</th><th class="tar">Đơn</th><th class="tar">% tổng</th><th class="tar">Chuyển trong kỳ</th>${sk.map(k=>`<th class="tar" title="${esc(st[k])}" style="color:${SC[k]}">${esc(st[k].split(' /')[0])}</th>`).join('')}<th class="tar">Tỉ lệ chốt</th><th class="tar">Doanh thu chốt</th><th class="tar">Quá hẹn</th><th class="tar">Tổng đang giữ</th></tr></thead><tbody>

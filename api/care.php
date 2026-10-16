@@ -11,7 +11,7 @@ require __DIR__ . '/_boot.php';
 $me = require_login();
 $PID = pid();
 
-const CARE_ST = ['new' => 'Chưa chăm sóc', 'contacting' => 'Đang liên hệ', 'callback' => 'Hẹn gọi lại', 'consulted' => 'Đã tư vấn', 'won' => 'Đã chốt / đã mua', 'lost' => 'Không nhu cầu / huỷ', 'invalid' => 'Sai số / trùng'];
+const CARE_ST = ['new' => 'Chưa chăm sóc', 'contacting' => 'Đang liên hệ', 'callback' => 'Hẹn gọi lại', 'consulted' => 'Đã tư vấn', 'transferred' => 'Chuyển chi nhánh / cơ sở', 'won' => 'Đã chốt / đã mua', 'lost' => 'Không nhu cầu / huỷ', 'invalid' => 'Sai số / trùng'];
 
 function care_staff(string $pid): array {
     global $pdo;
@@ -32,8 +32,8 @@ function care_where(array $g, string $pid): array {
     $w = ['project_id=?']; $a = [$pid];
     if (($q = trim((string)($g['q'] ?? ''))) !== '') {
         $digits = preg_replace('/\D/', '', $q);
-        $w[] = '(name LIKE ? OR address LIKE ? OR message LIKE ? OR items LIKE ? OR email LIKE ? OR ext_id=?' . (strlen($digits) >= 3 ? ' OR phone_norm LIKE ?' : '') . ')';
-        array_push($a, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", $q); if (strlen($digits) >= 3) $a[] = "%$digits%";
+        $w[] = '(name LIKE ? OR address LIKE ? OR message LIKE ? OR items LIKE ? OR email LIKE ? OR interest LIKE ? OR ext_id=?' . (strlen($digits) >= 3 ? ' OR phone_norm LIKE ?' : '') . ')';
+        array_push($a, "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", "%$q%", $q); if (strlen($digits) >= 3) $a[] = "%$digits%";
     }
     if (in_array($g['kind'] ?? '', ['contact', 'order'], true)) { $w[] = 'kind=?'; $a[] = $g['kind']; }
     if (isset(CARE_ST[$g['care'] ?? ''])) { $w[] = 'care_status=?'; $a[] = $g['care']; }
@@ -142,11 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $names = array_column(care_staff($PID), 'name', 'id'); $brs = array_column(care_branches($PID), 'name', 'id');
         header('Content-Type: text/csv; charset=utf-8'); header('Content-Disposition: attachment; filename="CSKH_chungauto_' . date('Ymd_Hi') . '.csv"');
         $o = fopen('php://output', 'w'); fwrite($o, "\xEF\xBB\xBF");
-        fputcsv($o, ['Loại', 'ID web', 'Ngày tạo', 'Tên', 'SĐT', 'Email', 'Địa chỉ', 'Nội dung / ghi chú khách', 'Sản phẩm', 'Tạm tính', 'Giảm giá', 'Tổng tiền', 'Mã giảm giá', 'Trạng thái web', 'Trạng thái CSKH', 'Phụ trách', 'Chi nhánh', 'Hẹn gọi lại', 'Liên hệ gần nhất', 'Ghi chú CSKH gần nhất']);
+        fputcsv($o, ['Loại', 'ID web', 'Ngày tạo', 'Tên', 'SĐT', 'Email', 'Địa chỉ', 'Nội dung / ghi chú khách', 'Sản phẩm / bài viết quan tâm', 'Link sản phẩm quan tâm', 'Sản phẩm trong đơn', 'Tạm tính', 'Giảm giá', 'Tổng tiền', 'Mã giảm giá', 'Trạng thái web', 'Trạng thái CSKH', 'Phụ trách', 'Chi nhánh', 'Hẹn gọi lại', 'Liên hệ gần nhất', 'Ghi chú CSKH gần nhất']);
         foreach ($st as $r) {
             $items = implode('; ', array_map(fn($i) => $i['name'] . ' x' . $i['qty'], jdecode($r['items'] ?? null)));
             $log = jdecode($r['care_log'] ?? null); $lastNote = $log ? end($log)['text'] ?? '' : '';
-            fputcsv($o, [$r['kind'] === 'order' ? 'Đơn hàng' : 'Liên hệ', $r['ext_id'], $r['ext_created_at'], $r['name'], $r['phone'], $r['email'], $r['address'], $r['message'], $items,
+            fputcsv($o, [$r['kind'] === 'order' ? 'Đơn hàng' : 'Liên hệ', $r['ext_id'], $r['ext_created_at'], $r['name'], $r['phone'], $r['email'], $r['address'], $r['message'], (string)($r['interest'] ?? ''), (string)($r['interest_url'] ?? ''), $items,
                 $r['subtotal'], $r['discount'], $r['total'], $r['coupon'], $r['web_status'], CARE_ST[$r['care_status']] ?? $r['care_status'], $names[$r['assignee_id']] ?? '', $brs[$r['branch_id']] ?? '', $r['next_follow_at'], $r['last_contact_at'], $lastNote]);
         }
         fclose($o); exit;

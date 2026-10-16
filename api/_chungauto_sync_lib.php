@@ -79,6 +79,11 @@ function ca_parse_contacts(string $html): array {
         $info = $td[1]; $f = [];
         foreach (['Tên' => 'name', 'Số điện thoại' => 'phone', 'Địa chỉ' => 'address', 'Email' => 'email'] as $lbl => $k)
             $f[$k] = preg_match('#<b>\s*' . preg_quote($lbl, '#') . '\s*</b>\s*:\s*(.*?)(?:<br|$)#su', $info, $m) ? ca_txt($m[1]) : '';
+        // Liên hệ gửi từ trang sản phẩm / bài viết: <b>Sản phẩm</b> : <a href="…">Tên</a>
+        $f['interest'] = ''; $f['interest_url'] = ''; $f['interest_type'] = '';
+        if (preg_match('#<b>\s*(Sản phẩm|Bài viết)\s*</b>\s*:\s*(?:<a[^>]*href="([^"]*)"[^>]*>(.*?)</a>|([^<]*))#su', $info, $m)) {
+            $f['interest_type'] = $m[1] === 'Sản phẩm' ? 'product' : 'post'; $f['interest_url'] = html_entity_decode($m[2] ?? '', ENT_QUOTES); $f['interest'] = ca_txt(($m[3] ?? '') !== '' ? $m[3] : ($m[4] ?? ''));
+        }
         $out[] = $f + ['ext_id' => ca_txt($td[0]), 'message' => ca_txt($td[2]), 'ext_created_at' => ca_date(ca_txt($td[3])), 'web_status' => ca_txt($td[4]) ?: null];
     }
     return array_values(array_filter($out, fn($r) => ctype_digit($r['ext_id'])));
@@ -144,26 +149,28 @@ function ca_retry(callable $fn) {
 function ca_upsert(string $pid, string $kind, array $r): string { return ca_retry(fn() => ca_upsert_once($pid, $kind, $r)); }
 function ca_upsert_once(string $pid, string $kind, array $r): string {
     global $pdo;
-    $st = $pdo->prepare('SELECT id, name, phone, address, email, message, items, total, web_status FROM care_records WHERE project_id=? AND src=? AND kind=? AND ext_id=?');
+    $st = $pdo->prepare('SELECT id, name, phone, address, email, message, items, total, web_status, interest, interest_url FROM care_records WHERE project_id=? AND src=? AND kind=? AND ext_id=?');
     $st->execute([$pid, CA_SRC, $kind, $r['ext_id']]); $old = $st->fetch();
     $items = isset($r['items']) ? json_encode($r['items'], JSON_UNESCAPED_UNICODE) : null;
     if (!$old) {
-        $pdo->prepare("INSERT INTO care_records(id,project_id,src,kind,ext_id,name,phone,phone_norm,email,address,message,items,subtotal,discount,total,coupon,web_status,ext_created_at,care_status,synced_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))")
+        $pdo->prepare("INSERT INTO care_records(id,project_id,src,kind,ext_id,name,phone,phone_norm,email,address,message,items,subtotal,discount,total,coupon,web_status,ext_created_at,care_status,interest,interest_url,interest_type,synced_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))")
             ->execute(['CS' . strtoupper(bin2hex(random_bytes(8))), $pid, CA_SRC, $kind, $r['ext_id'], $r['name'] ?? '', $r['phone'] ?? '', ca_phone_norm($r['phone'] ?? ''), $r['email'] ?? '', $r['address'] ?? '',
                 $r['message'] ?? '', $items, $r['subtotal'] ?? null, $r['discount'] ?? null, $r['total'] ?? null, $r['coupon'] ?? '', $r['web_status'] ?? null, $r['ext_created_at'] ?? null,
-                ca_initial_care($kind, $r['web_status'] ?? null)]);
+                ca_initial_care($kind, $r['web_status'] ?? null), ($r['interest'] ?? '') ?: null, ($r['interest_url'] ?? '') ?: null, ($r['interest_type'] ?? '') ?: null]);
         return 'new';
     }
     $chg = ($r['web_status'] ?? $old['web_status']) !== $old['web_status'] || ($r['name'] ?? $old['name']) !== $old['name'] || ($r['phone'] ?? $old['phone']) !== $old['phone']
         || ($r['address'] ?? $old['address']) !== $old['address'] || ($r['message'] ?? $old['message']) !== $old['message'] || ($items !== null && $items !== $old['items'])
-        || (isset($r['total']) && (float)$r['total'] !== (float)$old['total']);
+        || (isset($r['total']) && (float)$r['total'] !== (float)$old['total'])
+        || (isset($r['interest']) && ((string)$r['interest'] !== (string)$old['interest'] || (string)$r['interest_url'] !== (string)$old['interest_url']));
     if (!$chg) { $pdo->prepare("UPDATE care_records SET synced_at=datetime('now') WHERE id=?")->execute([$old['id']]); return 'same'; }
     $pdo->prepare("UPDATE care_records SET name=COALESCE(?,name), phone=COALESCE(?,phone), phone_norm=COALESCE(?,phone_norm), email=COALESCE(?,email), address=COALESCE(?,address),
         message=COALESCE(?,message), items=COALESCE(?,items), subtotal=COALESCE(?,subtotal), discount=COALESCE(?,discount), total=COALESCE(?,total), coupon=COALESCE(?,coupon),
-        web_status=COALESCE(?,web_status), ext_created_at=COALESCE(?,ext_created_at), synced_at=datetime('now'), updated_at=datetime('now') WHERE id=?")
+        web_status=COALESCE(?,web_status), ext_created_at=COALESCE(?,ext_created_at), interest=COALESCE(?,interest), interest_url=COALESCE(?,interest_url), interest_type=COALESCE(?,interest_type), synced_at=datetime('now'), updated_at=datetime('now') WHERE id=?")
         ->execute([$r['name'] ?? null, $r['phone'] ?? null, isset($r['phone']) ? ca_phone_norm($r['phone']) : null, $r['email'] ?? null, $r['address'] ?? null, $r['message'] ?? null, $items,
-            $r['subtotal'] ?? null, $r['discount'] ?? null, $r['total'] ?? null, $r['coupon'] ?? null, $r['web_status'] ?? null, $r['ext_created_at'] ?? null, $old['id']]);
+            $r['subtotal'] ?? null, $r['discount'] ?? null, $r['total'] ?? null, $r['coupon'] ?? null, $r['web_status'] ?? null, $r['ext_created_at'] ?? null,
+            ($r['interest'] ?? '') ?: null, ($r['interest_url'] ?? '') ?: null, ($r['interest_type'] ?? '') ?: null, $old['id']]);
     return 'upd';
 }
 
@@ -184,6 +191,7 @@ function ca_sync(array $CFG, string $pid, array $opt = []): array {
         if (time() > $deadline) { $res['complete'] = false; break; }
     }
 
+    if (!empty($opt['contacts_only'])) { setting_set('care.last_sync.' . $pid, json_encode(['at' => date('Y-m-d H:i:s'), 'res' => $res], JSON_UNESCAPED_UNICODE), ['id' => null]); return $res; }
     // ---- Đơn hàng: danh sách cho trạng thái + tổng; trang "Xem" cho SĐT, địa chỉ, sản phẩm (chỉ đơn mới hoặc chưa có chi tiết).
     $have = []; $st = $pdo->prepare("SELECT ext_id, web_status, items IS NOT NULL AS has_detail FROM care_records WHERE project_id=? AND src=? AND kind='order'"); $st->execute([$pid, CA_SRC]);
     foreach ($st->fetchAll() as $r) $have[$r['ext_id']] = $r;

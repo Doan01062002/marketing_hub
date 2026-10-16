@@ -499,6 +499,7 @@ CREATE TABLE IF NOT EXISTS care_records (
   name TEXT NOT NULL DEFAULT '',
   phone TEXT, phone_norm TEXT, email TEXT, address TEXT,
   message TEXT,                              -- nội dung liên hệ / ghi chú đơn của khách
+  interest TEXT, interest_url TEXT, interest_type TEXT, -- liên hệ: sản phẩm / bài viết khách đang xem khi để lại thông tin
   items TEXT,                                -- JSON sản phẩm [{name,qty,price,total,note}]
   subtotal REAL, discount REAL, total REAL, coupon TEXT,
   web_status TEXT,                           -- trạng thái trên web (Chưa phản hồi / Mới / Thành công / Hủy…)

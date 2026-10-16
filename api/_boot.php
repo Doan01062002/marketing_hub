@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 20; // v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 21; // v21 (16/10/2026): care_records.interest* (sản phẩm khách quan tâm) · v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -57,7 +57,8 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     // v11 (11/10/2026): tài khoản kênh nhiều môi trường (sandbox/production), quyền đã cấp, tên/ảnh tài khoản
     $addCols('connections', ['env' => 'TEXT', 'scopes' => 'TEXT', 'account_name' => 'TEXT', 'avatar' => 'TEXT']);
     $addCols('connections', ['scopes_declined' => 'TEXT']);
-    $addCols('care_records', ['branch_id' => 'TEXT']); // v19: chi nhánh xử lý khách // v17: quyền Meta người dùng đã bỏ chọn
+    $addCols('care_records', ['branch_id' => 'TEXT']); // v19: chi nhánh xử lý khách
+    $addCols('care_records', ['interest' => 'TEXT', 'interest_url' => 'TEXT', 'interest_type' => 'TEXT']); // v21: sản phẩm / bài viết khách quan tâm // v17: quyền Meta người dùng đã bỏ chọn
     $addCols('inbox_threads', ['ai_mode' => "TEXT NOT NULL DEFAULT 'on'", 'needs_human' => 'INTEGER NOT NULL DEFAULT 0', 'kind' => "TEXT NOT NULL DEFAULT 'message'", 'post_id' => 'TEXT', 'permalink' => 'TEXT']);
 
     /* v8 (11/10/2026) — lớp DỰ ÁN: mọi bản ghi nghiệp vụ thuộc một project_id; backend lọc theo dự án. */
