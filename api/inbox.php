@@ -18,7 +18,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 $myProjects = projects_for_user($me);                       // [{id,name,color,member_role,...}]
 $roleOf = []; foreach ($myProjects as $p) $roleOf[$p['id']] = $p['member_role'] ?? ($me['role'] === 'admin' ? 'owner' : 'viewer');
-$pids = array_keys($roleOf);
+// Vai trò tuỳ chỉnh không tick "Cửa sổ chat" ở dự án nào thì không thấy hội thoại của dự án đó.
+$pids = array_values(array_filter(array_keys($roleOf), fn($p) => !str_starts_with((string)$roleOf[$p], 'cr_') || role_level(custom_role_get((string)$roleOf[$p], (string)$p)['perms'], ['inbox']) >= 1));
 if (!$pids) respond(['threads' => [], 'counts' => ['unread' => 0, 'open' => 0], 'note' => 'Bạn chưa thuộc dự án nào']);
 $in = str_repeat('?,', count($pids) - 1) . '?';
 
@@ -28,7 +29,11 @@ function ib_thread(string $id, array $pids): array {
     if (!$t || !in_array($t['project_id'], $pids, true)) fail('Không tìm thấy cuộc trò chuyện', 404);
     return $t;
 }
-function ib_can_write(string $pid, array $roleOf, array $me): bool { return $me['role'] === 'admin' || in_array($roleOf[$pid] ?? '', PROJECT_WRITE_ROLES, true); }
+function ib_can_write(string $pid, array $roleOf, array $me): bool {
+    $r = (string)($roleOf[$pid] ?? '');
+    if (str_starts_with($r, 'cr_')) return role_level(custom_role_get($r, $pid)['perms'], ['inbox']) >= 2;
+    return $me['role'] === 'admin' || in_array($r, PROJECT_WRITE_ROLES, true);
+}
 function ib_public(array $t): array {
     return ['id' => $t['id'], 'project_id' => $t['project_id'], 'connection_id' => $t['connection_id'], 'provider' => $t['provider'], 'customer_id' => $t['customer_id'],
         'name' => $t['customer_name'], 'avatar' => $t['customer_avatar'], 'last' => $t['last_message'], 'last_dir' => $t['last_direction'], 'last_time' => $t['last_time'],

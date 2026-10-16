@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 19; // v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 20; // v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -191,7 +191,8 @@ function projects_for_user(array $u): array {
 }
 
 function public_project(array $p): array {
-    return ['id' => $p['id'], 'name' => $p['name'], 'type' => $p['type'], 'domain' => $p['domain'], 'timezone' => $p['timezone'],
+    $cr = str_starts_with((string)($p['member_role'] ?? ''), 'cr_') ? custom_role_get((string)$p['member_role'], (string)$p['id']) : null;
+    return ($cr ? ['role_name' => $cr['name'], 'perms' => $cr['perms']] : []) + ['id' => $p['id'], 'name' => $p['name'], 'type' => $p['type'], 'domain' => $p['domain'], 'timezone' => $p['timezone'],
         'color' => $p['color'], 'goal' => $p['goal'], 'budget_month' => (int)$p['budget_month'], 'status' => $p['status'],
         'settings' => jdecode($p['settings'] ?? null), 'role' => $p['member_role'] ?? null, 'created_at' => $p['created_at']];
 }
@@ -223,6 +224,11 @@ function pid(): string {
 function project_role(): ?string { $p = current_project(); return $p['member_role'] ?? null; }
 function require_project_role(string ...$roles): array {
     $u = require_login(); $r = project_role();
+    // Vai trò tuỳ chỉnh: được thao tác GHI nếu chức năng của API này được tick "Sửa" (thao tác chỉ dành cho chủ / quản lý thì không).
+    if ($r && str_starts_with($r, 'cr_') && array_diff($roles, PROJECT_ADMIN_ROLES) && ($cr = project_custom_role())) {
+        $mods = API_MODULES[basename((string)($_SERVER['SCRIPT_NAME'] ?? ''))] ?? [];
+        if ($mods && role_level($cr['perms'], $mods) >= 2) return $u;
+    }
     if (!$r || !in_array($r, $roles, true)) fail('Vai trò của bạn trong dự án này không được thực hiện thao tác đó', 403);
     return $u;
 }
@@ -232,6 +238,7 @@ function require_project_admin(): array { return require_project_role(...PROJECT
 /** Quyền DUYỆT trong dự án: chủ/quản lý dự án, khách hàng (duyệt nội dung được cấp), hoặc cờ approve hệ thống. */
 function can_approve_project(array $u): bool {
     $r = project_role();
+    if ($r && str_starts_with($r, 'cr_')) return !empty((project_custom_role() ?? [])['perms']['approve']) || can_approve($u);
     return in_array($r, ['owner', 'manager', 'client'], true) || can_approve($u);
 }
 
@@ -698,3 +705,49 @@ function public_connection(array $r): array {
         'project_id' => $r['project_id'] ?? null,
     ];
 }
+
+/* ---- VAI TRÒ TUỲ CHỈNH theo dự án (16/10/2026) ----
+   project_members.role = 'cr_…' → quyền theo chức năng (project_roles.perms: {module: 'view'|'edit', approve: bool}).
+   Mỗi API gắn với các chức năng ở API_MODULES; vai trò tuỳ chỉnh bị chặn ngay khi nạp _boot.php nếu không được tick
+   (GET cần "Xem", ghi cần "Sửa"). API không có trong bản đồ (đăng nhập, thông báo, dự án, tài khoản…) tự kiểm tra như cũ. */
+const ROLE_MODULES = ['inbox' => 'Cửa sổ chat (Messenger, Zalo)', 'leadsmenu' => 'Khách hàng & lead (CSKH)', 'overview' => 'Tổng quan dự án',
+    'market' => 'Phân tích thị trường', 'planmenu' => 'Mục tiêu & kế hoạch', 'channels' => 'Kênh marketing', 'ads' => 'Chiến dịch quảng cáo',
+    'caremenu' => 'Chăm sóc dự án (nội dung, công việc, bình luận)', 'automation' => 'Chiến dịch automation', 'reports' => 'Báo cáo & đo lường',
+    'utilities' => 'Tiện ích', 'aiplan' => 'Trợ lý dự án (AI)'];
+const API_MODULES = [
+    'inbox.php' => ['inbox'], 'zalo_user.php' => ['inbox'],
+    'leads.php' => ['leadsmenu'], 'care.php' => ['leadsmenu'], 'sequences.php' => ['automation', 'leadsmenu'],
+    'campaigns.php' => ['ads', 'planmenu', 'overview', 'reports'], 'meta_ads.php' => ['ads'], 'ads_report.php' => ['ads'],
+    'connections.php' => ['channels', 'ads'], 'metrics.php' => ['channels', 'ads', 'reports', 'overview'], 'meta.php' => ['channels'], 'tiktok.php' => ['channels'], 'x.php' => ['channels'],
+    'posts.php' => ['channels', 'caremenu'], 'comments.php' => ['channels', 'caremenu'], 'content.php' => ['caremenu'], 'tasks.php' => ['caremenu', 'planmenu'],
+    'upload.php' => ['caremenu', 'channels', 'inbox'], 'brand.php' => ['planmenu', 'caremenu'],
+    'trends.php' => ['market'], 'insights.php' => ['market'], 'segments.php' => ['market'], 'bot.php' => ['market'], 'competitors.php' => ['market', 'utilities'],
+    'okrs.php' => ['planmenu'], 'plan_auto.php' => ['planmenu'], 'automations.php' => ['automation'], 'stats.php' => ['reports', 'overview'],
+    'landings.php' => ['utilities'], 'ideas.php' => ['utilities'], 'ai_chat.php' => ['aiplan'], 'ai_generate.php' => ['aiplan', 'caremenu', 'inbox', 'utilities'],
+];
+function custom_role_get(string $id, string $pid): array {
+    global $pdo; static $cache = [];
+    if (!array_key_exists("$pid|$id", $cache)) {
+        $st = $pdo->prepare('SELECT id, name, perms FROM project_roles WHERE id=? AND project_id=?'); $st->execute([$id, $pid]); $x = $st->fetch() ?: null;
+        if ($x) $x['perms'] = jdecode($x['perms']);
+        $cache["$pid|$id"] = $x ?: ['id' => $id, 'name' => '(vai trò đã xoá)', 'perms' => []];
+    }
+    return $cache["$pid|$id"];
+}
+/** Vai trò tuỳ chỉnh của người dùng ở dự án hiện hành (null nếu là vai trò có sẵn). */
+function project_custom_role(): ?array {
+    $p = current_project(); $r = (string)($p['member_role'] ?? '');
+    return str_starts_with($r, 'cr_') ? custom_role_get($r, (string)$p['id']) : null;
+}
+/** 0 = không, 1 = xem, 2 = sửa — mức cao nhất trong các chức năng. */
+function role_level(array $perms, array $mods): int {
+    $l = 0; foreach ($mods as $m) { $v = $perms[$m] ?? ''; $l = max($l, $v === 'edit' ? 2 : ($v === 'view' ? 1 : 0)); } return $l;
+}
+(function () {
+    if (empty($_SESSION['uid'])) return; // cron / CLI không có phiên → không áp
+    $mods = API_MODULES[basename((string)($_SERVER['SCRIPT_NAME'] ?? ''))] ?? null;
+    if ($mods === null || !current_user()) return;
+    $cr = project_custom_role(); if (!$cr) return;
+    $need = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' ? 1 : 2;
+    if (role_level($cr['perms'], $mods) < $need) fail('Vai trò "' . $cr['name'] . '" không được ' . ($need === 2 ? 'sửa' : 'xem') . ' chức năng này', 403);
+})();

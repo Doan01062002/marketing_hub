@@ -1055,6 +1055,7 @@ function renderNav(){
  $('#nav').innerHTML=NAV.map(grp=>{
   const items=grp.items.map(([k,t,i,ext])=>{
    if(ext&&ext.href)return `<a class="nav-i ext" href="${ext.href}" target="_blank" rel="noopener">${ic(i)}<span>${t}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-left:auto;opacity:.55"><path d="M7 17 17 7M7 7h10v10"/></svg></a>`;
+   if(projCustom()&&ROLE_MODS.includes(k)&&modLevel(k)<1)return '';
    const c=navCount(k);const ai=k==='aiplan';return `<div class="nav-i ${ai?'ai ':''}${S.page===k?'on':''}" onclick="go('${k}')">${ic(i)}<span>${t}</span>${ai?'<span class="aitag">AI</span>':(c!=null?`<span class="cnt">${c}</span>`:'')}</div>`}).join('');
   return (grp.g?`<div class="sb-grp">${grp.g}</div>`:'<div style="height:10px"></div>')+items;
  }).join('');
@@ -1079,7 +1080,7 @@ function liveFilter(inp){const q=inp.value.toLowerCase();const root=inp.closest(
 function mobTables(){if(window.innerWidth>920)return;document.querySelectorAll('#content table.tbl:not(.mcard):not(.ins-tbl),#layer table.tbl:not(.mcard)').forEach(t=>{const hs=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());if(!hs.length)return;t.classList.add('mcard');t.querySelectorAll('tbody tr,tfoot tr').forEach(tr=>{let k=0;[...tr.children].forEach(td=>{if(!td.hasAttribute('data-label'))td.setAttribute('data-label',hs[k]||'');k+=+(td.getAttribute('colspan')||1)})})})}
 let _mobT=null;new MutationObserver(()=>{clearTimeout(_mobT);_mobT=setTimeout(mobTables,30)}).observe(document.documentElement,{childList:true,subtree:true});
 window.addEventListener('resize',()=>{clearTimeout(_mobT);_mobT=setTimeout(mobTables,100)});
-function render(){const P={inbox:pgInbox,overview:pgOverview,market:pgMarket,planmenu:pgPlanMenu,ads:pgAds,caremenu:pgCareMenu,leadsmenu:pgLeadsMenu,utilities:pgUtilities,portfolio:pgPortfolio,robot:pgRobot,dashboard:pgDash,aiplan:pgAiplan,research:pgResearch,trends:pgTrends,insights:pgInsights,plan:pgPlan,brand:pgBrand,campaigns:pgCampaigns,content:pgContent,channels:pgChannelsMenu,audience:pgAudience,demand:pgDemand,tasks:pgTasks,publish:pgPublish,care:pgCare,automation:pgAutomationMenu,staff:pgStaff,local:pgLocal,reports:pgReportsMenu,settings:pgSettingsMenu};$('#content').innerHTML=(P[S.page]||pgOverview)();hqAttach();if(S.page==='aiplan'){const b=$('#chatbody');if(b)b.scrollTop=b.scrollHeight;const cin=$('#cin');if(cin)cin.focus()}}
+function render(){if(projCustom()&&ROLE_MODS.includes(pageModule(S.page))&&modLevel(pageModule(S.page))<1){S.page=firstAllowedPage();if(typeof renderNav==='function')renderNav()}const P={inbox:pgInbox,overview:pgOverview,market:pgMarket,planmenu:pgPlanMenu,ads:pgAds,caremenu:pgCareMenu,leadsmenu:pgLeadsMenu,utilities:pgUtilities,portfolio:pgPortfolio,robot:pgRobot,dashboard:pgDash,aiplan:pgAiplan,research:pgResearch,trends:pgTrends,insights:pgInsights,plan:pgPlan,brand:pgBrand,campaigns:pgCampaigns,content:pgContent,channels:pgChannelsMenu,audience:pgAudience,demand:pgDemand,tasks:pgTasks,publish:pgPublish,care:pgCare,automation:pgAutomationMenu,staff:pgStaff,local:pgLocal,reports:pgReportsMenu,settings:pgSettingsMenu};$('#content').innerHTML=(P[S.page]||pgOverview)();hqAttach();if(S.page==='aiplan'){const b=$('#chatbody');if(b)b.scrollTop=b.scrollHeight;const cin=$('#cin');if(cin)cin.focus()}}
 
 /* ================= State maps ================= */
 const CAMPST={IDEA:{t:'Ý tưởng',c:'mut'},DRAFT:{t:'Nháp',c:'mut'},PLANNED:{t:'Đã lên KH',c:'info'},READY:{t:'Sẵn sàng',c:'vio'},ACTIVE:{t:'Đang chạy',c:'ok'},PAUSED:{t:'Tạm dừng',c:'warn'},COMPLETED:{t:'Hoàn thành',c:'info'},REVIEWED:{t:'Đã đánh giá',c:'mut'},CANCELLED:{t:'Đã huỷ',c:'bad'}};
@@ -3270,7 +3271,7 @@ function openStaffPerson(id){
 }
 function staffBrOptions(coId,sel){const c=ORG.companies.find(x=>x.id===coId);return `<option value="">Tất cả chi nhánh</option>`+(c?c.branches:[]).map(b=>`<option value="${b.id}" ${sel===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
 function staffForm(id){
- if(projAdmin()&&S.project&&!UT.members){apiGet('/api/projects.php?id='+encodeURIComponent(S.project)).then(d=>{UT.members=(d.project&&d.project.members)||[];staffForm(id)}).catch(()=>{UT.members=[];staffForm(id)});return}
+ if(projAdmin()&&S.project&&!UT.members){apiGet('/api/projects.php?id='+encodeURIComponent(S.project)).then(d=>{UT.members=(d.project&&d.project.members)||[];UT.roles=d.roles;UT.croles=d.custom_roles||[];staffForm(id)}).catch(()=>{UT.members=[];staffForm(id)});return}
  const u=id?(STX.users||[]).find(x=>x.id===id):{role:'staff',approve:false,co:'',br:''};if(!u)return;
  const adm=isAdmin();
  openModal(`<div class="mh">${ic('users')}<h3>${id?'Sửa thông tin nhân viên':'Thêm nhân viên mới'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
@@ -3279,7 +3280,7 @@ function staffForm(id){
    <div class="frow"><div class="field"><label>Chức danh</label><input id="sf-title" value="${esc(u.title||'')}" placeholder="VD: Chuyên viên Content"></div><div class="field"><label>Số điện thoại</label><input id="sf-phone" value="${esc(u.phone||'')}" placeholder="09xx xxx xxx"></div></div>
    ${adm?`<div class="frow"><div class="field"><label>Vai trò hệ thống</label><select id="sf-role">${Object.keys(ROLES).map(k=>`<option value="${k}" ${u.role===k?'selected':''}>${ROLES[k]}</option>`).join('')}</select></div><div class="field"><label>Quyền duyệt</label><label style="display:flex;gap:8px;align-items:center;height:40px;font-weight:500;text-transform:none;letter-spacing:0"><input id="sf-approve" type="checkbox" style="width:auto;height:auto" ${u.approve?'checked':''}> Được duyệt chiến dịch / nội dung / công việc</label></div></div>`:''}
    <div class="frow f3"><div class="field"><label>Công ty</label><select id="sf-co" ${adm?'':'disabled'} onchange="$('#sf-br').innerHTML=staffBrOptions(this.value,'')"><option value="">Toàn phòng</option>${ORG.companies.map(c=>`<option value="${c.id}" ${u.co===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Chi nhánh</label><select id="sf-br">${staffBrOptions(u.co,u.br)}</select></div><div class="field"><label>Phạm vi phụ trách</label><input id="sf-scope" value="${esc(u.scope||'')}" placeholder="VD: Tập đoàn / Brand"></div></div>
-   ${projAdmin()&&S.project?(()=>{const cur=id&&UT.members?((UT.members.find(m=>m.user_id===id)||{}).role||''):'';return `<div class="field" style="background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:10px 12px"><label>Vai trò trong dự án ${esc((proj()||{}).name||'')}</label><select id="sf-prole"><option value="">${id?(cur?'— Giữ nguyên —':'— Không thuộc dự án —'):'— Chưa thêm vào dự án —'}</option>${Object.keys(PROJECT_ROLES_LABEL).filter(k=>k!=='owner'||projRole()==='owner'||isAdmin()).map(k=>`<option value="${k}" ${cur===k?'selected':''}>${PROJECT_ROLES_LABEL[k]}</option>`).join('')}</select><div class="mini">Quyết định nhân viên thấy / sửa được gì trong dự án này. "Chỉ xem" = xem mọi mục, không sửa.</div></div>`})():''}
+   ${projAdmin()&&S.project?(()=>{const cur=id&&UT.members?((UT.members.find(m=>m.user_id===id)||{}).role||''):'';return `<div class="field" style="background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:10px 12px"><label>Vai trò trong dự án ${esc((proj()||{}).name||'')}</label><select id="sf-prole"><option value="">${id?(cur?'— Giữ nguyên —':'— Không thuộc dự án —'):'— Chưa thêm vào dự án —'}</option>${Object.entries(UT.roles||PROJECT_ROLES_LABEL).filter(([k])=>k!=='owner'||projRole()==='owner'||isAdmin()).map(([k,v])=>`<option value="${k}" ${cur===k?'selected':''}>${esc(v)}${String(k).startsWith('cr_')?' (tuỳ chỉnh)':''}</option>`).join('')}</select><div class="mini">Quyết định nhân viên thấy / sửa được gì trong dự án này. "Chỉ xem" = xem mọi mục, không sửa.</div></div>`})():''}
    ${id?'':`<div class="field"><label>Mật khẩu ban đầu (tối thiểu 8 ký tự)</label><input id="sf-pw" type="text" placeholder="Để trống để hệ thống tạo ngẫu nhiên"></div>`}
    <div id="sf-err" style="color:var(--bad);font-size:12.5px;min-height:16px"></div>
   </div>
@@ -3294,7 +3295,7 @@ async function submitStaffForm(id){
  try{
   const d=await apiPost('/api/users.php',Object.assign({action:id?'update':'create',id:id||undefined},body));
   const prole=v('#sf-prole');
-  if(prole&&S.project){try{await apiPost('/api/projects.php',{action:'member_set',id:S.project,user_id:id||d.id,role:prole});UT.members=null;toast('Đã đặt vai trò trong dự án',PROJECT_ROLES_LABEL[prole]||prole)}catch(e2){toast('Tạo tài khoản xong nhưng chưa thêm vào dự án',e2.message)}}
+  if(prole&&S.project){try{await apiPost('/api/projects.php',{action:'member_set',id:S.project,user_id:id||d.id,role:prole});UT.members=null;toast('Đã đặt vai trò trong dự án',(UT.roles||PROJECT_ROLES_LABEL)[prole]||prole)}catch(e2){toast('Tạo tài khoản xong nhưng chưa thêm vào dự án',e2.message)}}
   stInvalidate();await refreshData();
   if(!id&&d.password)showSecret('Đã tạo tài khoản',body.email,d.password);else{closeLayer();toast(id?'Đã lưu thông tin':'Đã tạo tài khoản',esc(body.name))}
  }catch(e){if(e.message!=='unauth')err.textContent=e.message}
@@ -4223,7 +4224,14 @@ const PROJECT_ROLES_LABEL={owner:'Chủ dự án',manager:'Quản lý dự án',
 function proj(){return DB.project||null}
 function projRole(){const p=proj();return p?p.role:null}
 function projAdmin(){return ['owner','manager'].includes(projRole())||isAdmin()}
-function projWrite(){return ['owner','manager','content','ads'].includes(projRole())||isAdmin()}
+function projWrite(){if(projCustom())return modLevel(pageModule(S.page))>=2;return ['owner','manager','content','ads'].includes(projRole())||isAdmin()}
+/* Vai trò tuỳ chỉnh (cr_…): quyền theo chức năng {module:'view'|'edit'}; máy chủ chặn thật ở API, đây chỉ là hiển thị. */
+const ROLE_MODS=['inbox','leadsmenu','overview','market','planmenu','channels','ads','caremenu','automation','reports','utilities','aiplan'];
+const ROLE_MOD_NAMES={inbox:'Cửa sổ chat (Messenger, Zalo)',leadsmenu:'Khách hàng & lead (CSKH)',overview:'Tổng quan dự án',market:'Phân tích thị trường',planmenu:'Mục tiêu & kế hoạch',channels:'Kênh marketing',ads:'Chiến dịch quảng cáo',caremenu:'Chăm sóc dự án (nội dung, công việc, bình luận)',automation:'Chiến dịch automation',reports:'Báo cáo & đo lường',utilities:'Tiện ích',aiplan:'Trợ lý dự án (AI)'};
+function projCustom(){const r=projRole();return !!r&&String(r).startsWith('cr_')&&!isAdmin()}
+function pageModule(p){const L=(typeof LEGACY!=='undefined'&&LEGACY[p])?LEGACY[p][0]:p;return L==='dashboard'?'overview':L}
+function modLevel(m){if(!projCustom())return 2;if(!ROLE_MODS.includes(m))return 1;const v=((proj()||{}).perms||{})[m];return v==='edit'?2:v==='view'?1:0}
+function firstAllowedPage(){return ROLE_MODS.find(m=>modLevel(m)>=1)||'settings'}
 function PH(h){return Object.assign({'X-Project':S.project||''},h||{})}
 
 /* Đổi dự án: huỷ dữ liệu đang giữ của dự án cũ, nạp lại từ đầu. Request cũ về muộn bị bỏ qua nhờ S.projSeq. */
@@ -5135,14 +5143,43 @@ async function projSave(){
 }
 async function projArchive(){if(!confirm('Lưu trữ dự án này? Dữ liệu giữ nguyên, dự án ẩn khỏi danh sách.'))return;try{await apiPost('/api/projects.php',{action:'archive',id:S.project});toast('Đã lưu trữ');S.project=null;resetProjectCaches();await loadData();renderScope();renderNav();go('portfolio')}catch(e){toast('Lỗi',e.message)}}
 function projMembers(){
- if(!UT.members){(async()=>{try{const d=await apiGet('/api/projects.php?id='+encodeURIComponent(S.project));UT.members=d.project.members||[];UT.roles=d.roles}catch(e){UT.members=[];toast('Lỗi',e.message)}render()})();return '<div class="empty">Đang tải…</div>'}
+ if(!UT.members){(async()=>{try{const d=await apiGet('/api/projects.php?id='+encodeURIComponent(S.project));UT.members=d.project.members||[];UT.roles=d.roles;UT.croles=d.custom_roles||[]}catch(e){UT.members=[];toast('Lỗi',e.message)}render()})();return '<div class="empty">Đang tải…</div>'}
  const roles=UT.roles||PROJECT_ROLES_LABEL;
  const all=(DB.staff||[]);const inM=new Set(UT.members.map(m=>m.user_id));
  return `<div class="card" style="max-width:860px"><div class="card-h"><h3>Thành viên dự án</h3><span class="sub">${UT.members.length} người · vai trò theo dự án, tách khỏi vai trò hệ thống</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thành viên</th><th>Vai trò trong dự án</th><th>Từ</th><th></th></tr></thead><tbody>
   ${UT.members.map(m=>`<tr><td><b>${esc(m.name)}</b><div class="mini">${esc(m.email||'')}${m.title?' · '+esc(m.title):''}${m.active?'':' · <span class="badge b-bad">đã khoá</span>'}</div></td><td>${projAdmin()?`<select onchange="memberSet('${esc(m.user_id)}',this.value)">${Object.entries(roles).map(([k,v])=>`<option value="${k}"${m.role===k?' selected':''}>${v}</option>`).join('')}</select>`:esc(m.role_label||roles[m.role]||m.role)}</td><td class="r-mut">${esc((m.since||'').slice(0,10))}</td><td>${projAdmin()?`<button class="btn xs" onclick="memberRemove('${esc(m.user_id)}')">Gỡ</button>`:''}</td></tr>`).join('')}
  </tbody></table></div>${projAdmin()&&isManager()?`<div class="card-b"><div class="grid2"><div class="field"><label>Thêm tài khoản</label><select id="mb-user">${all.filter(u=>!inM.has(u.id)&&u.active).map(u=>`<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.role||u.sysrole||'')})</option>`).join('')||'<option value="">— mọi tài khoản đã là thành viên —</option>'}</select><div class="mini">Tài khoản mới tạo ở Nhân sự & hiệu suất (quản trị). Khách hàng cũng là một tài khoản với vai trò "Khách hàng".</div></div><div class="field"><label>Vai trò</label><select id="mb-role">${Object.entries(roles).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div><button class="btn primary" onclick="memberSet($('#mb-user').value,$('#mb-role').value)">${ic('plus')} Thêm vào dự án</button></div>`:''}
- <div class="card-b mini">Quyền: Chủ/Quản lý dự án — quản lý kênh, duyệt, thành viên, ngân sách. Nội dung — soạn, đề nghị duyệt. Quảng cáo — chiến dịch ads. Khách hàng — xem báo cáo, duyệt nội dung. Chỉ xem — không sửa. Backend kiểm tra ở mọi API, không chỉ ẩn nút.</div></div>`;
+ <div class="card-b mini">Quyền: Chủ/Quản lý dự án — quản lý kênh, duyệt, thành viên, ngân sách. Nội dung — soạn, đề nghị duyệt. Quảng cáo — chiến dịch ads. Khách hàng — xem báo cáo, duyệt nội dung. Chỉ xem — không sửa. Vai trò tuỳ chỉnh — chỉ các chức năng được tick. Backend kiểm tra ở mọi API, không chỉ ẩn nút.</div></div>${projAdmin()?customRolesCard():''}`;
 }
+function customRolesCard(){
+ const L=UT.croles||[];
+ const lvl=(p,m)=>p[m]==='edit'?'<span class="badge b-ok">Sửa</span>':p[m]==='view'?'<span class="badge b-info">Xem</span>':'';
+ return `<div class="card" style="max-width:860px"><div class="card-h">${ic('shield')}<h3>Vai trò tuỳ chỉnh</h3><span class="sub">tự đặt tên, tick chức năng được xem / được sửa</span><div class="hact"><button class="btn sm primary" onclick="roleEdit()">${ic('plus')} Tạo vai trò</button></div></div>
+  ${L.length?`<div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Vai trò</th><th>Chức năng được dùng</th><th class="tar">Người dùng</th><th></th></tr></thead><tbody>${L.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td><div style="display:flex;gap:6px;flex-wrap:wrap">${ROLE_MODS.filter(m=>r.perms[m]).map(m=>`<span class="chip">${esc(ROLE_MOD_NAMES[m].split(' (')[0])} ${lvl(r.perms,m)}</span>`).join('')}${r.perms.approve?'<span class="chip">Được duyệt</span>':''}</div></td><td class="tar">${r.members}</td><td style="white-space:nowrap"><button class="btn xs" onclick="roleEdit('${esc(r.id)}')">${ic('edit')} Sửa</button> <button class="btn xs" onclick="roleDelete('${esc(r.id)}')" ${r.members?'disabled title="Còn người dùng vai trò này"':''}>${ic('trash')}</button></td></tr>`).join('')}</tbody></table></div>`
+  :`<div class="card-b"><div class="mini">Chưa có vai trò tuỳ chỉnh. VD: tạo "Nhân sự CSKH" chỉ thấy <b>Khách hàng & lead</b> (+ Cửa sổ chat), rồi gán cho nhân viên ở bảng Thành viên phía trên.</div></div>`}</div>`;
+}
+const ROLE_PRESETS={cskh:{name:'Nhân sự CSKH',perms:{leadsmenu:'edit',inbox:'edit'}},xem_kh:{name:'Xem khách hàng',perms:{leadsmenu:'view'}},content:{name:'Biên tập nội dung',perms:{caremenu:'edit',channels:'view',planmenu:'view'}},ads:{name:'Chạy quảng cáo',perms:{ads:'edit',channels:'view',reports:'view',overview:'view'}}};
+function roleEdit(id,preset){
+ const r=id?(UT.croles||[]).find(x=>x.id===id):(preset?{name:ROLE_PRESETS[preset].name,perms:Object.assign({},ROLE_PRESETS[preset].perms)}:{name:'',perms:{}});if(!r)return;
+ const row=m=>{const v=r.perms[m]||'';return `<tr><td><b>${esc(ROLE_MOD_NAMES[m])}</b></td>${['','view','edit'].map(x=>`<td class="tar" style="width:80px"><input type="radio" name="rp-${m}" value="${x}" ${v===x?'checked':''} style="width:auto;height:auto"></td>`).join('')}</tr>`};
+ openModal(`<div class="mh">${ic('shield')}<h3>${id?'Sửa vai trò':'Tạo vai trò tuỳ chỉnh'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+  <div class="mb">
+   ${id?'':`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><span class="mini" style="align-self:center">Mẫu nhanh:</span>${Object.entries(ROLE_PRESETS).map(([k,p])=>`<button class="btn xs" onclick="closeLayer();setTimeout(()=>roleEdit('','${k}'),260)">${esc(p.name)}</button>`).join('')}</div>`}
+   <div class="field"><label>Tên vai trò</label><input id="rp-name" value="${esc(r.name)}" placeholder="VD: Nhân sự CSKH"></div>
+   <div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>Chức năng</th><th class="tar">Không</th><th class="tar">Xem</th><th class="tar">Xem + sửa</th></tr></thead><tbody>${ROLE_MODS.map(row).join('')}</tbody></table></div>
+   <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:500;text-transform:none;letter-spacing:0"><input id="rp-approve" type="checkbox" style="width:auto;height:auto" ${r.perms.approve?'checked':''}> Được duyệt nội dung / chiến dịch</label>
+   <div class="mini" style="margin-top:8px">Mục không tick sẽ ẩn khỏi menu và máy chủ từ chối truy cập. Cài đặt dự án (thành viên, kết nối kênh, hệ thống) chỉ chủ / quản lý dự án dùng được.</div>
+   <div id="rp-err" style="color:var(--bad);font-size:12.5px;min-height:16px;margin-top:6px"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="roleSave('${esc(id||'')}')">${ic('check')} ${id?'Lưu vai trò':'Tạo vai trò'}</button></div>`);
+}
+async function roleSave(id){
+ const perms={};ROLE_MODS.forEach(m=>{const el=document.querySelector(`input[name="rp-${m}"]:checked`);if(el&&el.value)perms[m]=el.value});if($('#rp-approve').checked)perms.approve=true;
+ const name=$('#rp-name').value.trim();if(!name){$('#rp-err').textContent='Nhập tên vai trò';return}
+ try{const d=await apiPost('/api/projects.php',{action:'role_save',id:S.project,role_id:id||undefined,name,perms});UT.croles=d.custom_roles;UT.roles=d.roles;closeLayer();toast(id?'Đã lưu vai trò':'Đã tạo vai trò',name);render()}
+ catch(e){$('#rp-err').textContent=e.message}
+}
+async function roleDelete(id){const r=(UT.croles||[]).find(x=>x.id===id);if(!r||!confirm('Xoá vai trò "'+r.name+'"?'))return;try{const d=await apiPost('/api/projects.php',{action:'role_delete',id:S.project,role_id:id});UT.croles=d.custom_roles;UT.roles=d.roles;toast('Đã xoá vai trò');render()}catch(e){toast('Lỗi',e.message)}}
 async function memberSet(uid,role){if(!uid)return;try{const d=await apiPost('/api/projects.php',{action:'member_set',id:S.project,user_id:uid,role});UT.members=d.members;toast('Đã cập nhật thành viên');await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 async function memberRemove(uid){if(!confirm('Gỡ thành viên khỏi dự án?'))return;try{const d=await apiPost('/api/projects.php',{action:'member_remove',id:S.project,user_id:uid});UT.members=d.members;await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 

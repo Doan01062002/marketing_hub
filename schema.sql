@@ -527,3 +527,16 @@ CREATE TABLE IF NOT EXISTS branches (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(project_id, name)
 );
+
+-- v20 (16/10/2026): vai trò tuỳ chỉnh theo dự án — tick chức năng (perms JSON {module: 'view'|'edit', approve: true}).
+-- project_members.role = id vai trò (tiền tố cr_). Máy chủ chặn theo chức năng ở mọi API (_boot.php API_MODULES).
+CREATE TABLE IF NOT EXISTS project_roles (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  perms TEXT NOT NULL DEFAULT '{}',
+  created_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(project_id, name)
+);

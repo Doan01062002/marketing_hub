@@ -125,6 +125,16 @@ $kpis = [
     'rev' => null,
 ];
 
+// Vai trò tuỳ chỉnh: không gửi dữ liệu của chức năng không được tick (máy chủ chặn cả ở API riêng của từng chức năng).
+if ($crole = project_custom_role()) {
+    $can = fn(string ...$m) => role_level($crole['perms'], $m) >= 1;
+    if (!$can('ads', 'planmenu', 'overview', 'reports')) $campaigns = [];
+    if (!$can('caremenu', 'planmenu', 'overview', 'reports')) { $content = []; $tasks = []; }
+    if (!$can('leadsmenu', 'overview', 'reports')) $leads = [];
+    if (!$can('channels', 'ads', 'overview', 'reports')) $conns = [];
+    if (!$can('market')) { $insights = []; $segments = []; $trends = []; $competitors = []; }
+    if (!$can('planmenu', 'overview')) $okrs = [];
+}
 respond([
     'user' => $user,
     'projects' => $projects,
