@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 17; // v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 18; // v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');

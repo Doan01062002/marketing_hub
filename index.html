@@ -4713,11 +4713,127 @@ function pgAutomationMenu(){
 }
 /* ================= KHÁCH HÀNG & LEAD ================= */
 const PIPE=[['CREATED','Mới'],['VALIDATING','Đang kiểm tra'],['ROUTED','Đã định tuyến'],['DELIVERED','Bàn giao CRM'],['ACCEPTED','CRM đã nhận'],['REJECTED','CRM từ chối']];
+/* ---- CSKH: khách từ website chungauto.vn (liên hệ + đơn hàng) — api/care.php 16/10/2026 ---- */
+const CK={f:{q:'',kind:'',care:'',web:'',assignee:'',due:'',from:'',to:'',sort:'new'},page:1,per:50,d:null,busy:false,err:'',key:'',_pid:null};
+const CK_C={new:'mut',contacting:'info',callback:'warn',consulted:'vio',won:'ok',lost:'bad',invalid:'mut'};
+function ckMap(){const st=(CK.d&&CK.d.care_statuses)||{};const m={};Object.keys(st).forEach(k=>m[k]={t:st[k],c:CK_C[k]||'mut'});return m}
+function ckQS(extra){const q=Object.assign({},CK.f,{page:CK.page,per:CK.per},extra||{});Object.keys(q).forEach(k=>{if(q[k]===''||q[k]==null)delete q[k]});return new URLSearchParams(q).toString()}
+async function ckLoad(){
+ const key=ckQS()+'|'+(S.project||'');CK.key=key;CK.busy=true;render();
+ try{const d=await apiGet('/api/care.php?'+ckQS());if(CK.key===key){CK.d=d;CK.err=''}}
+ catch(e){if(CK.key===key)CK.err=e.message}
+ finally{if(CK.key===key){CK.busy=false;render();if(CK._focus){const i=document.getElementById('ck-q');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}CK._focus=false}}}
+}
+function ckSet(k,v){CK.f[k]=v;CK.page=1;ckLoad()}
+function ckQuick(due,care){CK.f.due=due;CK.f.care=care;CK.page=1;ckLoad()}
+function ckSearch(v){CK.f.q=v;CK._focus=true;clearTimeout(CK._t);CK._t=setTimeout(()=>{CK.page=1;ckLoad()},400)}
+function ckPage(p){CK.page=p;ckLoad()}
+function ckTel(p){const d=String(p||'').replace(/\D/g,'');return d?`<a href="tel:${d}" onclick="event.stopPropagation()" class="mono">${esc(p)}</a> <a href="https://zalo.me/${d}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Mở Zalo" class="chip" style="padding:0 6px">Zalo</a>`:'<span class="r-mut">—</span>'}
+function ckWhat(r){if(r.kind==='order'){const it=r.items||[];return it.length?esc(it.slice(0,2).map(i=>i.name+(i.qty>1?' ×'+i.qty:'')).join('; '))+(it.length>2?` <span class="r-mut">+${it.length-2}</span>`:''):'<span class="r-mut">—</span>'}return r.message?esc(r.message.length>90?r.message.slice(0,90)+'…':r.message):'<span class="r-mut">(không ghi nội dung)</span>'}
+function ckLast(r){const l=r.care_log||[];const x=l[l.length-1];return x?`<div class="mini" title="${esc(x.text)}">${esc(x.at)} · ${esc(x.name||'')}</div><div class="r-mut" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.text)}</div>`:'<span class="r-mut">—</span>'}
+async function ckUpd(id,patch,silent){
+ try{const d=await apiPost('/api/care.php',Object.assign({action:'update',id},patch));
+  if(CK.d&&d.record){const i=CK.d.rows.findIndex(x=>x.id===id);if(i>=0)CK.d.rows[i]=Object.assign(CK.d.rows[i],d.record)}
+  if(!silent)toast('Đã lưu',d.unchanged?'không có thay đổi':'');render();return d.record}
+ catch(e){toast('Lỗi',e.message);return null}
+}
+async function ckSync(full){
+ if(full&&!confirm('Đồng bộ toàn bộ (đọc lại mọi trang liên hệ + đơn hàng trên chungauto.vn) — có thể mất vài phút. Tiếp tục?'))return;
+ CK.syncing=true;render();toast('Đang kéo dữ liệu từ chungauto.vn…','chỉ đọc, không thay đổi gì trên web');
+ try{const d=await apiPost('/api/care.php',{action:'sync',full:!!full});toast('Đã đồng bộ',`${d.contacts.new} liên hệ mới · ${d.orders.new} đơn mới · ${d.orders.upd+d.contacts.upd} cập nhật${d.complete?'':' · còn tiếp, bấm lại để chạy nốt'}`)}
+ catch(e){toast('Đồng bộ lỗi',e.message)}finally{CK.syncing=false;ckLoad()}
+}
+function pgCareWeb(){
+ if(CK._pid!==(proj()||{}).id){CK._pid=(proj()||{}).id;CK.d=null;CK.err='';CK.page=1}
+ if(!CK.d&&!CK.busy&&!CK.err){setTimeout(ckLoad,0);return '<div class="empty">Đang tải khách CSKH…</div>'}
+ if(CK.err&&!CK.d)return noData('Chưa tải được danh sách CSKH',esc(CK.err),`<button class="btn" onclick="CK.err='';ckLoad()">Thử lại</button>`);
+ const D=CK.d,F=CK.f,M=ckMap(),st=D.stats||{},cn=D.counts||{},kd=D.kinds||{},W=projWrite();
+ const totalAll=(kd.contact||0)+(kd.order||0);
+ if(!totalAll&&!CK.busy)return `<div class="card">${noData('Chưa có khách từ website','Kéo liên hệ và đơn hàng từ trang quản trị chungauto.vn về đây để CSKH chăm sóc (chỉ đọc, không thay đổi gì trên web).',D.can_sync&&D.sync_configured?`<button class="btn primary" onclick="ckSync(true)" ${CK.syncing?'disabled':''}>${ic('download')} ${CK.syncing?'Đang kéo dữ liệu…':'Kéo toàn bộ khách từ chungauto.vn'}</button>`:'<div class="mini">Quản trị viên cần cấu hình tài khoản quản trị chungauto.vn trên máy chủ.</div>')}</div>`;
+ const kp=(l,v,ic2,c,fn,on)=>`<div class="kpi" style="cursor:pointer;${on?'outline:2px solid '+c+';':''}" onclick="${fn}"><div class="lbl"><span class="ki" style="background:${c}1a;color:${c}">${ic(ic2)}</span>${l}</div><div class="val">${v}</div></div>`;
+ const kpis=`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+  ${kp('Tất cả khách',num(totalAll),'users','#2563eb',"ckQuick('','')",!F.due&&!F.care)}
+  ${kp('Chưa chăm sóc',num(cn.new||0),'route','#6b7789',"ckQuick('','new')",F.care==='new'&&!F.due)}
+  ${kp('Cần gọi hôm nay',num(st.due_today||0),'bell','#d97706',"ckQuick('today','')",F.due==='today')}
+  ${kp('Quá hẹn',num(st.overdue||0),'clock','#dc2626',"ckQuick('overdue','')",F.due==='overdue')}
+  ${kp('Hẹn gọi lại',num(cn.callback||0),'calendar','#d97706',"ckQuick('','callback')",F.care==='callback'&&!F.due)}
+  ${kp('Đã chốt / đã mua',num(cn.won||0),'check','#0d9488',"ckQuick('','won')",F.care==='won'&&!F.due)}
+  ${kp('Chưa giao người',num(st.unassigned||0),'users','#7c3aed',"CK.f.due='';CK.f.care='';ckSet('assignee','_none')",F.assignee==='_none')}
+  ${kp('Doanh thu đơn thành công',money(st.revenue||0),'chart','#db2777',"CK.f.due='';CK.f.care='';CK.f.kind='order';ckSet('web','Thành công')",F.web==='Thành công')}
+ </div>`;
+ const webs=[...new Set((D.web_statuses||[]).map(w=>w.web_status))];
+ const sel=(k,opts,lbl)=>`<select onchange="ckSet('${k}',this.value)" title="${lbl}">${opts.map(o=>`<option value="${esc(o[0])}" ${F[k]===o[0]?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`;
+ const staff=D.staff||[];
+ const ls=D.last_sync&&D.last_sync.at?`Đồng bộ lần cuối ${esc(D.last_sync.at.slice(0,16))}`:'';
+ const bar=`<div class="card" style="margin-bottom:12px"><div class="card-b" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <div class="fb-search" style="flex:1;min-width:220px">${ic('search')}<input id="ck-q" placeholder="Tìm tên, SĐT, địa chỉ, sản phẩm, mã đơn…" value="${esc(F.q)}" oninput="ckSearch(this.value)"></div>
+  ${sel('kind',[['','Liên hệ + đơn hàng'],['contact','Chỉ liên hệ ('+(kd.contact||0)+')'],['order','Chỉ đơn hàng ('+(kd.order||0)+')']],'Loại')}
+  ${sel('care',[['','Mọi trạng thái CSKH']].concat(Object.keys(M).map(k=>[k,M[k].t+' ('+(cn[k]||0)+')'])),'Trạng thái CSKH')}
+  ${sel('web',[['','Mọi trạng thái web']].concat(webs.map(w=>[w,w])),'Trạng thái trên web')}
+  ${sel('assignee',[['','Mọi người phụ trách'],['_none','Chưa giao']].concat(staff.map(s=>[s.id,s.name])),'Phụ trách')}
+  <input type="date" value="${esc(F.from)}" onchange="ckSet('from',this.value)" title="Từ ngày"><input type="date" value="${esc(F.to)}" onchange="ckSet('to',this.value)" title="Đến ngày">
+  ${sel('sort',[['new','Mới nhất'],['old','Cũ nhất'],['follow','Hẹn gọi gần nhất'],['value','Giá trị đơn cao'],['updated','Vừa cập nhật']],'Sắp xếp')}
+  <div class="hact"><span class="mini">${CK.busy?'Đang tải…':ls}</span>
+   ${D.can_sync&&D.sync_configured?`<button class="btn sm" onclick="ckSync(false)" ${CK.syncing?'disabled':''} title="Kéo liên hệ / đơn mới từ chungauto.vn (tự chạy mỗi giờ)">${ic('download')} ${CK.syncing?'Đang đồng bộ…':'Đồng bộ ngay'}</button>`:''}
+   <a class="btn sm" style="text-decoration:none" href="${APP_BASE}api/care.php?${ckQS({export:1,page:'',per:''})}">${ic('download')} Xuất Excel</a></div></div></div>`;
+ const pages=Math.max(1,Math.ceil(D.total/D.per));
+ const rows=(D.rows||[]).map(r=>{
+  const overdue=r.next_follow_at&&r.next_follow_at<new Date().toISOString().slice(0,16).replace('T',' ')&&!['won','lost','invalid'].includes(r.care_status);
+  return `<tr class="clk" onclick="ckOpen('${esc(r.id)}')">
+  <td class="mono" style="white-space:nowrap">${esc((r.ext_created_at||'').slice(0,16))}</td>
+  <td style="white-space:nowrap">${r.kind==='order'?'<span class="badge b-vio">Đơn</span>':'<span class="badge b-info">Liên hệ</span>'}<div class="r-mut mono">#${esc(r.ext_id)}</div></td>
+  <td style="min-width:150px"><b>${esc(r.name||'(không tên)')}</b>${r.same_phone>1?` <span class="chip" title="Cùng SĐT: ${r.same_phone} lần liên hệ / đơn">khách quen ×${r.same_phone}</span>`:''}<div>${ckTel(r.phone)}</div>${r.email?`<div class="r-mut">${esc(r.email)}</div>`:''}</td>
+  <td style="max-width:220px" class="r-mut">${esc(r.address||'—')}</td>
+  <td style="max-width:260px">${ckWhat(r)}</td>
+  <td class="tar mono">${r.kind==='order'&&r.total!=null?money(r.total):'—'}</td>
+  <td>${r.web_status?`<span class="chip">${esc(r.web_status)}</span>`:'—'}</td>
+  <td onclick="event.stopPropagation()">${W?`<select onchange="ckUpd('${esc(r.id)}',{care_status:this.value})" style="max-width:150px">${Object.keys(M).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(M[k].t)}</option>`).join('')}</select>`:badge(M,r.care_status)}</td>
+  <td onclick="event.stopPropagation()">${W?`<select onchange="ckUpd('${esc(r.id)}',{assignee_id:this.value})" style="max-width:140px"><option value="">— Chưa giao —</option>${staff.map(s=>`<option value="${esc(s.id)}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select>`:esc((staff.find(s=>s.id===r.assignee_id)||{}).name||'—')}</td>
+  <td style="white-space:nowrap" class="${overdue?'neg':''}">${r.next_follow_at?esc(r.next_follow_at)+(overdue?'<div class="mini" style="color:var(--bad)">quá hẹn</div>':''):'<span class="r-mut">—</span>'}</td>
+  <td>${ckLast(r)}</td></tr>`}).join('');
+ const pager=`<div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:10px 14px;flex-wrap:wrap"><span class="mini">${num(D.total)} khách · trang ${D.page}/${pages}</span>
+  <button class="btn sm" ${D.page<=1?'disabled':''} onclick="ckPage(${D.page-1})">‹ Trước</button><button class="btn sm" ${D.page>=pages?'disabled':''} onclick="ckPage(${D.page+1})">Sau ›</button>
+  <select onchange="CK.per=Number(this.value);ckPage(1)">${[25,50,100,200].map(n=>`<option ${CK.per===n?'selected':''}>${n}</option>`).join('')}</select><span class="mini">/ trang</span></div>`;
+ return kpis+bar+`<div class="card"><div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl"><thead><tr><th>Ngày tạo</th><th>Loại</th><th>Khách</th><th>Địa chỉ</th><th>Nội dung / sản phẩm</th><th class="tar">Giá trị</th><th>Trạng thái web</th><th>CSKH</th><th>Phụ trách</th><th>Hẹn gọi lại</th><th>Chăm sóc gần nhất</th></tr></thead>
+  <tbody>${rows||`<tr><td colspan="11"><div class="mini" style="padding:16px">${CK.busy?'Đang tải…':'Không có khách khớp bộ lọc.'}</div></td></tr>`}</tbody></table></div>${pager}</div>`;
+}
+async function ckOpen(id){
+ let d;try{d=await apiGet('/api/care.php?id='+encodeURIComponent(id))}catch(e){toast('Lỗi',e.message);return}
+ const r=d.record,H=d.history||[],st=d.care_statuses,W=projWrite();const M={};Object.keys(st).forEach(k=>M[k]={t:st[k],c:CK_C[k]||'mut'});
+ const it=r.items||[];
+ const info=(l,v)=>`<div class="dleg">${l}<b style="margin-left:auto;text-align:right;max-width:65%">${v}</b></div>`;
+ const webLink=r.kind==='order'?`<a href="https://chungauto.vn/cp_admin/orders/${encodeURIComponent(r.ext_id)}" target="_blank" rel="noopener">#${esc(r.ext_id)} ↗</a>`:'#'+esc(r.ext_id);
+ openDrawer(`<div class="dh"><div><div class="d-title">${esc(r.name||'(không tên)')}</div><div class="d-sub">${ckTel(r.phone)}${r.email?' · '+esc(r.email):''}</div></div><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+ <div class="db">
+  <div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap">${r.kind==='order'?'<span class="badge b-vio">Đơn hàng</span>':'<span class="badge b-info">Liên hệ</span>'}${badge(M,r.care_status)}${r.web_status?`<span class="chip">Web: ${esc(r.web_status)}</span>`:''}</div>
+  <div class="card" style="margin:0"><div class="card-b">
+   ${info('Mã trên web',webLink)}${info('Ngày tạo',esc(r.ext_created_at||'—'))}${info('Địa chỉ',esc(r.address||'—'))}
+   ${r.kind==='order'?info('Tổng tiền',`<span class="mono">${money(r.total||0)}</span>`)+(r.discount?info('Giảm giá',money(r.discount)):'')+(r.coupon?info('Mã giảm giá',esc(r.coupon)):''):''}
+   ${r.message?`<div class="mini" style="margin-top:8px"><b>${r.kind==='order'?'Ghi chú của khách':'Nội dung liên hệ'}:</b> ${esc(r.message)}</div>`:''}
+  </div></div>
+  ${it.length?`<div class="card" style="margin:14px 0 0"><div class="card-h"><h3>Sản phẩm trong đơn</h3></div><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Sản phẩm</th><th class="tar">SL</th><th class="tar">Giá</th><th class="tar">Thành tiền</th></tr></thead><tbody>${it.map(i=>`<tr><td>${esc(i.name)}${i.note?`<div class="r-mut">${esc(i.note)}</div>`:''}</td><td class="tar">${i.qty}</td><td class="tar mono">${money(i.price)}</td><td class="tar mono">${money(i.total)}</td></tr>`).join('')}</tbody></table></div></div>`:''}
+  <div class="card" style="margin:14px 0 0"><div class="card-h">${ic('edit')}<h3>Chăm sóc khách</h3></div><div class="card-b">
+   ${W?`<div class="frow f2"><div class="field"><label>Trạng thái CSKH</label><select id="ck-st">${Object.keys(M).map(k=>`<option value="${k}" ${r.care_status===k?'selected':''}>${esc(M[k].t)}</option>`).join('')}</select></div>
+   <div class="field"><label>Người phụ trách</label><select id="ck-as"><option value="">— Chưa giao —</option>${(d.staff||[]).map(s=>`<option value="${esc(s.id)}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div></div>
+   <div class="field"><label>Hẹn gọi lại</label><input id="ck-nf" type="datetime-local" value="${esc((r.next_follow_at||'').replace(' ','T'))}"></div>
+   <div class="field"><label>Ghi chú cuộc gọi / chăm sóc</label><textarea id="ck-note" rows="3" placeholder="VD: Đã gọi, khách hẹn cuối tuần qua lắp; quan tâm gói phim cách nhiệt…"></textarea></div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${['Không nghe máy','Thuê bao','Đã tư vấn, khách suy nghĩ','Khách đã mua','Không có nhu cầu'].map(t=>`<button class="btn xs" onclick="const n=$('#ck-note');n.value=(n.value?n.value+'; ':'')+'${t}'">${t}</button>`).join('')}</div>
+   <button class="btn primary" onclick="ckSaveDrawer('${esc(r.id)}')">${ic('check')} Lưu chăm sóc</button>`:'<div class="mini">Bạn chỉ có quyền xem.</div>'}
+  </div></div>
+  <div class="card" style="margin:14px 0 0"><div class="card-h">${ic('clock')}<h3>Nhật ký chăm sóc</h3><span class="sub">${(r.care_log||[]).length} lần</span></div><div class="card-b">${(r.care_log||[]).slice().reverse().map(x=>`<div style="border-left:3px solid var(--line);padding:2px 0 8px 10px"><div class="mini"><b>${esc(x.name||'')}</b> · ${esc(x.at)}</div><div>${esc(x.text)}</div></div>`).join('')||'<div class="mini">Chưa có lần chăm sóc nào.</div>'}</div></div>
+  ${H.length?`<div class="card" style="margin:14px 0 0"><div class="card-h">${ic('users')}<h3>Lịch sử cùng số điện thoại</h3><span class="sub">${H.length} lần khác</span></div><div class="card-b">${H.map(h=>`<div class="docrow clk" style="cursor:pointer" onclick="ckOpen('${esc(h.id)}')"><div class="dm"><div class="t1">${h.kind==='order'?'Đơn':'Liên hệ'} #${esc(h.ext_id)} · ${esc((h.ext_created_at||'').slice(0,10))} ${h.web_status?`<span class="chip">${esc(h.web_status)}</span>`:''} ${badge(M,h.care_status)}</div><div class="t2">${h.kind==='order'?money(h.total||0)+' · '+esc((h.items||[]).map(i=>i.name).join('; ')):esc(h.message||'')}</div></div></div>`).join('')}</div></div>`:''}
+ </div>`);
+}
+async function ckSaveDrawer(id){
+ const p={care_status:$('#ck-st').value,assignee_id:$('#ck-as').value,next_follow_at:$('#ck-nf').value,note:$('#ck-note').value};
+ const r=await ckUpd(id,p);if(r)ckOpen(id);
+}
 function pgLeadsMenu(){
- const t=tabOf('leadsmenu','list');
- const tabs=[['list','Danh sách & bàn giao','route',DB.leads.length],['pipe','Pipeline','layers']];
+ const t=tabOf('leadsmenu','care');
+ const tabs=[['care','Chăm sóc khách (CSKH)','users',CK.d?((CK.d.kinds||{}).contact||0)+((CK.d.kinds||{}).order||0):null],['list','Danh sách & bàn giao','route',DB.leads.length],['pipe','Pipeline','layers']];
  let body='';
- if(t==='crm')body=crmLeadsTab();
+ if(t==='care')body=pgCareWeb();
+ else if(t==='crm')body=crmLeadsTab();
  else if(t==='pipe'){
   const src=fget('lsrc','');const srcs=[...new Set(DB.leads.map(l=>l.source).filter(Boolean))];
   const ls=DB.leads.filter(l=>!src||l.source===src);

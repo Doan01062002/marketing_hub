@@ -488,3 +488,31 @@ CREATE TABLE IF NOT EXISTS meta_pages (
   PRIMARY KEY (connection_id, page_id)
 );
 CREATE INDEX IF NOT EXISTS idx_meta_pages_page ON meta_pages(page_id);
+
+-- v18 (16/10/2026): khách từ website (liên hệ + đơn hàng chungauto.vn) để CSKH chăm sóc. Phần web đồng bộ lại được; phần chăm sóc không bị đè.
+CREATE TABLE IF NOT EXISTS care_records (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  src TEXT NOT NULL,                         -- chungauto.vn
+  kind TEXT NOT NULL,                        -- contact | order
+  ext_id TEXT NOT NULL,                      -- ID trên web
+  name TEXT NOT NULL DEFAULT '',
+  phone TEXT, phone_norm TEXT, email TEXT, address TEXT,
+  message TEXT,                              -- nội dung liên hệ / ghi chú đơn của khách
+  items TEXT,                                -- JSON sản phẩm [{name,qty,price,total,note}]
+  subtotal REAL, discount REAL, total REAL, coupon TEXT,
+  web_status TEXT,                           -- trạng thái trên web (Chưa phản hồi / Mới / Thành công / Hủy…)
+  ext_created_at TEXT,                       -- giờ tạo trên web (giờ VN)
+  care_status TEXT NOT NULL DEFAULT 'new',   -- new | contacting | callback | consulted | won | lost | invalid
+  assignee_id TEXT,
+  next_follow_at TEXT,                       -- hẹn gọi lại (YYYY-MM-DD HH:MM)
+  last_contact_at TEXT,
+  care_log TEXT,                             -- JSON [{at, by, name, status, text}]
+  synced_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(project_id, src, kind, ext_id)
+);
+CREATE INDEX IF NOT EXISTS idx_care_phone ON care_records(project_id, phone_norm);
+CREATE INDEX IF NOT EXISTS idx_care_status ON care_records(project_id, care_status);
+CREATE INDEX IF NOT EXISTS idx_care_created ON care_records(project_id, ext_created_at);
