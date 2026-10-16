@@ -1056,7 +1056,9 @@ function renderNav(){
   const items=grp.items.map(([k,t,i,ext])=>{
    if(ext&&ext.href)return `<a class="nav-i ext" href="${ext.href}" target="_blank" rel="noopener">${ic(i)}<span>${t}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-left:auto;opacity:.55"><path d="M7 17 17 7M7 7h10v10"/></svg></a>`;
    if(projCustom()&&ROLE_MODS.includes(k)&&modLevel(k)<1)return '';
+   if(k==='settings'&&projCustom()&&modLevel('settings')<1){t='Tài khoản của tôi';i='users'}
    const c=navCount(k);const ai=k==='aiplan';return `<div class="nav-i ${ai?'ai ':''}${S.page===k?'on':''}" onclick="go('${k}')">${ic(i)}<span>${t}</span>${ai?'<span class="aitag">AI</span>':(c!=null?`<span class="cnt">${c}</span>`:'')}</div>`}).join('');
+  if(!items)return '';
   return (grp.g?`<div class="sb-grp">${grp.g}</div>`:'<div style="height:10px"></div>')+items;
  }).join('');
  mbarRender();
@@ -4227,10 +4229,12 @@ function projAdmin(){return ['owner','manager'].includes(projRole())||isAdmin()}
 function projWrite(){if(projCustom())return modLevel(pageModule(S.page))>=2;return ['owner','manager','content','ads'].includes(projRole())||isAdmin()}
 /* Vai trò tuỳ chỉnh (cr_…): quyền theo chức năng {module:'view'|'edit'}; máy chủ chặn thật ở API, đây chỉ là hiển thị. */
 const ROLE_MODS=['inbox','leadsmenu','overview','market','planmenu','channels','ads','caremenu','automation','reports','utilities','aiplan'];
-const ROLE_MOD_NAMES={inbox:'Cửa sổ chat (Messenger, Zalo)',leadsmenu:'Khách hàng & lead (CSKH)',overview:'Tổng quan dự án',market:'Phân tích thị trường',planmenu:'Mục tiêu & kế hoạch',channels:'Kênh marketing',ads:'Chiến dịch quảng cáo',caremenu:'Chăm sóc dự án (nội dung, công việc, bình luận)',automation:'Chiến dịch automation',reports:'Báo cáo & đo lường',utilities:'Tiện ích',aiplan:'Trợ lý dự án (AI)'};
+const ROLE_MOD_NAMES={inbox:'Cửa sổ chat (Messenger, Zalo)',leadsmenu:'Khách hàng & lead (CSKH)',overview:'Tổng quan dự án',market:'Phân tích thị trường',planmenu:'Mục tiêu & kế hoạch',channels:'Kênh marketing',ads:'Chiến dịch quảng cáo',caremenu:'Chăm sóc dự án (nội dung, công việc, bình luận)',automation:'Chiến dịch automation',reports:'Báo cáo & đo lường',utilities:'Tiện ích',aiplan:'Trợ lý dự án (AI)',settings:'Cài đặt dự án (thông tin, thành viên, kết nối)'};
+const ROLE_EDIT_MODS=ROLE_MODS.concat(['settings']);
+function roleLabel(p){return p?(p.role_name||PROJECT_ROLES_LABEL[p.role]||p.role||''):''}
 function projCustom(){const r=projRole();return !!r&&String(r).startsWith('cr_')&&!isAdmin()}
 function pageModule(p){const L=(typeof LEGACY!=='undefined'&&LEGACY[p])?LEGACY[p][0]:p;return L==='dashboard'?'overview':L}
-function modLevel(m){if(!projCustom())return 2;if(!ROLE_MODS.includes(m))return 1;const v=((proj()||{}).perms||{})[m];return v==='edit'?2:v==='view'?1:0}
+function modLevel(m){if(!projCustom())return 2;if(!ROLE_EDIT_MODS.includes(m))return 1;const v=((proj()||{}).perms||{})[m];return v==='edit'?2:v==='view'?1:0}
 function firstAllowedPage(){return ROLE_MODS.find(m=>modLevel(m)>=1)||'settings'}
 function PH(h){return Object.assign({'X-Project':S.project||''},h||{})}
 
@@ -4263,7 +4267,7 @@ function renderScope(){
  const ps=DB.projects||[],p=proj();
  const sel=`<select onchange="switchProject(this.value)" aria-label="Chọn dự án">${ps.map(x=>`<option value="${esc(x.id)}"${p&&x.id===p.id?' selected':''}>${esc(x.name)}</option>`).join('')}<option value="__all">Tất cả dự án…</option>${isManager()?'<option value="__new">＋ Tạo dự án mới…</option>':''}</select>`;
  const sc=$('#scope');if(sc)sc.innerHTML=`${ic('building')}${sel}`;
- const sb=$('#sbproj');if(sb)sb.innerHTML=p?`<div class="eyebrow">Không gian làm việc</div><div class="pj"><span class="dot" style="background:${esc(p.color||'#22c55e')}"></span><div style="min-width:0"><b>${esc(p.name)}</b><small>${esc(p.domain||(p.type==='internal'?'Dự án nội bộ':'Dự án khách hàng'))} · ${esc(PROJECT_ROLES_LABEL[p.role]||p.role||'')}</small></div></div>${sel}<div class="scope-note">${ic('shield')}Dữ liệu trong phạm vi dự án</div>`:`<div class="eyebrow">Không gian làm việc</div><div class="scope-note">Bạn chưa thuộc dự án nào</div>`;
+ const sb=$('#sbproj');if(sb)sb.innerHTML=p?`<div class="eyebrow">Không gian làm việc</div><div class="pj"><span class="dot" style="background:${esc(p.color||'#22c55e')}"></span><div style="min-width:0"><b>${esc(p.name)}</b><small>${esc(p.domain||(p.type==='internal'?'Dự án nội bộ':'Dự án khách hàng'))} · ${esc(roleLabel(p)||'')}</small></div></div>${sel}<div class="scope-note">${ic('shield')}Dữ liệu trong phạm vi dự án</div>`:`<div class="eyebrow">Không gian làm việc</div><div class="scope-note">Bạn chưa thuộc dự án nào</div>`;
 }
 function setScope(){ /* co/br cũ không còn dùng — phạm vi là dự án */ }
 
@@ -4282,7 +4286,7 @@ function pgOverview(){
  const pend=DB.campaigns.filter(c=>c.approval==='PENDING').length+DB.content.filter(c=>c.state==='IN_REVIEW').length;
  const late=(DB.tasks||[]).filter(t=>dueLate(t.due)).length;
  const k=DB.kpis||{};
- const hero=`<div class="proj-hero" style="--pc:${esc(p.color||'#22c55e')}"><div class="ph-l"><div class="eyebrow">${p.type==='internal'?'Dự án nội bộ':'Dự án khách hàng'} · ${esc(PROJECT_ROLES_LABEL[p.role]||'')}</div><h1>${esc(p.name)}</h1><div class="sub">${p.domain?`<a href="https://${esc(p.domain)}" target="_blank" rel="noopener">${esc(p.domain)}</a> · `:''}${esc(p.goal||'Chưa đặt mục tiêu — vào Cài đặt dự án')}</div></div>
+ const hero=`<div class="proj-hero" style="--pc:${esc(p.color||'#22c55e')}"><div class="ph-l"><div class="eyebrow">${p.type==='internal'?'Dự án nội bộ':'Dự án khách hàng'} · ${esc(roleLabel(p)||'')}</div><h1>${esc(p.name)}</h1><div class="sub">${p.domain?`<a href="https://${esc(p.domain)}" target="_blank" rel="noopener">${esc(p.domain)}</a> · `:''}${esc(p.goal||'Chưa đặt mục tiêu — vào Cài đặt dự án')}</div></div>
   <div class="ph-r"><div class="pst"><b>${ok}/${conns.length}</b><span>kênh kết nối</span></div><div class="pst"><b>${pend}</b><span>chờ duyệt</span></div><div class="pst ${late?'bad':''}"><b>${late}</b><span>việc trễ hạn</span></div><div class="pst"><b>${p.budget_month?money(p.budget_month):'—'}</b><span>ngân sách KH/tháng</span></div></div></div>
   ${bad.length?`<div class="pub-bad" style="margin-bottom:14px">${ic('alert')} ${bad.length} kênh chưa kết nối hoặc đang lỗi: ${bad.slice(0,4).map(c=>esc(c.label)).join(', ')}${bad.length>4?'…':''} — <a href="#settings/integ" onclick="go('settings','integ');return false">xem kết nối</a></div>`:''}
   ${!conns.length?noData('Chưa có kênh nào trong dự án','Số liệu tiếp cận, truy cập, chi phí chỉ hiện khi đã kết nối kênh. Dữ liệu trống ở đây nghĩa là "chưa kết nối", không phải 0.',`<button class="btn primary" onclick="go('settings','integ')">${ic('plus')} Kết nối kênh</button>`):''}`;
@@ -4294,7 +4298,7 @@ function pgPortfolio(){
  const ps=DB.projects||[];
  return `<div class="pagehead"><div><h1>Tất cả dự án</h1><div class="sub">Mỗi dự án là một không gian độc lập: kênh, chiến dịch, nội dung, khách hàng, automation và thành viên riêng.</div></div>
   ${isManager()?`<div class="ph-act"><button class="btn primary" onclick="projCreateForm()">${ic('plus')} Tạo dự án</button></div>`:''}</div>
-  <div class="grid3">${ps.map(x=>`<div class="card clk" onclick="switchProject('${esc(x.id)}')" style="margin:0;border-top:3px solid ${esc(x.color||'#22c55e')}"><div class="card-b"><div class="eyebrow">${x.type==='internal'?'Nội bộ':'Khách hàng'} · ${esc(PROJECT_ROLES_LABEL[x.role]||x.role||'')}</div><h3 style="margin:4px 0">${esc(x.name)}</h3><div class="mini">${esc(x.domain||'')}</div><div class="mini" style="margin-top:8px">${esc(x.goal||'')}</div>${x.status!=='active'?`<span class="badge b-warn">${x.status}</span>`:''}</div></div>`).join('')||noData('Chưa có dự án nào','Nhờ quản trị tạo dự án và thêm bạn vào.')}</div>`;
+  <div class="grid3">${ps.map(x=>`<div class="card clk" onclick="switchProject('${esc(x.id)}')" style="margin:0;border-top:3px solid ${esc(x.color||'#22c55e')}"><div class="card-b"><div class="eyebrow">${x.type==='internal'?'Nội bộ':'Khách hàng'} · ${esc(roleLabel(x)||'')}</div><h3 style="margin:4px 0">${esc(x.name)}</h3><div class="mini">${esc(x.domain||'')}</div><div class="mini" style="margin-top:8px">${esc(x.goal||'')}</div>${x.status!=='active'?`<span class="badge b-warn">${x.status}</span>`:''}</div></div>`).join('')||noData('Chưa có dự án nào','Nhờ quản trị tạo dự án và thêm bạn vào.')}</div>`;
 }
 function projCreateForm(){
  openModal(`<div class="mh"><h3>Tạo dự án mới</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb">
@@ -5113,8 +5117,9 @@ async function ideaDelete(id){if(!confirm('Xoá ý tưởng này?'))return;try{a
 
 /* ================= CÀI ĐẶT DỰ ÁN ================= */
 function pgSettingsMenu(){
- const t=tabOf('setmenu','project');
- const tabs=[['project','Thông tin dự án','flag'],['members','Thành viên & quyền','users'],['integ','Tài khoản kết nối','link',(DB.connections||[]).length]].concat(isManager()?[['staff','Nhân sự & hiệu suất','users']]:[]).concat(isAdmin()?[['system','Hệ thống (AI, dữ liệu, gửi tin)','settings']]:[]).concat([['account','Tài khoản của tôi','users']]);
+ const noSet=projCustom()&&modLevel('settings')<1;
+ const t=noSet?'account':tabOf('setmenu','project');
+ const tabs=noSet?[['account','Tài khoản của tôi','users']]:[['project','Thông tin dự án','flag'],['members','Thành viên & quyền','users'],['integ','Tài khoản kết nối','link',(DB.connections||[]).length]].concat(isManager()?[['staff','Nhân sự & hiệu suất','users']]:[]).concat(isAdmin()?[['system','Hệ thống (AI, dữ liệu, gửi tin)','settings']]:[]).concat([['account','Tài khoản của tôi','users']]);
  let body='';const p=proj()||{};
  if(t==='project'){
   body=`<div class="card" style="max-width:720px"><div class="card-h"><h3>Thông tin dự án</h3><span class="sub">Mã: ${esc(p.id||'')}</span></div><div class="card-b">
@@ -5155,7 +5160,7 @@ function customRolesCard(){
  const L=UT.croles||[];
  const lvl=(p,m)=>p[m]==='edit'?'<span class="badge b-ok">Sửa</span>':p[m]==='view'?'<span class="badge b-info">Xem</span>':'';
  return `<div class="card" style="max-width:860px"><div class="card-h">${ic('shield')}<h3>Vai trò tuỳ chỉnh</h3><span class="sub">tự đặt tên, tick chức năng được xem / được sửa</span><div class="hact"><button class="btn sm primary" onclick="roleEdit()">${ic('plus')} Tạo vai trò</button></div></div>
-  ${L.length?`<div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Vai trò</th><th>Chức năng được dùng</th><th class="tar">Người dùng</th><th></th></tr></thead><tbody>${L.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td><div style="display:flex;gap:6px;flex-wrap:wrap">${ROLE_MODS.filter(m=>r.perms[m]).map(m=>`<span class="chip">${esc(ROLE_MOD_NAMES[m].split(' (')[0])} ${lvl(r.perms,m)}</span>`).join('')}${r.perms.approve?'<span class="chip">Được duyệt</span>':''}</div></td><td class="tar">${r.members}</td><td style="white-space:nowrap"><button class="btn xs" onclick="roleEdit('${esc(r.id)}')">${ic('edit')} Sửa</button> <button class="btn xs" onclick="roleDelete('${esc(r.id)}')" ${r.members?'disabled title="Còn người dùng vai trò này"':''}>${ic('trash')}</button></td></tr>`).join('')}</tbody></table></div>`
+  ${L.length?`<div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Vai trò</th><th>Chức năng được dùng</th><th class="tar">Người dùng</th><th></th></tr></thead><tbody>${L.map(r=>`<tr><td><b>${esc(r.name)}</b></td><td><div style="display:flex;gap:6px;flex-wrap:wrap">${ROLE_EDIT_MODS.filter(m=>r.perms[m]).map(m=>`<span class="chip">${esc(ROLE_MOD_NAMES[m].split(' (')[0])} ${lvl(r.perms,m)}</span>`).join('')}${r.perms.approve?'<span class="chip">Được duyệt</span>':''}</div></td><td class="tar">${r.members}</td><td style="white-space:nowrap"><button class="btn xs" onclick="roleEdit('${esc(r.id)}')">${ic('edit')} Sửa</button> <button class="btn xs" onclick="roleDelete('${esc(r.id)}')" ${r.members?'disabled title="Còn người dùng vai trò này"':''}>${ic('trash')}</button></td></tr>`).join('')}</tbody></table></div>`
   :`<div class="card-b"><div class="mini">Chưa có vai trò tuỳ chỉnh. VD: tạo "Nhân sự CSKH" chỉ thấy <b>Khách hàng & lead</b> (+ Cửa sổ chat), rồi gán cho nhân viên ở bảng Thành viên phía trên.</div></div>`}</div>`;
 }
 const ROLE_PRESETS={cskh:{name:'Nhân sự CSKH',perms:{leadsmenu:'edit',inbox:'edit'}},xem_kh:{name:'Xem khách hàng',perms:{leadsmenu:'view'}},content:{name:'Biên tập nội dung',perms:{caremenu:'edit',channels:'view',planmenu:'view'}},ads:{name:'Chạy quảng cáo',perms:{ads:'edit',channels:'view',reports:'view',overview:'view'}}};
@@ -5166,15 +5171,15 @@ function roleEdit(id,preset){
   <div class="mb">
    ${id?'':`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"><span class="mini" style="align-self:center">Mẫu nhanh:</span>${Object.entries(ROLE_PRESETS).map(([k,p])=>`<button class="btn xs" onclick="closeLayer();setTimeout(()=>roleEdit('','${k}'),260)">${esc(p.name)}</button>`).join('')}</div>`}
    <div class="field"><label>Tên vai trò</label><input id="rp-name" value="${esc(r.name)}" placeholder="VD: Nhân sự CSKH"></div>
-   <div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>Chức năng</th><th class="tar">Không</th><th class="tar">Xem</th><th class="tar">Xem + sửa</th></tr></thead><tbody>${ROLE_MODS.map(row).join('')}</tbody></table></div>
+   <div class="tbl-wrap" style="box-shadow:none"><table class="tbl"><thead><tr><th>Chức năng</th><th class="tar">Không</th><th class="tar">Xem</th><th class="tar">Xem + sửa</th></tr></thead><tbody>${ROLE_EDIT_MODS.map(row).join('')}</tbody></table></div>
    <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-weight:500;text-transform:none;letter-spacing:0"><input id="rp-approve" type="checkbox" style="width:auto;height:auto" ${r.perms.approve?'checked':''}> Được duyệt nội dung / chiến dịch</label>
-   <div class="mini" style="margin-top:8px">Mục không tick sẽ ẩn khỏi menu và máy chủ từ chối truy cập. Cài đặt dự án (thành viên, kết nối kênh, hệ thống) chỉ chủ / quản lý dự án dùng được.</div>
+   <div class="mini" style="margin-top:8px">Mục không tick sẽ ẩn khỏi menu và máy chủ từ chối truy cập. Không tick "Cài đặt dự án" → nhân viên chỉ thấy "Tài khoản của tôi" (đổi mật khẩu). Quản lý thành viên, kết nối kênh, hệ thống luôn chỉ dành cho chủ / quản lý dự án.</div>
    <div id="rp-err" style="color:var(--bad);font-size:12.5px;min-height:16px;margin-top:6px"></div>
   </div>
   <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="roleSave('${esc(id||'')}')">${ic('check')} ${id?'Lưu vai trò':'Tạo vai trò'}</button></div>`);
 }
 async function roleSave(id){
- const perms={};ROLE_MODS.forEach(m=>{const el=document.querySelector(`input[name="rp-${m}"]:checked`);if(el&&el.value)perms[m]=el.value});if($('#rp-approve').checked)perms.approve=true;
+ const perms={};ROLE_EDIT_MODS.forEach(m=>{const el=document.querySelector(`input[name="rp-${m}"]:checked`);if(el&&el.value)perms[m]=el.value});if($('#rp-approve').checked)perms.approve=true;
  const name=$('#rp-name').value.trim();if(!name){$('#rp-err').textContent='Nhập tên vai trò';return}
  try{const d=await apiPost('/api/projects.php',{action:'role_save',id:S.project,role_id:id||undefined,name,perms});UT.croles=d.custom_roles;UT.roles=d.roles;closeLayer();toast(id?'Đã lưu vai trò':'Đã tạo vai trò',name);render()}
  catch(e){$('#rp-err').textContent=e.message}

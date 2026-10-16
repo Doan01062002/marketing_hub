@@ -713,7 +713,7 @@ function public_connection(array $r): array {
 const ROLE_MODULES = ['inbox' => 'Cửa sổ chat (Messenger, Zalo)', 'leadsmenu' => 'Khách hàng & lead (CSKH)', 'overview' => 'Tổng quan dự án',
     'market' => 'Phân tích thị trường', 'planmenu' => 'Mục tiêu & kế hoạch', 'channels' => 'Kênh marketing', 'ads' => 'Chiến dịch quảng cáo',
     'caremenu' => 'Chăm sóc dự án (nội dung, công việc, bình luận)', 'automation' => 'Chiến dịch automation', 'reports' => 'Báo cáo & đo lường',
-    'utilities' => 'Tiện ích', 'aiplan' => 'Trợ lý dự án (AI)'];
+    'utilities' => 'Tiện ích', 'aiplan' => 'Trợ lý dự án (AI)', 'settings' => 'Cài đặt dự án (thông tin, thành viên, kết nối)'];
 const API_MODULES = [
     'inbox.php' => ['inbox'], 'zalo_user.php' => ['inbox'],
     'leads.php' => ['leadsmenu'], 'care.php' => ['leadsmenu'], 'sequences.php' => ['automation', 'leadsmenu'],
