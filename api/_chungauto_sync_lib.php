@@ -135,7 +135,7 @@ function ca_upsert(string $pid, string $kind, array $r): string {
     if (!$old) {
         $pdo->prepare("INSERT INTO care_records(id,project_id,src,kind,ext_id,name,phone,phone_norm,email,address,message,items,subtotal,discount,total,coupon,web_status,ext_created_at,care_status,synced_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))")
-            ->execute([gen_id('CS'), $pid, CA_SRC, $kind, $r['ext_id'], $r['name'] ?? '', $r['phone'] ?? '', ca_phone_norm($r['phone'] ?? ''), $r['email'] ?? '', $r['address'] ?? '',
+            ->execute(['CS' . strtoupper(bin2hex(random_bytes(8))), $pid, CA_SRC, $kind, $r['ext_id'], $r['name'] ?? '', $r['phone'] ?? '', ca_phone_norm($r['phone'] ?? ''), $r['email'] ?? '', $r['address'] ?? '',
                 $r['message'] ?? '', $items, $r['subtotal'] ?? null, $r['discount'] ?? null, $r['total'] ?? null, $r['coupon'] ?? '', $r['web_status'] ?? null, $r['ext_created_at'] ?? null,
                 ca_initial_care($kind, $r['web_status'] ?? null)]);
         return 'new';
