@@ -132,8 +132,17 @@ function ca_initial_care(string $kind, ?string $web): string {
     return 'new';
 }
 
+/** CSDL đang bị tiến trình khác ghi (cron, webhook) → chờ rồi thử lại, tối đa 6 lần. */
+function ca_retry(callable $fn) {
+    for ($i = 0; ; $i++) {
+        try { return $fn(); }
+        catch (PDOException $e) { if ($i >= 6 || !str_contains($e->getMessage(), 'locked')) throw $e; sleep(2 + $i * 2); }
+    }
+}
+
 /** Ghi / cập nhật một bản ghi. Trả 'new' | 'upd' | 'same'. */
-function ca_upsert(string $pid, string $kind, array $r): string {
+function ca_upsert(string $pid, string $kind, array $r): string { return ca_retry(fn() => ca_upsert_once($pid, $kind, $r)); }
+function ca_upsert_once(string $pid, string $kind, array $r): string {
     global $pdo;
     $st = $pdo->prepare('SELECT id, name, phone, address, email, message, items, total, web_status FROM care_records WHERE project_id=? AND src=? AND kind=? AND ext_id=?');
     $st->execute([$pid, CA_SRC, $kind, $r['ext_id']]); $old = $st->fetch();
