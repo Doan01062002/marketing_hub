@@ -4921,11 +4921,84 @@ async function ckSaveDrawer(id){
  const p={care_status:$('#ck-st').value,assignee_id:$('#ck-as').value,branch_id:$('#ck-br').value==='__new'?'':$('#ck-br').value,next_follow_at:$('#ck-nf').value,note:$('#ck-note').value};
  const r=await ckUpd(id,p);if(r)ckOpen(id);
 }
+/* ---- Báo cáo CSKH (api/care.php?report=1) 16/10/2026 ---- */
+const CR={range:'today',from:'',to:'',d:null,busy:false,err:'',key:'',_pid:null,m:'new'};
+const CR_RANGES=[['today','Hôm nay'],['yesterday','Hôm qua'],['7d','7 ngày qua'],['30d','30 ngày qua'],['month','Tháng này'],['lastmonth','Tháng trước'],['quarter','Quý này'],['year','Năm nay'],['custom','Tuỳ chọn…']];
+function crYmd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function crDates(){const t=new Date();t.setHours(0,0,0,0);const add=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};let a=t,b=t;
+ switch(CR.range){case'yesterday':a=b=add(t,-1);break;case'7d':a=add(t,-6);break;case'30d':a=add(t,-29);break;case'month':a=new Date(t.getFullYear(),t.getMonth(),1);break;
+  case'lastmonth':a=new Date(t.getFullYear(),t.getMonth()-1,1);b=new Date(t.getFullYear(),t.getMonth(),0);break;case'quarter':a=new Date(t.getFullYear(),Math.floor(t.getMonth()/3)*3,1);break;
+  case'year':a=new Date(t.getFullYear(),0,1);break;case'custom':return [CR.from||crYmd(t),CR.to||crYmd(t)]}
+ return [crYmd(a),crYmd(b)]}
+async function crLoad(){const [f,t]=crDates();const key=f+'|'+t+'|'+(S.project||'');CR.key=key;CR.busy=true;CR.err='';render();
+ try{const d=await apiGet('/api/care.php?report=1&from='+f+'&to='+t);if(CR.key===key)CR.d=d}catch(e){if(CR.key===key)CR.err=e.message}finally{if(CR.key===key){CR.busy=false;render()}}}
+function crSet(r){CR.range=r;if(r!=='custom'){CR.d=null;crLoad()}else render()}
+function crDelta(c,p,inv){if(!p){return c?'<span class="mini" style="color:var(--mut)">kỳ trước: 0</span>':''}const x=(c-p)/p*100,up=x>=0,good=inv?!up:up;return `<span class="mini" style="font-weight:700;color:${Math.abs(x)<1?'var(--mut)':good?'var(--ok)':'var(--bad)'}">${up?'▲':'▼'} ${Math.abs(x).toLocaleString('vi-VN',{maximumFractionDigits:1})}%</span> <span class="mini">so với kỳ trước (${num(p)})</span>`}
+function crPct(a,b){return b?(a/b*100).toLocaleString('vi-VN',{maximumFractionDigits:1})+'%':'—'}
+function crFmtD(s){const p=String(s||'').split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:s}
+function pgCareReport(){
+ if(typeof ckCss==='function')ckCss();
+ if(CR._pid!==(proj()||{}).id){CR._pid=(proj()||{}).id;CR.d=null;CR.err=''}
+ const [f,t]=crDates();
+ const bar=`<div class="ck-shell no-print-b" style="margin-bottom:14px"><div class="ck-tabs">${CR_RANGES.map(r=>`<button class="ck-tab ${CR.range===r[0]?'on':''}" onclick="crSet('${r[0]}')">${r[1]}</button>`).join('')}</div>
+  <div class="ck-tools">${CR.range==='custom'?`<input class="ck-date" type="date" value="${esc(CR.from||f)}" onchange="CR.from=this.value"> → <input class="ck-date" type="date" value="${esc(CR.to||t)}" onchange="CR.to=this.value"><button class="btn sm primary" onclick="CR.d=null;crLoad()">Xem báo cáo</button>`:''}
+   <span class="mini"><b>${crFmtD(f)}${f!==t?' → '+crFmtD(t):''}</b>${CR.d?` · so với ${crFmtD(CR.d.range.prev_from)}${CR.d.range.prev_from!==CR.d.range.prev_to?' → '+crFmtD(CR.d.range.prev_to):''}`:''}</span>
+   <div class="hact">${CR.busy?'<span class="mini">Đang tính…</span>':CR.d?`<span class="mini">Lập lúc ${esc(CR.d.generated_at.slice(11))}</span>`:''}
+    <button class="btn sm" onclick="CR.d=null;crLoad()">${ic('trend')} Làm mới</button>
+    ${CR.d?`<button class="btn sm" onclick="crExportAll()">${ic('download')} Xuất báo cáo (Excel)</button><a class="btn sm" style="text-decoration:none" href="${APP_BASE}api/care.php?export=1&from=${f}&to=${t}">${ic('download')} Danh sách khách trong kỳ</a><button class="btn sm" onclick="crPrint()">${ic('doc')} In / PDF</button>`:''}</div></div></div>`;
+ if(CR.err)return bar+noData('Chưa lập được báo cáo',esc(CR.err),`<button class="btn" onclick="crLoad()">Thử lại</button>`);
+ if(!CR.d){if(!CR.busy&&CR.range!=='custom')setTimeout(crLoad,0);return bar+'<div class="ck-shell"><div class="ck-empty">Đang lập báo cáo…</div></div>'}
+ const D=CR.d,c=D.summary.cur,p=D.summary.prev,st=D.care_statuses;
+ const tile=(l,v,cv,pv,icn,col,sub,inv)=>`<div class="ck-stat" style="--c:${col};cursor:default;align-items:flex-start"><div class="ic">${ic(icn)}</div><div style="min-width:0"><div class="n">${v}</div><div class="l">${l}</div><div style="margin-top:4px">${cv!=null?crDelta(cv,pv,inv):''}</div>${sub?`<div class="mini">${sub}</div>`:''}</div></div>`;
+ const tiles=`<div class="ck-stats" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+  ${tile('Khách mới',num(c.new),c.new,p.new,'users','#2563eb',`${num(c.contacts)} liên hệ · ${num(c.orders)} đơn`)}
+  ${tile('Đã phân chi nhánh',num(c.assigned),c.assigned,p.assigned,'route','#7c3aed',`${crPct(c.assigned,c.new)} khách mới · chưa phân ${num(c.unassigned)}`)}
+  ${tile('Lượt chuyển chi nhánh',num(c.transfers),c.transfers,p.transfers,'send','#d97706','theo thời điểm chuyển trong kỳ')}
+  ${tile('Khách được chăm sóc',num(c.cared),c.cared,p.cared,'check','#0d9488',`${num(c.actions)} lượt ghi nhận / cập nhật`)}
+  ${tile('Đã chốt (khách mới)',num(c.won),c.won,p.won,'trophy','#16a34a',`tỉ lệ chốt ${crPct(c.won,c.new)}`)}
+  ${tile('Giá trị đơn mới',money(c.order_value),c.order_value,p.order_value,'wallet','#db2777',`${num(c.orders)} đơn đặt trong kỳ`)}
+  ${tile('Doanh thu đã chốt',money(c.revenue),c.revenue,p.revenue,'chart','#0891b2','đơn mới trong kỳ, trạng thái Đã chốt')}
+  ${tile('Quá hẹn hiện tại',num(D.branches.reduce((s,b)=>s+b.overdue,0)),null,null,'alert','#dc2626','tính đến lúc lập báo cáo')}
+ </div>`;
+ const CM=[['new','Khách mới',x=>x.contacts+x.orders,'#2563eb'],['transfers','Chuyển chi nhánh',x=>x.transfers,'#d97706'],['actions','Lượt chăm sóc',x=>x.actions,'#0d9488'],['won','Chốt',x=>x.won,'#16a34a']];
+ const cm=CM.find(x=>x[0]===CR.m)||CM[0];const S2=D.series;
+ const chart=S2.length>1?`<div class="card"><div class="card-h"><h3>Diễn biến theo ngày</h3><div class="segbar" style="margin:0">${CM.map(x=>`<button class="seg ${x[0]===cm[0]?'on':''}" onclick="CR.m='${x[0]}';render()">${x[1]}</button>`).join('')}</div></div><div class="card-b">${chLine(stThin(S2.map(x=>stDay(x.d))),cm[0]==='new'?[{name:'Liên hệ',color:'#2563eb',values:S2.map(x=>x.contacts)},{name:'Đơn hàng',color:'#7c3aed',values:S2.map(x=>x.orders)}]:[{name:cm[1],color:cm[3],values:S2.map(cm[2])}])}</div></div>`:'';
+ const sk=Object.keys(st),SC={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
+ const B=D.branches,tot=k=>B.reduce((s,b)=>s+(typeof k==='function'?k(b):b[k]),0);
+ const brTbl=`<div class="card"><div class="card-h">${ic('building')}<h3>Phân bố theo chi nhánh</h3><span class="sub">khách mới trong kỳ (theo ngày tạo) · lượt chuyển theo thời điểm chuyển</span><div class="hact"><button class="btn sm" onclick="crExport('branches')">${ic('download')} Excel</button></div></div>
+  <div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl"><thead><tr><th>Chi nhánh</th><th class="tar">Khách mới</th><th class="tar">Liên hệ</th><th class="tar">Đơn</th><th class="tar">% tổng</th><th class="tar">Chuyển trong kỳ</th>${sk.map(k=>`<th class="tar" title="${esc(st[k])}" style="color:${SC[k]}">${esc(st[k].split(' /')[0])}</th>`).join('')}<th class="tar">Tỉ lệ chốt</th><th class="tar">Doanh thu chốt</th><th class="tar">Quá hẹn</th><th class="tar">Tổng đang giữ</th></tr></thead><tbody>
+  ${B.map(b=>`<tr${b.id==='_none'?' style="background:#fffbea"':''}><td><b>${esc(b.name)}</b></td><td class="tar"><b>${num(b.new)}</b></td><td class="tar">${num(b.contacts)}</td><td class="tar">${num(b.orders)}</td><td class="tar">${crPct(b.new,c.new)}</td><td class="tar">${num(b.transfers)}</td>${sk.map(k=>`<td class="tar">${b.status[k]?num(b.status[k]):'<span class="r-mut">·</span>'}</td>`).join('')}<td class="tar">${crPct(b.won,b.new)}</td><td class="tar mono">${b.revenue?money(b.revenue):'—'}</td><td class="tar ${b.overdue?'neg':''}">${num(b.overdue)}</td><td class="tar">${num(b.total_now)}</td></tr>`).join('')||`<tr><td colspan="${11+sk.length}"><div class="mini" style="padding:12px">Chưa có chi nhánh — tạo ở tab Chăm sóc khách.</div></td></tr>`}
+  </tbody><tfoot><tr style="font-weight:700;background:#f8fafc"><td>Tổng</td><td class="tar">${num(tot('new'))}</td><td class="tar">${num(tot('contacts'))}</td><td class="tar">${num(tot('orders'))}</td><td class="tar">100%</td><td class="tar">${num(tot('transfers'))}</td>${sk.map(k=>`<td class="tar">${num(tot(b=>b.status[k]||0))}</td>`).join('')}<td class="tar">${crPct(tot('won'),tot('new'))}</td><td class="tar mono">${money(tot('revenue'))}</td><td class="tar">${num(tot('overdue'))}</td><td class="tar">${num(tot('total_now'))}</td></tr></tfoot></table></div></div>`;
+ const maxB=Math.max(1,...B.map(b=>b.new));
+ const brBars=B.some(b=>b.new)?`<div class="card"><div class="card-h"><h3>Tỉ trọng khách mới theo chi nhánh</h3></div><div class="card-b">${B.filter(b=>b.new).map((b,i)=>`<div style="display:grid;grid-template-columns:180px 1fr 90px;gap:10px;align-items:center;margin:6px 0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(b.name)}</b></div><div style="height:12px;background:#eef1f5;border-radius:6px"><div style="height:12px;width:${(b.new/maxB*100).toFixed(1)}%;background:${b.id==='_none'?'#cbd5e1':AR_COL[i%AR_COL.length]};border-radius:6px"></div></div><div class="tar mini"><b>${num(b.new)}</b> · ${crPct(b.new,c.new)}</div></div>`).join('')}</div></div>`:'';
+ const SF=D.staff;
+ const sfTbl=`<div class="card"><div class="card-h">${ic('users')}<h3>Theo nhân viên chăm sóc</h3><span class="sub">lượt chăm sóc, chuyển chi nhánh, chốt — theo nhật ký trong kỳ</span><div class="hact"><button class="btn sm" onclick="crExport('staff')">${ic('download')} Excel</button></div></div>
+  <div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl"><thead><tr><th>Nhân viên</th><th class="tar">Khách mới được giao</th><th class="tar">Khách đã chăm sóc</th><th class="tar">Lượt chăm sóc</th><th class="tar">Chuyển chi nhánh</th><th class="tar">Chốt</th><th class="tar">Doanh thu chốt</th><th class="tar">Đang hẹn gọi lại</th><th class="tar">Quá hẹn</th></tr></thead><tbody>
+  ${SF.map(x=>`<tr><td><div style="display:flex;gap:8px;align-items:center"><span class="av sm" style="background:${avc(x.name)}">${esc(initials(x.name))}</span><b>${esc(x.name)}</b></div></td><td class="tar">${num(x.assigned_new)}</td><td class="tar">${num(x.cared)}</td><td class="tar"><b>${num(x.actions)}</b></td><td class="tar">${num(x.transfers)}</td><td class="tar">${num(x.won)}</td><td class="tar mono">${x.revenue?money(x.revenue):'—'}</td><td class="tar">${num(x.callback)}</td><td class="tar ${x.overdue?'neg':''}">${num(x.overdue)}</td></tr>`).join('')||'<tr><td colspan="9"><div class="mini" style="padding:12px">Chưa có hoạt động chăm sóc trong kỳ.</div></td></tr>'}
+  </tbody></table></div></div>`;
+ const fn=D.funnel,fmax=Math.max(1,...sk.map(k=>fn[k]||0));
+ const funnel=`<div class="card"><div class="card-h"><h3>Trạng thái CSKH của khách mới</h3><span class="sub">${num(c.new)} khách</span><div class="hact"><button class="btn sm" onclick="crExport('funnel')">${ic('download')} Excel</button></div></div><div class="card-b">${sk.map(k=>`<div style="display:grid;grid-template-columns:160px 1fr 90px;gap:10px;align-items:center;margin:6px 0"><div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${SC[k]};margin-right:6px"></span>${esc(st[k])}</div><div style="height:12px;background:#eef1f5;border-radius:6px"><div style="height:12px;width:${((fn[k]||0)/fmax*100).toFixed(1)}%;background:${SC[k]};border-radius:6px"></div></div><div class="tar mini"><b>${num(fn[k]||0)}</b> · ${crPct(fn[k]||0,c.new)}</div></div>`).join('')}</div></div>`;
+ return `<div id="cr-print">${bar}<div class="cr-ph" style="display:none"><h2 style="margin:0">Báo cáo CSKH — ${esc((proj()||{}).name||'')}</h2><div class="mini">${crFmtD(D.range.from)}${D.range.from!==D.range.to?' → '+crFmtD(D.range.to):''} · lập lúc ${esc(D.generated_at)}</div></div>${tiles}${chart}${brTbl}<div class="grid2" style="grid-template-columns:1fr 1fr">${brBars||'<div></div>'}${funnel}</div>${sfTbl}</div>`;
+}
+function crRows(kind){const D=CR.d,st=D.care_statuses,sk=Object.keys(st);
+ if(kind==='branches')return [['Chi nhánh','Khách mới','Liên hệ','Đơn','% tổng','Chuyển trong kỳ'].concat(sk.map(k=>st[k])).concat(['Tỉ lệ chốt','Doanh thu chốt','Quá hẹn','Tổng đang giữ']),D.branches.map(b=>[b.name,b.new,b.contacts,b.orders,crPct(b.new,D.summary.cur.new),b.transfers].concat(sk.map(k=>b.status[k]||0)).concat([crPct(b.won,b.new),Math.round(b.revenue),b.overdue,b.total_now]))];
+ if(kind==='staff')return [['Nhân viên','Khách mới được giao','Khách đã chăm sóc','Lượt chăm sóc','Chuyển chi nhánh','Chốt','Doanh thu chốt','Đang hẹn gọi lại','Quá hẹn'],D.staff.map(x=>[x.name,x.assigned_new,x.cared,x.actions,x.transfers,x.won,Math.round(x.revenue),x.callback,x.overdue])];
+ if(kind==='funnel')return [['Trạng thái CSKH','Số khách mới','Tỉ lệ'],sk.map(k=>[st[k],D.funnel[k]||0,crPct(D.funnel[k]||0,D.summary.cur.new)])];
+ if(kind==='daily')return [['Ngày','Liên hệ mới','Đơn mới','Chuyển chi nhánh','Lượt chăm sóc','Chốt'],D.series.map(x=>[crFmtD(x.d),x.contacts,x.orders,x.transfers,x.actions,x.won])];
+ const c=D.summary.cur,p=D.summary.prev,L=[['new','Khách mới'],['contacts','Liên hệ mới'],['orders','Đơn mới'],['assigned','Đã phân chi nhánh'],['unassigned','Chưa phân chi nhánh'],['transfers','Lượt chuyển chi nhánh'],['cared','Khách được chăm sóc'],['actions','Lượt chăm sóc'],['won','Đã chốt'],['order_value','Giá trị đơn mới'],['revenue','Doanh thu đã chốt']];
+ return [['Chỉ số','Kỳ này','Kỳ trước','Chênh lệch (%)'],L.map(([k,l])=>[l,Math.round(c[k]),Math.round(p[k]),p[k]?((c[k]-p[k])/p[k]*100).toFixed(1):''])]}
+function crExport(kind){const [h,rows]=crRows(kind);const D=CR.d;dlCSV(h,rows,`BaoCao_CSKH_${{branches:'ChiNhanh',staff:'NhanVien',funnel:'TrangThai',daily:'TheoNgay',summary:'TongQuan'}[kind]}_${D.range.from}_${D.range.to}.csv`)}
+function crExportAll(){const D=CR.d;const parts=[];const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+ parts.push([q('BÁO CÁO CSKH — '+((proj()||{}).name||'')),q(crFmtD(D.range.from)+' → '+crFmtD(D.range.to)),q('So với '+crFmtD(D.range.prev_from)+' → '+crFmtD(D.range.prev_to))].join(','));
+ [['summary','TỔNG QUAN'],['branches','THEO CHI NHÁNH'],['staff','THEO NHÂN VIÊN'],['funnel','TRẠNG THÁI CSKH'],['daily','THEO NGÀY']].forEach(([k,t])=>{const [h,rows]=crRows(k);parts.push('',q(t),h.map(q).join(','),...rows.map(r=>r.map(q).join(',')))});
+ const b=new Blob(['﻿'+parts.join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`BaoCao_CSKH_${D.range.from}_${D.range.to}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);toast('Đã xuất báo cáo','Mở bằng Excel')}
+function crPrint(){if(!document.getElementById('cr-print-css')){const s=document.createElement('style');s.id='cr-print-css';s.textContent='@media print{body *{visibility:hidden}#cr-print,#cr-print *{visibility:visible}#cr-print{position:absolute;left:0;top:0;width:100%}#cr-print .no-print-b,#cr-print .hact button{display:none!important}#cr-print .cr-ph{display:block!important;margin-bottom:12px}.card,.ck-stat{break-inside:avoid}}';document.head.appendChild(s)}window.print()}
 function pgLeadsMenu(){
  const t=tabOf('leadsmenu','care');
- const tabs=[['care','Chăm sóc khách (CSKH)','users',CK.d?((CK.d.kinds||{}).contact||0)+((CK.d.kinds||{}).order||0):null],['list','Danh sách & bàn giao','route',DB.leads.length],['pipe','Pipeline','layers']];
+ const tabs=[['care','Chăm sóc khách (CSKH)','users',CK.d?((CK.d.kinds||{}).contact||0)+((CK.d.kinds||{}).order||0):null],['carerep','Báo cáo CSKH','chart'],['list','Danh sách & bàn giao','route',DB.leads.length],['pipe','Pipeline','layers']];
  let body='';
  if(t==='care')body=pgCareWeb();
+ else if(t==='carerep')body=pgCareReport();
  else if(t==='crm')body=crmLeadsTab();
  else if(t==='pipe'){
   const src=fget('lsrc','');const srcs=[...new Set(DB.leads.map(l=>l.source).filter(Boolean))];

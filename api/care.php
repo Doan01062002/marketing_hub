@@ -3,6 +3,7 @@
    GET  ?q&kind&care&web&assignee&due=today|overdue|none&from&to&sort&page&per   → {rows, total, page, per, counts, kinds, web_statuses, staff, stats, last_sync}
    GET  ?id=…                    → {record, history:[cùng SĐT]}
    GET  ?export=1&(bộ lọc như trên) → CSV toàn bộ kết quả lọc
+   GET  ?report=1&from=Y-m-d&to=Y-m-d → báo cáo CSKH: chỉ số + so kỳ trước, theo ngày, theo chi nhánh, theo nhân viên, phễu trạng thái
    POST {action:'update', id, care_status?, assignee_id?, branch_id?, next_follow_at?, note?}   → ghi nhật ký chăm sóc
    POST {action:'branch_create', name} → tạo nhanh chi nhánh của dự án → {branch, branches}
    POST {action:'sync', full?}   → kéo dữ liệu mới từ chungauto.vn (chủ / quản lý dự án) */
@@ -49,7 +50,80 @@ function care_where(array $g, string $pid): array {
     return [implode(' AND ', $w), $a];
 }
 
+/** Báo cáo CSKH trong khoảng [from, to] (ngày VN). Khách mới tính theo ngày tạo trên web; hoạt động (chăm sóc, chuyển
+ *  chi nhánh, chốt) tính theo thời điểm ghi nhật ký. Trả kèm số kỳ trước cùng độ dài để so sánh. */
+function care_report(string $pid, string $from, string $to): array {
+    global $pdo;
+    $d1 = new DateTimeImmutable($from); $d2 = new DateTimeImmutable($to); $days = (int)$d1->diff($d2)->days + 1;
+    $p2 = $d1->modify('-1 day'); $p1 = $p2->modify('-' . ($days - 1) . ' day');
+    $in = fn(?string $t, DateTimeImmutable $a, DateTimeImmutable $b) => $t !== null && $t !== '' && substr($t, 0, 10) >= $a->format('Y-m-d') && substr($t, 0, 10) <= $b->format('Y-m-d');
+    $branches = array_column(care_branches($pid), 'name', 'id'); $bByName = array_flip($branches);
+    $staff = array_column(care_staff($pid), 'name', 'id');
+    $st = $pdo->prepare('SELECT id, kind, ext_id, name, phone, web_status, care_status, total, branch_id, assignee_id, next_follow_at, ext_created_at, care_log FROM care_records WHERE project_id=?');
+    $st->execute([$pid]);
+    $now = date('Y-m-d H:i'); $won = fn($r) => $r['care_status'] === 'won';
+    $sum = ['cur' => [], 'prev' => []];
+    foreach (['cur', 'prev'] as $k) $sum[$k] = ['new' => 0, 'contacts' => 0, 'orders' => 0, 'assigned' => 0, 'unassigned' => 0, 'cared' => 0, 'actions' => 0, 'transfers' => 0, 'won' => 0, 'revenue' => 0.0, 'order_value' => 0.0];
+    $series = []; for ($d = $d1; $d <= $d2; $d = $d->modify('+1 day')) $series[$d->format('Y-m-d')] = ['d' => $d->format('Y-m-d'), 'contacts' => 0, 'orders' => 0, 'transfers' => 0, 'actions' => 0, 'won' => 0];
+    $statusKeys = array_keys(CARE_ST);
+    $br = []; $mkB = function ($id, $name) use ($statusKeys) { return ['id' => $id, 'name' => $name, 'new' => 0, 'contacts' => 0, 'orders' => 0, 'transfers' => 0, 'status' => array_fill_keys($statusKeys, 0), 'won' => 0, 'revenue' => 0.0, 'overdue' => 0, 'total_now' => 0]; };
+    foreach ($branches as $id => $n) $br[$id] = $mkB($id, $n); $br['_none'] = $mkB('_none', 'Chưa phân chi nhánh');
+    $sf = []; $mkS = fn($id, $n) => ['id' => $id, 'name' => $n, 'assigned_new' => 0, 'actions' => 0, 'cared' => 0, 'transfers' => 0, 'won' => 0, 'revenue' => 0.0, 'callback' => 0, 'overdue' => 0];
+    foreach ($staff as $id => $n) $sf[$id] = $mkS($id, $n);
+    $funnel = array_fill_keys($statusKeys, 0);
+    foreach ($st as $r) {
+        $bk = ($r['branch_id'] && isset($br[$r['branch_id']])) ? $r['branch_id'] : '_none';
+        $isOver = $r['next_follow_at'] && $r['next_follow_at'] < $now && !in_array($r['care_status'], ['won', 'lost', 'invalid'], true);
+        $br[$bk]['total_now']++; if ($isOver) { $br[$bk]['overdue']++; if ($r['assignee_id'] && isset($sf[$r['assignee_id']])) $sf[$r['assignee_id']]['overdue']++; }
+        if ($r['assignee_id'] && isset($sf[$r['assignee_id']]) && $r['care_status'] === 'callback') $sf[$r['assignee_id']]['callback']++;
+        foreach (['cur' => [$d1, $d2], 'prev' => [$p1, $p2]] as $k => [$a, $b]) {
+            if ($in($r['ext_created_at'], $a, $b)) {
+                $S = &$sum[$k]; $S['new']++; $S[$r['kind'] === 'order' ? 'orders' : 'contacts']++; $S[$bk === '_none' ? 'unassigned' : 'assigned']++;
+                if ($r['kind'] === 'order') $S['order_value'] += (float)$r['total'];
+                if ($won($r)) { $S['won']++; if ($r['kind'] === 'order') $S['revenue'] += (float)$r['total']; }
+                unset($S);
+                if ($k === 'cur') {
+                    $day = substr($r['ext_created_at'], 0, 10); if (isset($series[$day])) $series[$day][$r['kind'] === 'order' ? 'orders' : 'contacts']++;
+                    $B = &$br[$bk]; $B['new']++; $B[$r['kind'] === 'order' ? 'orders' : 'contacts']++; $B['status'][$r['care_status']] = ($B['status'][$r['care_status']] ?? 0) + 1;
+                    if ($won($r)) { $B['won']++; if ($r['kind'] === 'order') $B['revenue'] += (float)$r['total']; } unset($B);
+                    $funnel[$r['care_status']] = ($funnel[$r['care_status']] ?? 0) + 1;
+                    if ($r['assignee_id'] && isset($sf[$r['assignee_id']])) $sf[$r['assignee_id']]['assigned_new']++;
+                }
+            }
+        }
+        // nhật ký chăm sóc: hoạt động trong kỳ
+        $caredIn = ['cur' => false, 'prev' => false];
+        foreach (jdecode($r['care_log'] ?? null) as $lg) {
+            foreach (['cur' => [$d1, $d2], 'prev' => [$p1, $p2]] as $k => [$a, $b]) {
+                if (!$in($lg['at'] ?? null, $a, $b)) continue;
+                $txt = (string)($lg['text'] ?? ''); $sum[$k]['actions']++; $caredIn[$k] = true;
+                $isTr = preg_match('/Chuyển chi nhánh: ([^·]+)/u', $txt, $mm); $isWon = str_contains($txt, 'Trạng thái: ' . CARE_ST['won']);
+                if ($isTr) $sum[$k]['transfers']++;
+                if ($k !== 'cur') continue;
+                $day = substr((string)$lg['at'], 0, 10); if (isset($series[$day])) { $series[$day]['actions']++; if ($isTr) $series[$day]['transfers']++; if ($isWon) $series[$day]['won']++; }
+                if ($isTr) { $bid = $bByName[trim($mm[1])] ?? null; if ($bid) $br[$bid]['transfers']++; }
+                $u = (string)($lg['by'] ?? '');
+                if ($u !== '') { if (!isset($sf[$u])) $sf[$u] = $mkS($u, (string)($lg['name'] ?? $u)); $sf[$u]['actions']++; if ($isTr) $sf[$u]['transfers']++; if ($isWon) { $sf[$u]['won']++; if ($r['kind'] === 'order') $sf[$u]['revenue'] += (float)$r['total']; } }
+            }
+        }
+        foreach ($caredIn as $k => $v) if ($v) $sum[$k]['cared']++;
+        if ($caredIn['cur']) foreach (array_unique(array_column(array_filter(jdecode($r['care_log'] ?? null), fn($lg) => $in($lg['at'] ?? null, $d1, $d2)), 'by')) as $u) if (isset($sf[$u])) $sf[$u]['cared']++;
+    }
+    $br = array_values(array_filter($br, fn($b) => $b['new'] || $b['transfers'] || $b['total_now'] || $b['id'] !== '_none'));
+    usort($br, fn($a, $b) => ($b['id'] !== '_none') <=> ($a['id'] !== '_none') ?: $b['new'] <=> $a['new']);
+    $sf = array_values(array_filter($sf, fn($x) => $x['assigned_new'] || $x['actions'] || $x['callback'] || $x['overdue']));
+    usort($sf, fn($a, $b) => $b['actions'] <=> $a['actions']);
+    return ['range' => ['from' => $d1->format('Y-m-d'), 'to' => $d2->format('Y-m-d'), 'days' => $days, 'prev_from' => $p1->format('Y-m-d'), 'prev_to' => $p2->format('Y-m-d')],
+        'summary' => $sum, 'series' => array_values($series), 'branches' => $br, 'staff' => $sf, 'funnel' => $funnel, 'care_statuses' => CARE_ST, 'generated_at' => date('Y-m-d H:i')];
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (!empty($_GET['report'])) {
+        $re = '/^\d{4}-\d{2}-\d{2}$/'; $from = (string)($_GET['from'] ?? date('Y-m-d')); $to = (string)($_GET['to'] ?? $from);
+        if (!preg_match($re, $from) || !preg_match($re, $to) || $from > $to) fail('Khoảng ngày không hợp lệ');
+        if ((new DateTime($from))->diff(new DateTime($to))->days > 731) fail('Khoảng ngày tối đa 2 năm');
+        respond(care_report($PID, $from, $to));
+    }
     if (!empty($_GET['id'])) {
         $st = $pdo->prepare('SELECT * FROM care_records WHERE id=? AND project_id=?'); $st->execute([(string)$_GET['id'], $PID]);
         $r = $st->fetch(); if (!$r) fail('Không tìm thấy khách', 404);
