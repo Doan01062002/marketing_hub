@@ -68,9 +68,9 @@ if ($CFG['meta_app_id'] && $CFG['meta_app_secret'] && setting_get('cron.last_met
     }
     if ($n || $err) $log('Đồng bộ quyền Meta', "$n ổn, $err cần xem lại");
 }
-// 19/10/2026: khách mới từ chungauto.vn (liên hệ + đơn hàng) → CSKH, mỗi giờ một lần. Tài khoản đồng bộ riêng do chủ dự án cấp
+// 19/10/2026: khách mới từ chungauto.vn (liên hệ + đơn hàng) → CSKH, 5 phút một lần (mỗi lượt cron). Tài khoản đồng bộ riêng do chủ dự án cấp
 // (config.local.php chungauto_admin_email / chungauto_admin_password). Chỉ đọc; đơn đổi trạng thái trên web cũng được cập nhật.
-if (!empty($CFG['chungauto_admin_email']) && !empty($CFG['chungauto_admin_password']) && (int)setting_get('cron.last_care_sync', 0) < time() - 3300) {
+if (!empty($CFG['chungauto_admin_email']) && !empty($CFG['chungauto_admin_password']) && (int)setting_get('cron.last_care_sync', 0) < time() - 270) {
     setting_set('cron.last_care_sync', (string)time(), ['id' => null]);
     require_once __DIR__ . '/../api/_chungauto_sync_lib.php';
     // Đêm (2h): quét đầy đủ để cập nhật trạng thái đơn cũ; các giờ khác chỉ đọc trang mới nhất.
