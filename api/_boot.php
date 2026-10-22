@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 21; // v21 (16/10/2026): care_records.interest* (sản phẩm khách quan tâm) · v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 22; // v22 (22/10/2026): gộp competitors.teardowns (phiếu học hỏi đối thủ, nhánh nhóm v17) vào bản Chung Auto · v21 (16/10/2026): care_records.interest* (sản phẩm khách quan tâm) · v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -52,7 +52,8 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols('okrs', ['metric' => "TEXT NOT NULL DEFAULT 'manual'"]);
     $addCols('competitors', ['place_id' => 'TEXT', 'place_name' => 'TEXT', 'place_rating' => 'REAL', 'place_reviews' => 'INTEGER',
         'place_address' => 'TEXT', 'place_url' => 'TEXT', 'place_synced_at' => 'TEXT',
-        'website' => 'TEXT', 'web_snapshot' => 'TEXT', 'web_checked_at' => 'TEXT', 'web_change' => 'TEXT']);
+        'website' => 'TEXT', 'web_snapshot' => 'TEXT', 'web_checked_at' => 'TEXT', 'web_change' => 'TEXT',
+        'teardowns' => 'TEXT']);
     $addCols('leads', ['email' => 'TEXT', 'notes' => 'TEXT', 'source_ref' => 'TEXT']);
     // v11 (11/10/2026): tài khoản kênh nhiều môi trường (sandbox/production), quyền đã cấp, tên/ảnh tài khoản
     $addCols('connections', ['env' => 'TEXT', 'scopes' => 'TEXT', 'account_name' => 'TEXT', 'avatar' => 'TEXT']);

@@ -11,7 +11,7 @@ $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/');
 
 $ok = $path === '/' || $path === '/index.html' || in_array($path, ['/privacy.html', '/terms.html', '/data-deletion.html'], true)
     || preg_match('#^/api/[a-z0-9][a-z0-9_]*\.php$#', $path)
-    || (preg_match('#^/uploads/(?!\.+$)[A-Za-z0-9._-]+$#', $path) && !preg_match('#\.(php\d?|phtml|phar|htaccess)$#i', $path));
+    || (preg_match('#^/uploads/(?:[A-Za-z0-9_-]+/)?(?!\.+$)[A-Za-z0-9._-]+$#', $path) && !preg_match('#\.(php\d?|phtml|phar|htaccess)$#i', $path));
 
 if (!$ok) {
     http_response_code(404);

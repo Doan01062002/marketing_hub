@@ -30,13 +30,101 @@ function trend_refresh(array $row): array {
 /* ---------------- Theo dõi website đối thủ ----------------
    Mỗi lần kiểm tra: đọc trang chủ (tiêu đề, mô tả, H1, số chữ, số điện thoại, nền tảng) + sitemap (số URL, URL mới so với lần trước).
    So với lần trước → ghi "động thái" (trang mới, đổi tiêu đề / mô tả) vào đối thủ. */
+if (!function_exists('comp_safe_url')) {
+    function comp_safe_url(string $url): ?string {
+        if ($url !== '' && !preg_match('#^https?://#i', $url)) $url = 'https://' . $url;
+        $u = parse_url($url);
+        if (!$u || !in_array(strtolower($u['scheme'] ?? ''), ['http', 'https'], true) || empty($u['host'])) return null;
+        $host = strtolower($u['host']);
+        if (in_array($host, ['localhost', 'metadata.google.internal'], true)) return null;
+        $ips = @gethostbynamel($host) ?: [];
+        if (filter_var($host, FILTER_VALIDATE_IP)) $ips = [$host];
+        if (!$ips) return null;
+        foreach ($ips as $ip) {
+            if (!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) return null;
+            $long = ip2long($ip);
+            if ($long !== false) {
+                // Chặn RFC 6598 Carrier-Grade NAT (100.64.0.0/10: 100.64.0.0 - 100.127.255.255)
+                if (($long & 0xFFC00000) === 0x64400000) return null;
+                // Chặn RFC 2544 Benchmarking (198.18.0.0/15: 198.18.0.0 - 198.19.255.255)
+                if (($long & 0xFFFE0000) === 0xC6120000) return null;
+            }
+        }
+        return $url;
+    }
+}
+
 function comp_fetch(string $url, int $timeout = 20): array {
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 5, CURLOPT_TIMEOUT => $timeout,
-        CURLOPT_ENCODING => '', CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 MarketingHub-monitor']);
-    $body = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $final = (string)curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
-    curl_close($ch);
-    return [$code, (string)$body, $final];
+    $currentUrl = $url;
+    $maxRedirs = 5;
+    $finalUrl = $url;
+    $lastCode = 0;
+    $lastBody = '';
+
+    for ($hop = 0; $hop <= $maxRedirs; $hop++) {
+        $safeUrl = comp_safe_url($currentUrl);
+        if (!$safeUrl) {
+            // Chặn chuyển hướng hoặc yêu cầu trỏ tới địa chỉ nội bộ / private (SSRF)
+            return [400, '', $currentUrl];
+        }
+        $currentUrl = $safeUrl;
+        $finalUrl = $currentUrl;
+
+        $ch = curl_init($currentUrl);
+        $headers = [];
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
+            CURLOPT_ENCODING => '',
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 MarketingHub-monitor',
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+            CURLOPT_HEADERFUNCTION => function($c, $h) use (&$headers) {
+                if (stripos($h, 'location:') === 0) {
+                    $headers['location'] = trim(substr($h, 9));
+                }
+                return strlen($h);
+            },
+        ]);
+        $body = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $redir = (string)curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+        curl_close($ch);
+
+        $lastCode = $code;
+        $lastBody = (string)$body;
+
+        if (in_array($code, [301, 302, 303, 307, 308], true)) {
+            $target = $redir !== '' ? $redir : ($headers['location'] ?? '');
+            if ($target !== '') {
+                if (!preg_match('#^https?://#i', $target)) {
+                    $p = parse_url($currentUrl);
+                    if ($p && !empty($p['host'])) {
+                        $scheme = $p['scheme'] ?? 'http';
+                        $host = $p['host'];
+                        $port = !empty($p['port']) ? ':' . $p['port'] : '';
+                        if (str_starts_with($target, '//')) {
+                            $target = $scheme . ':' . $target;
+                        } elseif (str_starts_with($target, '/')) {
+                            $target = $scheme . '://' . $host . $port . $target;
+                        } else {
+                            $path = $p['path'] ?? '/';
+                            $dir = preg_replace('#/[^/]*$#', '/', $path);
+                            $target = $scheme . '://' . $host . $port . $dir . $target;
+                        }
+                    }
+                }
+                $currentUrl = $target;
+                continue;
+            }
+        }
+
+        return [$code, (string)$body, $finalUrl];
+    }
+
+    return [$lastCode, $lastBody, $finalUrl];
 }
 function comp_sitemap_urls(string $base): array {
     $urls = []; $queue = [rtrim($base, '/') . '/sitemap.xml', rtrim($base, '/') . '/sitemap_index.xml', rtrim($base, '/') . '/wp-sitemap.xml']; $seen = [];

@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS competitors (
   share_of_voice INTEGER NOT NULL DEFAULT 0,
   spend_estimate TEXT, latest_move TEXT, threat TEXT,
   website TEXT, web_snapshot TEXT, web_checked_at TEXT, web_change TEXT, -- theo dõi website đối thủ (trang mới, tiêu đề…)
-  place_id TEXT, place_name TEXT, place_rating REAL, place_reviews INTEGER, place_address TEXT, place_url TEXT, place_synced_at TEXT, -- Google Maps (Places API)
+  place_id TEXT, place_name TEXT, place_rating REAL, place_reviews INTEGER, place_address TEXT, place_url TEXT, place_synced_at TEXT, teardowns TEXT, -- Google Maps & Phiếu học hỏi đối thủ
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
