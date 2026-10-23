@@ -325,22 +325,46 @@ textarea.cf-in.mono{font-family:ui-monospace,Consolas,monospace;font-size:12.5px
 /* ===== Giao diện gọn kiểu phân hệ Kế toán (đè lên phần trên) ===== */
 :root{--brand:#16a34a;--brand-d:#15803d;--brand-t:#e9f7ef;--bg:#eef1f5;--line:#e3e7ed;--line2:#edf0f4;--shadow:0 1px 2px rgba(20,28,44,.05);--disp:Inter,system-ui,'Segoe UI',sans-serif}
 body{font-size:13px;line-height:1.45}
-.app{grid-template-columns:214px 1fr}
-.sidebar{background:#1e2533}
-.sb-brand{padding:12px 14px;gap:9px}
-.sb-brand .lg{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#22c55e,#15803d)}
-.sb-brand .lg svg{width:16px;height:16px}
-.sb-brand b{font-size:14px;letter-spacing:.2px}.sb-brand span{font-size:10.5px}
-.sb-nav{padding:6px 0 16px}
-.sb-grp{font-size:10px;padding:12px 16px 4px;color:#7b8798;letter-spacing:.08em}
-.nav-i{border-radius:0;padding:7px 16px;gap:10px;font-size:13px;margin:0;border-left:3px solid transparent;color:#cfd6e1}
-.nav-i svg{width:15px;height:15px}
-.nav-i:hover{background:rgba(255,255,255,.05)}
-.nav-i.on{background:#151b26;border-left-color:#22c55e;color:#fff;font-weight:600}
-.nav-i.on svg{color:#22c55e}
-.nav-i.ai{background:none;border:0;border-left:3px solid transparent}
-.nav-i .cnt{font-size:10.5px;padding:0 6px}
-.sb-foot{padding:9px 14px}.sb-foot .av{width:30px;height:30px;border-radius:50%}
+.app{grid-template-columns:238px 1fr}
+.sidebar{background:linear-gradient(180deg,#161d2b 0%,#121824 100%);border-right:1px solid rgba(255,255,255,.06);user-select:none}
+.sb-brand{padding:13px 14px;gap:10px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer}
+.sb-brand .lg{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,#22c55e,#15803d);box-shadow:0 2px 8px rgba(34,197,94,.28)}
+.sb-brand .lg svg{width:17px;height:17px}
+.sb-brand b{font-size:14.5px;letter-spacing:-.1px;line-height:1.2}.sb-brand span{font-size:11px;color:#8a96a8;display:block;margin-top:1px}
+.sb-nav{padding:6px 8px 18px;scrollbar-width:thin}
+.sb-grp-wrap{margin-top:6px}.sb-grp-wrap:first-child{margin-top:2px}
+.sb-grp-wrap+.sb-grp-wrap{border-top:1px solid rgba(255,255,255,.05);padding-top:6px}
+.sb-grp{display:flex;align-items:center;justify-content:space-between;font-size:10.5px;font-weight:700;padding:6px 10px 4px;color:#7e8c9f;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:6px;transition:color .12s}
+.sb-grp:hover{color:#aeb9c9}
+.sb-grp svg{width:12px;height:12px;opacity:.6;transition:transform .18s ease}
+.sb-grp-wrap.closed .sb-grp svg{transform:rotate(-90deg)}
+.sb-grp-wrap.closed .sb-grp-items{display:none}
+.sb-grp-items{display:flex;flex-direction:column;gap:2px}
+.nav-i{border-radius:8px;padding:7.5px 10px;gap:10px;font-size:13px;font-weight:500;margin:0;border-left:0;color:#c9d2df;position:relative;transition:background .14s,color .14s}
+.nav-i svg{width:16px;height:16px;color:#8391a6;transition:color .14s}
+.nav-i span:first-of-type{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-i:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-i:hover svg{color:#d5dde8}
+.nav-i.on{background:linear-gradient(90deg,rgba(34,197,94,.20),rgba(34,197,94,.07));color:#fff;font-weight:600;box-shadow:inset 3px 0 0 #22c55e}
+.nav-i.on svg{color:#4ade80}
+.nav-i.ai{background:linear-gradient(90deg,rgba(139,92,246,.14),rgba(139,92,246,.04));border:1px solid rgba(167,139,250,.22)}
+.nav-i.ai svg{color:#c4b5fd}
+.nav-i.ai:hover{background:linear-gradient(90deg,rgba(139,92,246,.22),rgba(139,92,246,.08));border-color:rgba(167,139,250,.38)}
+.nav-i.ai.on{background:linear-gradient(90deg,rgba(34,197,94,.22),rgba(34,197,94,.08));border-color:rgba(34,197,94,.35);box-shadow:inset 3px 0 0 #22c55e}
+.nav-i.ai.on svg{color:#4ade80}
+.nav-i .cnt{margin-left:auto;font-size:10.5px;padding:1px 6.5px;border-radius:10px;background:rgba(255,255,255,.10);color:#cbd5e1;font-weight:600;line-height:1.4;font-variant-numeric:tabular-nums}
+.nav-i.on .cnt{background:rgba(34,197,94,.28);color:#fff}
+.nav-i .cnt.un{background:#ef4444;color:#fff;font-weight:700;box-shadow:0 0 0 2px rgba(239,68,68,.25)}
+.nav-i .ext-ic{margin-left:auto;width:13px;height:13px;opacity:.45}
+.nav-i:hover .ext-ic{opacity:.8}
+.sb-foot{padding:10px 12px;background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.06);gap:9px}
+.sb-foot .av{width:32px;height:32px;border-radius:8px;font-size:11.5px;cursor:pointer}
+.sb-foot .u-info{flex:1;min-width:0;cursor:pointer;padding:2px 4px;border-radius:6px;transition:background .12s}
+.sb-foot .u-info:hover{background:rgba(255,255,255,.06)}
+.sb-foot .u-info b{font-size:12.5px;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-foot .u-info span{font-size:11px;color:#8a96a8;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-foot .iconbtn{width:30px;height:30px;border-radius:7px;background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12);color:#94a3b8}
+.sb-foot .iconbtn:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#fca5a5}
 .topbar{height:50px;padding:0 16px;gap:10px}
 .tb-title{font-size:14px;letter-spacing:.3px;text-transform:uppercase;color:var(--brand-d)}
 .scope{border-radius:6px;padding:2px 3px}.scope select{height:28px;font-size:12px}
@@ -497,12 +521,23 @@ table.tbl{font-size:12.5px}
 }
 
 /* ---- lớp dự án (11/10/2026) ---- */
-.sb-proj{padding:10px 12px 8px;border-bottom:1px solid rgba(255,255,255,.07)}
-.sb-proj .eyebrow,.proj-hero .eyebrow,.card .eyebrow{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7b8798;font-weight:700;margin-bottom:6px}
-.sb-proj .pj{display:flex;align-items:center;gap:9px;margin-bottom:8px}.sb-proj .pj .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.sb-proj .pj b{display:block;color:#fff;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sb-proj .pj small{color:#8b96a8;font-size:11px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-proj select{width:100%;background:#151b26;color:#e5e9f0;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 8px;font:inherit;font-size:12.5px}
-.sb-proj .scope-note{display:flex;align-items:center;gap:6px;font-size:11px;color:#7b8798;margin-top:7px}.sb-proj .scope-note svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+.sb-proj{padding:10px 10px 8px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-proj .eyebrow,.proj-hero .eyebrow,.card .eyebrow{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#7e8c9f;font-weight:700;margin-bottom:6px}
+.sb-proj-hd{display:flex;align-items:center;justify-content:space-between;padding:0 2px;margin-bottom:5px}
+.sb-proj-hd .eyebrow{margin:0}
+.sb-proj-all{border:0;background:rgba(255,255,255,.06);color:#94a3b8;font:600 10.5px/1 Inter,sans-serif;padding:3px 7px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .12s}
+.sb-proj-all svg{width:11px;height:11px;stroke:currentColor}
+.sb-proj-all:hover,.sb-proj-all.on{background:rgba(34,197,94,.22);color:#4ade80}
+.sb-proj-card{position:relative;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:9px;padding:7.5px 10px;cursor:pointer;transition:background .14s,border-color .14s}
+.sb-proj-card:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.20)}
+.sb-proj-card .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.sb-proj-card .pj-txt{flex:1;min-width:0}
+.sb-proj-card b{display:block;color:#fff;font-size:13px;font-weight:600;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-proj-card small{color:#8a96a8;font-size:11px;display:block;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-proj-card .pj-chev{color:#8a96a8;display:flex;flex-direction:column;flex-shrink:0}
+.sb-proj-card .pj-chev svg{width:14px;height:14px}
+.sb-proj-card select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:13px}
+.sb-proj-card select option{background:#161d2b;color:#f1f5f9}
 .menuhead{display:flex;align-items:baseline;gap:12px;margin:0 0 10px}.menuhead h1{font-family:var(--disp);font-size:21px;margin:0}.menuhead .sub{font-size:12.5px;color:var(--mut)}
 .chbar{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px;width:100%;overflow-x:auto;flex-wrap:nowrap;margin-bottom:10px}.chbar .seg{border-bottom:0;border-radius:7px;padding:7px 12px}.chbar .seg.on{background:var(--brand-t);color:var(--brand-d)}
 .proj-hero{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-left:5px solid var(--pc,#22c55e);border-radius:12px;padding:16px 18px;margin-bottom:14px;flex-wrap:wrap}
@@ -836,7 +871,7 @@ html.chatapp .content{padding:0!important;height:100vh;height:100dvh;overflow:hi
 <body>
 <div class="app">
  <aside class="sidebar">
-  <div class="sb-brand"><div class="lg"><svg viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div><div><b>Marketing Hub</b><span>Phòng Marketing</span></div></div>
+  <div class="sb-brand" onclick="go('overview')" title="Về Tổng quan dự án"><div class="lg"><svg viewBox="0 0 24 24"><path d="M3 11l18-8-8 18-2-8-8-2z"/></svg></div><div><b>Marketing Hub</b><span>Phòng Marketing</span></div></div>
   <div class="sb-proj" id="sbproj"></div>
   <nav class="sb-nav" id="nav"></nav>
   <div class="sb-foot" id="sbfoot"></div>
@@ -904,7 +939,7 @@ async function loadData(){
 async function refreshData(){await loadData();renderSbFoot();renderNav();render()}
 function renderSbFoot(){
  const el=$('#sbfoot');if(!el||!CURRENT_USER)return;
- el.innerHTML=`<span class="av" style="background:${avc(CURRENT_USER.name)}">${initials(CURRENT_USER.name)}</span><div style="flex:1;min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CURRENT_USER.name}</b><span>${CURRENT_USER.title||''}</span></div><button class="iconbtn" title="Đăng xuất" onclick="doLogout()" style="background:transparent;border-color:rgba(255,255,255,.15);color:#c7d0de">${ic('x')}</button>`;
+ el.innerHTML=`<span class="av" style="background:${avc(CURRENT_USER.name)}" onclick="go('settings','account')" title="Tài khoản của tôi">${initials(CURRENT_USER.name)}</span><div class="u-info" onclick="go('settings','account')" title="Cài đặt tài khoản của tôi"><b>${esc(CURRENT_USER.name)}</b><span>${esc(CURRENT_USER.title||ROLES[CURRENT_USER.role]||'')}</span></div><button class="iconbtn" title="Đăng xuất" onclick="doLogout()">${ic('logout')}</button>`;
 }
 async function doLogout(){try{await apiPost('/api/auth.php?action=logout',{})}catch(e){}location.reload()}
 function renderLogin(err){
@@ -998,7 +1033,15 @@ const ICONS={
  link:'<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
  star:'<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
  tag:'<path d="M20.59 13.41 12 22l-8-8V4h10z"/><circle cx="8" cy="8" r="1.5"/>',
- shield:'<path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/>'
+ shield:'<path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z"/>',
+ chat:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/>',
+ sparkles:'<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3z"/><path d="M5 3v4M3 5h4M19 17v4M17 19h4"/>',
+ logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+ chevD:'<path d="m6 9 6 6 6-6"/>',
+ chevUD:'<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
+ ext:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+ file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+ archive:'<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>'
 };
 function ic(k){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICONS[k]||''}</svg>`}
 /* ---------- utils ---------- */
@@ -1037,37 +1080,65 @@ function brName(id){for(const c of ORG.companies){const b=c.branches.find(x=>x.i
 function inScope(x){return true} /* 11/10/2026: phạm vi = dự án, backend lọc; co/br chỉ là nhãn phụ */
 /* renderScope()/setScope() mới ở khối LỚP DỰ ÁN bên dưới */
 
-/* ================= NAV (7 nhóm) ================= */
+/* ================= NAV (Sắp xếp khoa học theo 4 bước chu trình Marketing) ================= */
 const NAV=[
- {g:'',items:[['inbox','Cửa sổ chat','send']]},
- /* Theo đặc tả 11/10/2026: chọn DỰ ÁN → menu nghiệp vụ → tab kênh. Các trang cũ nằm trong tab của menu mới (LEGACY). */
- {g:'Quản trị dự án',items:[['overview','Tổng quan dự án','grid'],['market','Phân tích thị trường','search'],['planmenu','Mục tiêu & kế hoạch','target']]},
- {g:'Triển khai marketing',items:[['channels','Kênh marketing','layers'],['ads','Chiến dịch quảng cáo','mega'],['caremenu','Chăm sóc dự án','send'],['automation','Chiến dịch automation','zap'],['leadsmenu','Khách hàng & lead','route']]},
- {g:'Đo lường & quản trị',items:[['reports','Báo cáo & đo lường','chart'],['utilities','Tiện ích','globe'],['settings','Cài đặt dự án','settings']]},
- {g:'',items:[['aiplan','Trợ lý dự án','zap'],['portfolio','Tất cả dự án','building']]}
+ {g:'Tổng quan & Điều hành',items:[
+  ['overview','Tổng quan dự án','grid'],
+  ['reports','Báo cáo & đo lường','chart'],
+  ['aiplan','Trợ lý AI dự án','sparkles']
+ ]},
+ {g:'Chiến lược & Nghiên cứu',items:[
+  ['market','Phân tích thị trường','trend'],
+  ['planmenu','Mục tiêu & kế hoạch','target'],
+  ['utilities','Tiện ích & ý tưởng','layers']
+ ]},
+ {g:'Kênh & Chiến dịch',items:[
+  ['channels','Kênh marketing','globe'],
+  ['caremenu','Nội dung & chăm sóc','edit'],
+  ['ads','Chiến dịch quảng cáo','mega'],
+  ['automation','Chiến dịch automation','zap']
+ ]},
+ {g:'Khách hàng & Hệ thống',items:[
+  ['inbox','Cửa sổ chat','chat'],
+  ['leadsmenu','Khách hàng & lead','users'],
+  ['settings','Cài đặt dự án','settings']
+ ]}
 ];
 const MENU_TAB={settings:'setmenu'};
 const LEGACY={dashboard:['overview'],trends:['market','trends'],research:['market','research'],robot:['market','robot'],audience:['market','audience'],insights:['market','insights'],plan:['planmenu','plan'],brand:['planmenu','brand'],campaigns:['ads'],tasks:['caremenu','tasks'],content:['caremenu','content'],publish:['caremenu','publish'],care:['caremenu','care'],demand:['leadsmenu','list'],staff:['settings','staff'],local:['reports','local']};
-const TITLES={overview:'Tổng quan dự án',market:'Phân tích thị trường',planmenu:'Mục tiêu & kế hoạch',ads:'Chiến dịch quảng cáo',caremenu:'Chăm sóc dự án',leadsmenu:'Khách hàng & lead',utilities:'Tiện ích',portfolio:'Tất cả dự án',robot:'Robot duyệt web',aiplan:'Trợ lý AI lập kế hoạch',dashboard:'Bảng điều khiển',research:'Nghiên cứu thị trường & Đối thủ',trends:'Xu hướng & Social listening',insights:'Kho Insight',plan:'Kế hoạch Marketing',brand:'Thương hiệu & Thông điệp',campaigns:'Chiến dịch',content:'Nội dung & Sáng tạo',channels:'Đo lường kênh',audience:'Phân khúc & Hành trình',demand:'Đầu mối → CRM',tasks:'Phân công công việc',publish:'Đăng bài đa kênh',care:'Chăm sóc bình luận',automation:'Kịch bản tự động & chăm sóc',staff:'Nhân sự & hiệu suất',local:'Địa phương & Chi nhánh',reports:'Báo cáo & Phân tích',settings:'Thiết lập & Kết nối'};
-Object.assign(TITLES,{inbox:'Cửa sổ chat',channels:'Kênh marketing',settings:'Cài đặt dự án',automation:'Chiến dịch automation',reports:'Báo cáo & đo lường',aiplan:'Trợ lý dự án'});
-function navCount(k){if(k==='inbox')return IB.unread||null;return {ads:DB.campaigns.length,caremenu:DB.tasks.length+DB.content.length,leadsmenu:DB.leads.length,channels:(DB.connections||[]).length}[k]}
+const TITLES={overview:'Tổng quan dự án',market:'Phân tích thị trường',planmenu:'Mục tiêu & kế hoạch',ads:'Chiến dịch quảng cáo',caremenu:'Nội dung & chăm sóc',leadsmenu:'Khách hàng & lead',utilities:'Tiện ích & ý tưởng',portfolio:'Tất cả dự án',robot:'Robot duyệt web',aiplan:'Trợ lý AI lập kế hoạch',dashboard:'Bảng điều khiển',research:'Nghiên cứu thị trường & Đối thủ',trends:'Xu hướng & Social listening',insights:'Kho Insight',plan:'Kế hoạch Marketing',brand:'Thương hiệu & Thông điệp',campaigns:'Chiến dịch',content:'Nội dung & Sáng tạo',channels:'Đo lường kênh',audience:'Phân khúc & Hành trình',demand:'Đầu mối → CRM',tasks:'Phân công công việc',publish:'Đăng bài đa kênh',care:'Chăm sóc bình luận',automation:'Kịch bản tự động & chăm sóc',staff:'Nhân sự & hiệu suất',local:'Địa phương & Chi nhánh',reports:'Báo cáo & Phân tích',settings:'Thiết lập & Kết nối'};
+Object.assign(TITLES,{inbox:'Cửa sổ chat',channels:'Kênh marketing',settings:'Cài đặt dự án',automation:'Chiến dịch automation',reports:'Báo cáo & đo lường',aiplan:'Trợ lý AI dự án'});
+function navCount(k){
+ if(k==='inbox')return IB.unread||null;
+ const m={ads:(DB.campaigns||[]).length,caremenu:(DB.tasks||[]).length+(DB.content||[]).length,leadsmenu:(DB.leads||[]).length,channels:(DB.connections||[]).length};
+ return m[k]>0?m[k]:null;
+}
+function toggleGrp(idx){
+ S.openGrp[idx]=S.openGrp[idx]===false?true:false;
+ renderNav();
+}
 function renderNav(){
- $('#nav').innerHTML=NAV.map(grp=>{
-  const items=grp.items.map(([k,t,i,ext])=>{
-   if(ext&&ext.href)return `<a class="nav-i ext" href="${ext.href}" target="_blank" rel="noopener">${ic(i)}<span>${t}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-left:auto;opacity:.55"><path d="M7 17 17 7M7 7h10v10"/></svg></a>`;
-   if(projCustom()&&ROLE_MODS.includes(k)&&modLevel(k)<1)return '';
+ $('#nav').innerHTML=NAV.map((grp,idx)=>{
+  const vis=grp.items.filter(([k])=>!(projCustom()&&ROLE_MODS.includes(k)&&modLevel(k)<1));
+  if(!vis.length)return '';
+  const hasActive=vis.some(([k])=>S.page===k);
+  const isClosed=S.openGrp[idx]===false&&!hasActive;
+  const items=vis.map(([k,t,i,ext])=>{
+   if(ext&&ext.href)return `<a class="nav-i ext" href="${ext.href}" target="_blank" rel="noopener">${ic(i)}<span>${t}</span>${ic('ext')}</a>`;
    if(k==='settings'&&projCustom()&&modLevel('settings')<1){t='Tài khoản của tôi';i='users'}
-   const c=navCount(k);const ai=k==='aiplan';return `<div class="nav-i ${ai?'ai ':''}${S.page===k?'on':''}" onclick="go('${k}')">${ic(i)}<span>${t}</span>${ai?'<span class="aitag">AI</span>':(c!=null?`<span class="cnt">${c}</span>`:'')}</div>`}).join('');
-  if(!items)return '';
-  return (grp.g?`<div class="sb-grp">${grp.g}</div>`:'<div style="height:10px"></div>')+items;
+   const c=navCount(k);const ai=k==='aiplan';const isChat=k==='inbox';
+   const right=ai?'<span class="aitag">AI</span>':(c!=null?`<span class="cnt${isChat?' un':''}">${c}</span>`:(isChat?`<span class="ext-ic" title="Mở cửa sổ chat">${ic('ext')}</span>`:''));
+   return `<div class="nav-i ${ai?'ai ':''}${S.page===k?'on':''}" onclick="go('${k}')">${ic(i)}<span>${t}</span>${right}</div>`}).join('');
+  return `<div class="sb-grp-wrap${isClosed?' closed':''}">${grp.g?`<div class="sb-grp" onclick="toggleGrp(${idx})" title="Thu gọn / Mở rộng nhóm"><span>${grp.g}</span>${ic('chevD')}</div>`:''}<div class="sb-grp-items">${items}</div></div>`;
  }).join('');
+ const pAll=$('.sb-proj-all');if(pAll)pAll.classList.toggle('on',S.page==='portfolio');
  mbarRender();
  if(!IB.cTimer){ibCounts();IB.cTimer=setInterval(ibCounts,60000)}
  const apr=DB.campaigns.filter(c=>c.approval==='PENDING').length+DB.content.filter(c=>c.state==='IN_REVIEW').length;
  const nd=$('#ndApr');if(nd){nd.textContent=apr;nd.style.display=apr?'grid':'none'}
 }
 function toggleNav(on){document.body.classList.toggle('nav-open',on===undefined?!document.body.classList.contains('nav-open'):on)}
-const MBAR=[['overview','Tổng quan','grid'],['inbox','Chat','send'],['caremenu','Chăm sóc','clipboard'],['leadsmenu','Khách','users'],['__menu','Menu','settings']];
+const MBAR=[['overview','Tổng quan','grid'],['inbox','Chat','chat'],['caremenu','Chăm sóc','edit'],['leadsmenu','Khách','users'],['__menu','Menu','settings']];
 function mbarRender(){const el=document.getElementById('mbar');if(!el)return;const apr=(DB.tasks||[]).filter(t=>dueLate(t.due)).length;
  el.innerHTML=MBAR.map(([k,t,i])=>`<button class="${S.page===k?'on':''}" onclick="${k==='__menu'?'toggleNav(true)':`go('${k}')`}">${k==='__menu'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>':ic(i)}<span>${t}</span>${k==='inbox'&&IB.unread?`<span class="nd">${IB.unread}</span>`:''}${k==='tasks'&&apr?`<span class="nd">${apr}</span>`:''}</button>`).join('')}
 function go(p,t){document.body.classList.remove('nav-open');if(p==='inbox'&&!CHAT_APP){window.open(location.pathname+'?chat=1#inbox'+(t?'/'+t:''),'mkt_chat');if(location.hash.startsWith('#inbox'))history.replaceState(null,'',location.pathname+location.search+'#'+S.page);return}if(CHAT_APP&&p!=='inbox'){window.open(location.pathname+'#'+p+(t?'/'+t:''),'mkt_main');return}if(LEGACY[p]){if(LEGACY[p][1]&&!t)t=LEGACY[p][1];p=LEGACY[p][0]}if(!DB.project&&p!=='portfolio'&&p!=='inbox')p='portfolio';S.page=p;const tk=MENU_TAB[p]||p;if(t)S.tab[tk]=t;const want=p+(S.tab[tk]?'/'+S.tab[tk]:'');if(location.hash.slice(1)!==want)location.hash=want;$('#tbtitle').textContent=TITLES[p]||'';renderNav();render();$('#content').scrollTop=0}
@@ -4272,7 +4343,7 @@ function renderScope(){
  const ps=DB.projects||[],p=proj();
  const sel=`<select onchange="switchProject(this.value)" aria-label="Chọn dự án">${ps.map(x=>`<option value="${esc(x.id)}"${p&&x.id===p.id?' selected':''}>${esc(x.name)}</option>`).join('')}<option value="__all">Tất cả dự án…</option>${isManager()?'<option value="__new">＋ Tạo dự án mới…</option>':''}</select>`;
  const sc=$('#scope');if(sc)sc.innerHTML=`${ic('building')}${sel}`;
- const sb=$('#sbproj');if(sb)sb.innerHTML=p?`<div class="eyebrow">Không gian làm việc</div><div class="pj"><span class="dot" style="background:${esc(p.color||'#22c55e')}"></span><div style="min-width:0"><b>${esc(p.name)}</b><small>${esc(p.domain||(p.type==='internal'?'Dự án nội bộ':'Dự án khách hàng'))} · ${esc(roleLabel(p)||'')}</small></div></div>${sel}<div class="scope-note">${ic('shield')}Dữ liệu trong phạm vi dự án</div>`:`<div class="eyebrow">Không gian làm việc</div><div class="scope-note">Bạn chưa thuộc dự án nào</div>`;
+ const sb=$('#sbproj');if(sb)sb.innerHTML=p?`<div class="sb-proj-hd"><span class="eyebrow">Dự án đang chọn</span><button class="sb-proj-all" onclick="go('portfolio')" title="Danh mục tất cả dự án">Tất cả (${ps.length})</button></div><div class="sb-proj-card"><span class="dot" style="background:${esc(p.color||'#22c55e')}"></span><div class="pj-info"><b>${esc(p.name)}</b><small>${esc(p.domain||(p.type==='internal'?'Dự án nội bộ':'Dự án khách hàng'))} · ${esc(roleLabel(p)||'')}</small></div><span class="pj-chev">${ic('chevUD')}</span>${sel}</div>`:`<div class="sb-proj-hd"><span class="eyebrow">Dự án đang chọn</span></div><div class="scope-note">Bạn chưa thuộc dự án nào</div>`;
 }
 function setScope(){ /* co/br cũ không còn dùng — phạm vi là dự án */ }
 
