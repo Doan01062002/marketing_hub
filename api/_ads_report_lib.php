@@ -85,8 +85,8 @@ function ads_report(array $CFG, array $conn, array $P): array {
 
     // Chưa chọn tài khoản quảng cáo → trả danh sách để chọn.
     if (empty($conn['external_account_id'])) {
-        [$c, , $list] = $gAll('me/adaccounts', ['fields' => 'id,name,account_status,currency,amount_spent,business{name}', 'limit' => 100], 200);
-        if ($c !== 200) throw new AdsReportError('Không lấy được tài khoản quảng cáo — cần quyền ads_read, bấm Kết nối lại', 502);
+        [$c, $errD, $list] = $gAll('me/adaccounts', ['fields' => 'id,name,account_status,currency,amount_spent,business{name}', 'limit' => 100], 200);
+        if ($c !== 200) { $em = $errD['error']['message'] ?? "HTTP $c"; throw new AdsReportError('Không lấy được tài khoản quảng cáo (' . $em . ') — kiểm tra lại App Meta / Token hoặc dán System User Token bên dưới', 502); }
         return (['need_account' => true, 'accounts' => array_map(fn($a) => ['id' => $a['id'], 'name' => (string)($a['name'] ?? $a['id']), 'status' => (int)($a['account_status'] ?? 0),
             'currency' => (string)($a['currency'] ?? ''), 'business' => (string)($a['business']['name'] ?? '')], $list)]);
     }

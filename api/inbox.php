@@ -14,6 +14,7 @@ require __DIR__ . '/_boot.php';
 require_once __DIR__ . '/_inbox_lib.php';
 require_once __DIR__ . '/_inbox_ai_lib.php';
 $me = require_login();
+session_write_close();
 $method = $_SERVER['REQUEST_METHOD'];
 
 $myProjects = projects_for_user($me);                       // [{id,name,color,member_role,...}]

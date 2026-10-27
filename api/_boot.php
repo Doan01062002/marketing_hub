@@ -9,7 +9,16 @@ $CFG = require __DIR__ . '/../config.php';
 // Bản DEV chạy ở thư mục con (app_url …/dev): cookie phiên riêng, chỉ gửi trong /dev/ → không dính phiên bản thật.
 $__path = rtrim((string)parse_url((string)$CFG['app_url'], PHP_URL_PATH), '/');
 if ($__path !== '') { session_name('MKTSESS' . strtoupper(preg_replace('/[^a-z0-9]/i', '', $__path))); }
-session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'path' => ($__path ?: '') . '/']);
+$__sessDir = __DIR__ . '/../data/sessions';
+if (!is_dir($__sessDir)) @mkdir($__sessDir, 0700, true);
+if (is_dir($__sessDir) && is_writable($__sessDir)) session_save_path($__sessDir);
+@ini_set('session.gc_maxlifetime', '2592000');
+session_set_cookie_params([
+    'lifetime' => 2592000,
+    'httponly' => true,
+    'samesite' => 'Lax',
+    'path'     => ($__path ?: '') . '/',
+]);
 session_start();
 
 header('Content-Type: application/json; charset=utf-8');
@@ -39,6 +48,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
 const SCHEMA_VERSION = 17; // v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+try { $__ucols = array_column($pdo->query('PRAGMA table_info(users)')->fetchAll(), 'name'); if ($__ucols && !in_array('permissions', $__ucols, true)) $pdo->exec('ALTER TABLE users ADD COLUMN permissions TEXT'); } catch (Throwable $e) {}
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -47,7 +57,7 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     };
     $addCols('connections', ['auth_method' => "TEXT NOT NULL DEFAULT 'oauth'", 'secret' => 'TEXT', 'client_id' => 'TEXT', 'client_secret' => 'TEXT']);
     $addCols('users', ['active' => 'INTEGER NOT NULL DEFAULT 1', 'phone' => 'TEXT', 'scope' => 'TEXT',
-        'co' => 'TEXT', 'br' => 'TEXT', 'last_login_at' => 'TEXT']);
+        'co' => 'TEXT', 'br' => 'TEXT', 'last_login_at' => 'TEXT', 'permissions' => 'TEXT']);
     $pdo->exec(file_get_contents(__DIR__ . '/../schema.sql')); // chỉ có CREATE … IF NOT EXISTS: tạo bảng mới còn thiếu
     $addCols('okrs', ['metric' => "TEXT NOT NULL DEFAULT 'manual'"]);
     $addCols('competitors', ['place_id' => 'TEXT', 'place_name' => 'TEXT', 'place_rating' => 'REAL', 'place_reviews' => 'INTEGER',
@@ -80,15 +90,18 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $pdo->exec('PRAGMA user_version = ' . SCHEMA_VERSION);
 }
 
-// OAuth client Google dán trên giao diện (Thiết lập → Nguồn dữ liệu thị trường) dùng khi config để trống.
-foreach (['google_client_id' => 'google.client_id', 'google_client_secret' => 'google.client_secret', 'meta_app_id' => 'meta.app_id', 'meta_app_secret' => 'meta.app_secret'] as $__ck => $__sk) {
-    if (empty($CFG[$__ck]) && ($__v = setting_get($__sk))) $CFG[$__ck] = $__v;
-}
-// Meta App ID / App Secret từ biến môi trường (pool PHP-FPM + cron) — ưu tiên hơn config và giao diện, không nằm trong mã hay CSDL.
+// Meta App ID / App Secret từ biến môi trường (pool PHP-FPM + cron) dùng làm mặc định nếu chưa đặt trên giao diện.
 $CFG['meta_app_source'] = '';
 foreach (['meta_app_id' => 'META_APP_ID', 'meta_app_secret' => 'META_APP_SECRET'] as $__ck => $__ek) {
     $__v = getenv($__ek);
-    if (is_string($__v) && trim($__v) !== '') { $CFG[$__ck] = trim($__v); $CFG['meta_app_source'] = 'env'; }
+    if (empty($CFG[$__ck]) && is_string($__v) && trim($__v) !== '') { $CFG[$__ck] = trim($__v); $CFG['meta_app_source'] = 'env'; }
+}
+// OAuth client Google / Meta dán trên giao diện (Thiết lập → Nguồn dữ liệu thị trường) luôn được ưu tiên.
+foreach (['google_client_id' => 'google.client_id', 'google_client_secret' => 'google.client_secret', 'meta_app_id' => 'meta.app_id', 'meta_app_secret' => 'meta.app_secret'] as $__ck => $__sk) {
+    if (($__v = setting_get($__sk))) {
+        $CFG[$__ck] = $__v;
+        if (str_starts_with($__ck, 'meta_')) $CFG['meta_app_source'] = 'db';
+    }
 }
 
 /** Trang kết thúc cho OAuth mở trong cửa sổ bật lên: báo kết quả về trang chính rồi tự đóng. */
@@ -126,16 +139,232 @@ function fail(string $msg, int $code = 400): void {
     respond(['error' => $msg], $code);
 }
 
+const ROLES = [
+    'admin'   => 'Quản trị',
+    'manager' => 'Trưởng nhóm',
+    'staff'   => 'Nhân viên',
+    'content' => 'Chuyên viên Nội dung',
+    'ads'     => 'Chuyên viên Quảng cáo',
+    'sale'    => 'Kinh doanh / CSKH',
+    'viewer'  => 'Chỉ xem',
+];
+
+const RBAC_MODULES = [
+    'inbox'      => ['name' => 'Cửa sổ chat & Hội thoại',      'group' => 'Chăm sóc & Khách hàng'],
+    'overview'   => ['name' => 'Tổng quan dự án',              'group' => 'Quản trị dự án'],
+    'market'     => ['name' => 'Phân tích thị trường',         'group' => 'Quản trị dự án'],
+    'planmenu'   => ['name' => 'Mục tiêu & Kế hoạch',          'group' => 'Quản trị dự án'],
+    'channels'   => ['name' => 'Kênh marketing & Đăng bài',    'group' => 'Triển khai marketing'],
+    'ads'        => ['name' => 'Chiến dịch quảng cáo (Ads)',   'group' => 'Triển khai marketing'],
+    'caremenu'   => ['name' => 'Chăm sóc dự án & Công việc',   'group' => 'Triển khai marketing'],
+    'automation' => ['name' => 'Chiến dịch Automation',        'group' => 'Triển khai marketing'],
+    'leadsmenu'  => ['name' => 'Khách hàng & Lead (CRM)',      'group' => 'Chăm sóc & Khách hàng'],
+    'reports'    => ['name' => 'Báo cáo & Đo lường (GA4/Ads)', 'group' => 'Đo lường & Quản trị'],
+    'utilities'  => ['name' => 'Tiện ích & Địa điểm',          'group' => 'Đo lường & Quản trị'],
+    'staff'      => ['name' => 'Nhân sự & Hiệu suất',          'group' => 'Đo lường & Quản trị'],
+    'settings'   => ['name' => 'Cài đặt & Phân quyền',         'group' => 'Đo lường & Quản trị'],
+];
+
+const RBAC_ACTIONS = [
+    'view'    => 'Xem',
+    'create'  => 'Thêm',
+    'edit'    => 'Sửa',
+    'delete'  => 'Xoá',
+    'approve' => 'Duyệt',
+];
+
+function rbac_make_perms(array $map, array $default = ['view'=>false,'create'=>false,'edit'=>false,'delete'=>false,'approve'=>false]): array {
+    $out = [];
+    foreach (array_keys(RBAC_MODULES) as $m) {
+        $p = $default;
+        if (isset($map['*']) && is_array($map['*'])) $p = array_merge($p, $map['*']);
+        if (isset($map[$m]) && is_array($map[$m])) $p = array_merge($p, $map[$m]);
+        foreach (array_keys(RBAC_ACTIONS) as $a) $p[$a] = !empty($p[$a]);
+        $out[$m] = $p;
+    }
+    return $out;
+}
+
+function rbac_default_roles(): array {
+    $allTrue = ['view'=>true,'create'=>true,'edit'=>true,'delete'=>true,'approve'=>true];
+    $crudNoDel = ['view'=>true,'create'=>true,'edit'=>true,'delete'=>false,'approve'=>false];
+    $viewOnly = ['view'=>true,'create'=>false,'edit'=>false,'delete'=>false,'approve'=>false];
+    return [
+        'admin' => [
+            'name' => 'Quản trị', 'color' => 'vio', 'system' => true,
+            'desc' => 'Toàn quyền hệ thống, quản lý người dùng, phân quyền vai trò và cấu hình kết nối.',
+            'perms' => rbac_make_perms(['*' => $allTrue]),
+        ],
+        'manager' => [
+            'name' => 'Trưởng nhóm', 'color' => 'info', 'system' => true,
+            'desc' => 'Quản lý chiến dịch, nội dung, công việc, duyệt bài và xem báo cáo hiệu suất nhóm.',
+            'perms' => rbac_make_perms([
+                '*'        => ['view'=>true,'create'=>true,'edit'=>true,'delete'=>true,'approve'=>true],
+                'staff'    => ['view'=>true,'create'=>false,'edit'=>true,'delete'=>false,'approve'=>false],
+                'settings' => ['view'=>true,'create'=>true,'edit'=>true,'delete'=>false,'approve'=>false],
+            ]),
+        ],
+        'staff' => [
+            'name' => 'Nhân viên', 'color' => 'ok', 'system' => true,
+            'desc' => 'Thực hiện công việc, nội dung, chiến dịch và chăm sóc khách hàng được giao.',
+            'perms' => rbac_make_perms([
+                '*'        => $crudNoDel,
+                'staff'    => $viewOnly,
+                'settings' => $viewOnly,
+            ]),
+        ],
+        'content' => [
+            'name' => 'Chuyên viên Nội dung', 'color' => 'info', 'system' => false,
+            'desc' => 'Nghiên cứu thị trường, lập kế hoạch, soạn thảo & đăng bài đa kênh, chăm sóc bình luận.',
+            'perms' => rbac_make_perms([
+                'inbox'      => $crudNoDel,
+                'overview'   => $viewOnly,
+                'market'     => $crudNoDel,
+                'planmenu'   => $crudNoDel,
+                'channels'   => $crudNoDel,
+                'ads'        => $viewOnly,
+                'caremenu'   => $crudNoDel,
+                'automation' => $viewOnly,
+                'leadsmenu'  => $viewOnly,
+                'reports'    => $viewOnly,
+                'utilities'  => $crudNoDel,
+                'staff'      => $viewOnly,
+                'settings'   => $viewOnly,
+            ]),
+        ],
+        'ads' => [
+            'name' => 'Chuyên viên Quảng cáo', 'color' => 'warn', 'system' => false,
+            'desc' => 'Quản lý chiến dịch quảng cáo (Facebook, Google, TikTok), tối ưu ngân sách & đo lường GA4/Ads.',
+            'perms' => rbac_make_perms([
+                'inbox'      => $viewOnly,
+                'overview'   => $viewOnly,
+                'market'     => $crudNoDel,
+                'planmenu'   => $crudNoDel,
+                'channels'   => $viewOnly,
+                'ads'        => ['view'=>true,'create'=>true,'edit'=>true,'delete'=>true,'approve'=>false],
+                'caremenu'   => $crudNoDel,
+                'automation' => $crudNoDel,
+                'leadsmenu'  => $crudNoDel,
+                'reports'    => $crudNoDel,
+                'utilities'  => $crudNoDel,
+                'staff'      => $viewOnly,
+                'settings'   => $viewOnly,
+            ]),
+        ],
+        'sale' => [
+            'name' => 'Kinh doanh / CSKH', 'color' => 'ok', 'system' => false,
+            'desc' => 'Trực cửa sổ chat đa kênh, tư vấn khách hàng và cập nhật trạng thái Lead (CRM).',
+            'perms' => rbac_make_perms([
+                'inbox'      => $crudNoDel,
+                'overview'   => $viewOnly,
+                'leadsmenu'  => $crudNoDel,
+                'caremenu'   => $crudNoDel,
+                'reports'    => $viewOnly,
+                'staff'      => $viewOnly,
+                'settings'   => $viewOnly,
+            ]),
+        ],
+        'viewer' => [
+            'name' => 'Chỉ xem', 'color' => 'mut', 'system' => false,
+            'desc' => 'Chỉ xem tổng quan, chiến dịch và báo cáo đo lường, không được thêm/sửa/xoá dữ liệu.',
+            'perms' => rbac_make_perms([
+                'overview'  => $viewOnly,
+                'market'    => $viewOnly,
+                'planmenu'  => $viewOnly,
+                'channels'  => $viewOnly,
+                'ads'       => $viewOnly,
+                'caremenu'  => $viewOnly,
+                'leadsmenu' => $viewOnly,
+                'reports'   => $viewOnly,
+            ]),
+        ],
+    ];
+}
+
+function rbac_roles(): array {
+    $defs = rbac_default_roles();
+    $raw = setting_get('rbac.roles');
+    $saved = is_string($raw) ? jdecode($raw, []) : [];
+    $deleted = is_array($saved['__deleted'] ?? null) ? $saved['__deleted'] : [];
+    unset($saved['__deleted']);
+    $out = [];
+    foreach ($defs as $k => $d) {
+        if (!$d['system'] && in_array($k, $deleted, true)) continue;
+        $out[$k] = $d;
+    }
+    foreach ($saved as $k => $r) {
+        if (!is_array($r) || !preg_match('/^[a-z0-9_]{2,32}$/', (string)$k)) continue;
+        $base = $out[$k] ?? [
+            'name' => trim((string)($r['name'] ?? $k)) ?: $k,
+            'color' => (string)($r['color'] ?? 'info'),
+            'system' => false,
+            'desc' => trim((string)($r['desc'] ?? '')),
+            'perms' => rbac_make_perms([]),
+        ];
+        if (!empty($r['name'])) $base['name'] = trim((string)$r['name']);
+        if (!empty($r['color'])) $base['color'] = (string)$r['color'];
+        if (isset($r['desc'])) $base['desc'] = trim((string)$r['desc']);
+        if ($k === 'admin') {
+            $base['perms'] = rbac_make_perms(['*' => ['view'=>true,'create'=>true,'edit'=>true,'delete'=>true,'approve'=>true]]);
+        } elseif (!empty($r['perms']) && is_array($r['perms'])) {
+            $base['perms'] = rbac_make_perms($r['perms'], ['view'=>false,'create'=>false,'edit'=>false,'delete'=>false,'approve'=>false]);
+        }
+        $out[$k] = $base;
+    }
+    return $out;
+}
+
+function rbac_role_labels(): array {
+    $out = [];
+    foreach (rbac_roles() as $k => $r) $out[$k] = $r['name'];
+    return $out;
+}
+
+function user_permissions(array $u): array {
+    $roles = rbac_roles();
+    $roleKey = (string)($u['role'] ?? 'staff');
+    if ($roleKey === 'admin') {
+        return rbac_make_perms(['*' => ['view'=>true,'create'=>true,'edit'=>true,'delete'=>true,'approve'=>true]]);
+    }
+    $roleDef = $roles[$roleKey] ?? $roles['staff'] ?? reset($roles);
+    $perms = $roleDef['perms'] ?? rbac_make_perms([]);
+    if (!empty($u['approve'])) {
+        foreach (['planmenu', 'channels', 'ads', 'caremenu'] as $m) {
+            if (isset($perms[$m])) $perms[$m]['approve'] = true;
+        }
+    }
+    $custom = is_array($u['custom_permissions'] ?? null) ? $u['custom_permissions'] : jdecode( is_string($u['permissions'] ?? null) ? $u['permissions'] : null, []);
+    if (!empty($custom) && is_array($custom)) {
+        foreach ($custom as $m => $acts) {
+            if (!isset($perms[$m]) || !is_array($acts)) continue;
+            foreach ($acts as $a => $val) {
+                if (isset(RBAC_ACTIONS[$a])) $perms[$m][$a] = (bool)$val;
+            }
+        }
+    }
+    return $perms;
+}
+
+function has_perm(string $module, string $action = 'view', ?array $u = null): bool {
+    $u = $u ?? current_user();
+    if (!$u) return false;
+    if (($u['role'] ?? '') === 'admin') return true;
+    $perms = is_array($u['permissions'] ?? null) ? $u['permissions'] : user_permissions($u);
+    return !empty($perms[$module][$action]);
+}
+
 function current_user(): ?array {
     global $pdo;
     static $cache = null;
     if (empty($_SESSION['uid'])) return null;
     if ($cache && $cache['id'] === $_SESSION['uid']) return $cache;
-    $st = $pdo->prepare('SELECT id,name,email,role,title,approve,active,co,br FROM users WHERE id=?');
+    $st = $pdo->prepare('SELECT id,name,email,role,title,approve,active,co,br,permissions FROM users WHERE id=?');
     $st->execute([$_SESSION['uid']]);
     $u = $st->fetch();
     if (!$u || !(int)$u['active']) { unset($_SESSION['uid']); return null; } // tài khoản bị khoá → đăng xuất ngay
     $u['approve'] = (int)$u['approve'];
+    $u['custom_permissions'] = jdecode($u['permissions'] ?? null, []);
+    $u['permissions'] = user_permissions($u);
     return $cache = $u;
 }
 
@@ -145,20 +374,19 @@ function require_login(): array {
     return $u;
 }
 
-/* ---- Phân quyền ----
-   admin   : toàn quyền, quản lý tài khoản nhân viên và cấu hình kết nối.
-   manager : quản lý công việc của nhóm, xem thống kê nhân viên.
-   staff   : làm việc được giao.
-   Quyền DUYỆT (chiến dịch, nội dung, công việc) là cờ riêng `approve`, admin luôn có. */
-const ROLES = ['admin' => 'Quản trị', 'manager' => 'Trưởng nhóm', 'staff' => 'Nhân viên'];
-
 function require_role(string ...$roles): array {
     $u = require_login();
+    if ($u['role'] === 'admin') return $u;
     if (!in_array($u['role'], $roles, true)) fail('Bạn không có quyền thực hiện thao tác này', 403);
     return $u;
 }
 
-function can_approve(array $u): bool { return $u['role'] === 'admin' || (int)$u['approve'] === 1; }
+function can_approve(array $u): bool {
+    if ($u['role'] === 'admin' || (int)$u['approve'] === 1) return true;
+    $perms = is_array($u['permissions'] ?? null) ? $u['permissions'] : user_permissions($u);
+    foreach ($perms as $m => $acts) if (!empty($acts['approve'])) return true;
+    return false;
+}
 
 function require_approver(): array {
     $u = require_login();
@@ -209,7 +437,7 @@ function current_project(): ?array {
     foreach ($list as $p) if ($p['id'] === $want) { $found = $p; break; }
     if (!$found && $want !== '' && ($_SERVER['HTTP_X_PROJECT'] ?? $_GET['project_id'] ?? null)) fail('Bạn không thuộc dự án này', 403);
     if (!$found) $found = $list[0] ?? null;
-    if ($found) $_SESSION['project_id'] = $found['id'];
+    if ($found && ($_SESSION['project_id'] ?? '') !== $found['id']) $_SESSION['project_id'] = $found['id'];
     return $cache = $found;
 }
 
@@ -230,7 +458,9 @@ function require_project_write(): array { return require_project_role(...PROJECT
 function require_project_admin(): array { return require_project_role(...PROJECT_ADMIN_ROLES); }
 /** Quyền DUYỆT trong dự án: chủ/quản lý dự án, khách hàng (duyệt nội dung được cấp), hoặc cờ approve hệ thống. */
 function can_approve_project(array $u): bool {
+    if (($u['role'] ?? '') === 'admin') return true;
     $r = project_role();
+    if ($r === 'viewer' || ($u['role'] ?? '') === 'viewer') return false;
     return in_array($r, ['owner', 'manager', 'client'], true) || can_approve($u);
 }
 
@@ -340,18 +570,21 @@ const PROVIDERS = [
    không bao giờ trả về trình duyệt, chỉ trả dạng che (mask_secret). */
 function setting_get(string $key, $default = null) {
     global $pdo;
-    static $cache = [];
-    if (array_key_exists($key, $cache)) return $cache[$key];
+    if (!isset($GLOBALS['__SETTING_CACHE'])) $GLOBALS['__SETTING_CACHE'] = [];
+    if (array_key_exists($key, $GLOBALS['__SETTING_CACHE'])) return $GLOBALS['__SETTING_CACHE'][$key];
     $st = $pdo->prepare('SELECT value FROM app_settings WHERE key=?');
     $st->execute([$key]);
     $v = $st->fetchColumn();
-    return $cache[$key] = ($v === false || $v === null || $v === '') ? $default : $v;
+    return $GLOBALS['__SETTING_CACHE'][$key] = ($v === false || $v === null || $v === '') ? $default : $v;
 }
 function setting_set(string $key, ?string $value, ?array $u = null): void {
     global $pdo;
     $pdo->prepare("INSERT INTO app_settings(key,value,updated_by,updated_at) VALUES (?,?,?,datetime('now'))
         ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_by=excluded.updated_by, updated_at=excluded.updated_at")
         ->execute([$key, $value, ($u ?? current_user())['id'] ?? null]);
+    if (!isset($GLOBALS['__SETTING_CACHE'])) $GLOBALS['__SETTING_CACHE'] = [];
+    if ($value === null || $value === '') unset($GLOBALS['__SETTING_CACHE'][$key]);
+    else $GLOBALS['__SETTING_CACHE'][$key] = $value;
 }
 function setting_is_secret(string $key): bool {
     return str_starts_with($key, 'secret.') || (bool)preg_match('/[._](key|password|token|secret)$/', $key);

@@ -65,15 +65,15 @@ if ($action === 'save') {
     if ($e = ma_err($c, $a, 'Không truy cập được ' . $accountId)) fail($e, 422);
     $label = trim((string)($in['label'] ?? '')) ?: ('Meta Ads ' . ((string)($a['name'] ?? $accountId)));
     $enc = tok_enc($CFG, $token);
-    $st = $pdo->prepare("SELECT id FROM connections WHERE project_id=? AND provider='meta_ads' AND external_account_id=?"); $st->execute([$PID, $accountId]);
+    $st = $pdo->prepare("SELECT id FROM connections WHERE project_id=? AND provider='meta_ads' AND (external_account_id=? OR external_account_id IS NULL OR external_account_id='') ORDER BY (external_account_id=?) DESC LIMIT 1"); $st->execute([$PID, $accountId, $accountId]);
     $id = (string)($st->fetchColumn() ?: '');
     if ($id === '') {
         $id = gen_id('CH');
         $pdo->prepare("INSERT INTO connections(id,project_id,provider,label,status,auth_method,secret,external_account_id,account_name,connected_by,connected_at) VALUES (?,?,'meta_ads',?,'connected','manual',?,?,?,?,datetime('now'))")
             ->execute([$id, $PID, $label, $enc, $accountId, (string)($a['name'] ?? ''), $me['id']]);
     } else {
-        $pdo->prepare("UPDATE connections SET label=?, secret=?, status='connected', auth_method='manual', last_error=NULL, account_name=?, connected_by=?, connected_at=datetime('now') WHERE id=?")
-            ->execute([$label, $enc, (string)($a['name'] ?? ''), $me['id'], $id]);
+        $pdo->prepare("UPDATE connections SET label=?, secret=?, external_account_id=?, status='connected', auth_method='manual', last_error=NULL, account_name=?, connected_by=?, connected_at=datetime('now') WHERE id=?")
+            ->execute([$label, $enc, $accountId, (string)($a['name'] ?? ''), $me['id'], $id]);
     }
     // Pixel chọn cho website của dự án (dùng khi cài mã đo / Conversions API)
     $pixel = preg_replace('/\D/', '', (string)($in['pixel_id'] ?? ''));

@@ -52,19 +52,20 @@ function human_age(string $ts): string {
 if (!$cur) {
     respond(['user' => $user, 'projects' => [], 'project' => null, 'staff' => [], 'campaigns' => [], 'content' => [], 'tasks' => [], 'leads' => [],
         'connections' => [], 'insights' => [], 'segments' => [], 'trends' => [], 'competitors' => [], 'kpis' => null, 'okrs' => [], 'brand' => [],
-        'roles' => ROLES, 'projectRoles' => PROJECT_ROLES, 'canApprove' => can_approve($user)]);
+        'roles' => rbac_role_labels(), 'rbac' => ['modules' => RBAC_MODULES, 'actions' => RBAC_ACTIONS, 'roles' => rbac_roles()], 'projectRoles' => PROJECT_ROLES, 'canApprove' => can_approve($user)]);
 }
 $pid = $cur['id'];
 $q = function (string $sql, array $v = []) use ($pdo, $pid): array { $st = $pdo->prepare($sql); $st->execute(array_merge([$pid], $v)); return $st->fetchAll(); };
 
 // Thành viên dự án (để giao việc / chọn người phụ trách). Admin hệ thống luôn có mặt.
-$staff = $q("SELECT u.id,u.name,u.title,u.role,u.approve,u.active,u.scope,u.co,u.br, COALESCE(m.role, CASE WHEN u.role='admin' THEN 'owner' END) AS prole
+$staff = $q("SELECT u.id,u.name,u.email,u.phone,u.title,u.role,u.approve,u.active,u.scope,u.co,u.br,u.permissions, COALESCE(m.role, CASE WHEN u.role='admin' THEN 'owner' END) AS prole
     FROM users u LEFT JOIN project_members m ON m.user_id=u.id AND m.project_id=?
     WHERE (m.user_id IS NOT NULL OR u.role='admin') ORDER BY u.active DESC, u.id");
 $staff = array_map(fn($s) => [
-    'id' => $s['id'], 'name' => $s['name'], 'role' => $s['title'] ?: '', 'sysrole' => $s['role'], 'prole' => $s['prole'],
+    'id' => $s['id'], 'name' => $s['name'], 'email' => $s['email'] ?? '', 'phone' => $s['phone'] ?? '',
+    'role' => $s['title'] ?: '', 'title' => $s['title'] ?: '', 'sysrole' => $s['role'], 'prole' => $s['prole'],
     'scope' => $s['scope'] ?: '—', 'approve' => (bool)$s['approve'], 'active' => (bool)$s['active'],
-    'co' => $s['co'], 'br' => $s['br'],
+    'co' => $s['co'], 'br' => $s['br'], 'permissions' => user_permissions($s),
 ], $staff);
 
 $okrs = array_map(fn($r) => [
@@ -142,7 +143,12 @@ respond([
     'kpis' => $kpis,
     'okrs' => $okrs,
     'brand' => $brand,
-    'roles' => ROLES,
+    'roles' => rbac_role_labels(),
+    'rbac' => [
+        'modules' => RBAC_MODULES,
+        'actions' => RBAC_ACTIONS,
+        'roles' => rbac_roles(),
+    ],
     'projectRoles' => PROJECT_ROLES,
     'canApprove' => can_approve_project($user),
 ]);

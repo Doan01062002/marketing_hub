@@ -129,7 +129,7 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 /* progress */
 .prog{height:8px;background:#eef1f5;border-radius:5px;overflow:hidden}.prog>div{height:100%;border-radius:5px;background:linear-gradient(90deg,#9f67ff,#6d28d9)}
 /* layer / modal / drawer / toast */
-#layer{position:fixed;inset:0;z-index:80;pointer-events:none}
+#toasts{z-index:9999!important}#layer{position:fixed;inset:0;z-index:80;pointer-events:none}
 .ov{position:absolute;inset:0;background:rgba(20,28,44,.44);opacity:0;transition:opacity .2s;pointer-events:auto}.ov.show{opacity:1}
 .modal{position:absolute;top:50%;left:50%;transform:translate(-50%,-46%);width:660px;max-width:94vw;max-height:92vh;background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);opacity:0;transition:all .2s;pointer-events:auto;display:flex;flex-direction:column;overflow:hidden}
 .modal.show{transform:translate(-50%,-50%);opacity:1}.modal.lg{width:880px}
@@ -872,10 +872,48 @@ const $$=(s,r=document)=>[...r.querySelectorAll(s)];
 let CURRENT_USER=null;
 let ROLES={admin:'Quản trị',manager:'Trưởng nhóm',staff:'Nhân viên'},CAN_APPROVE=false;
 function isAdmin(){return !!CURRENT_USER&&CURRENT_USER.role==='admin'}
-function isManager(){return !!CURRENT_USER&&(CURRENT_USER.role==='admin'||CURRENT_USER.role==='manager')}
+const PAGE_TO_MOD={
+ inbox:'inbox',overview:'overview',dashboard:'overview',portfolio:'overview',aiplan:'overview',
+ market:'market',trends:'market',research:'market',robot:'market',audience:'market',insights:'market',demand:'market',
+ planmenu:'planmenu',plan:'planmenu',brand:'planmenu',
+ channels:'channels',
+ ads:'ads',campaigns:'ads',
+ caremenu:'caremenu',publish:'caremenu',content:'caremenu',tasks:'caremenu',care:'caremenu',
+ automation:'automation',
+ leadsmenu:'leadsmenu',
+ reports:'reports',
+ utilities:'utilities',local:'utilities',
+ staff:'staff',
+ settings:'settings'
+};
+function pageMod(p){return PAGE_TO_MOD[p||S.page]||'overview'}
+function isViewerRole(){
+ if(isAdmin())return false;
+ if(!CURRENT_USER||CURRENT_USER.role==='viewer'||projRole()==='viewer')return true;
+ return false;
+}
+function canPerm(mod,act='view'){
+ if(isAdmin())return true;
+ const m=mod||pageMod(S.page);
+ if(act!=='view'&&isViewerRole())return false;
+ if(act!=='view'&&act!=='approve'&&projRole()==='client')return false;
+ const p=CURRENT_USER&&CURRENT_USER.permissions;
+ if(!p||!p[m])return act==='view';
+ return !!p[m][act];
+}
+function canCreateMod(mod){return canPerm(mod||pageMod(S.page),'create')}
+function canEditMod(mod){return canPerm(mod||pageMod(S.page),'edit')}
+function canWriteMod(mod){return canCreateMod(mod)||canEditMod(mod)}
+function canDeleteMod(mod){return canPerm(mod||pageMod(S.page),'delete')}
+function canApproveMod(mod){return canPerm(mod||pageMod(S.page),'approve')}
+function isManager(){
+ if(isAdmin())return true;
+ if(isViewerRole())return false;
+ return !!CURRENT_USER&&(canPerm('staff','edit')||canPerm('settings','edit'));
+}
 async function apiGet(url){
  const r=await fetch(url,{credentials:'same-origin',headers:PH()});
- if(r.status===401){renderLogin();throw new Error('unauth')}
+ if(r.status===401){if(!$('#li-email'))renderLogin();throw new Error('unauth')}
  const d=await r.json().catch(()=>({}));
  if(!r.ok)throw new Error(d.error||('Lỗi máy chủ ('+r.status+')'));
  return d;
@@ -883,7 +921,10 @@ async function apiGet(url){
 async function apiPost(url,body){
  const r=await fetch(url,{method:'POST',credentials:'same-origin',headers:PH({'Content-Type':'application/json'}),body:JSON.stringify(body||{})});
  const d=await r.json().catch(()=>({}));
- if(r.status===401){renderLogin();throw new Error('unauth')}
+ if(r.status===401 && !String(url).includes('auth.php')){
+  if(!$('#li-email'))renderLogin('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.');
+  throw new Error('unauth');
+ }
  if(!r.ok)throw new Error(d.error||('Lỗi máy chủ ('+r.status+')'));
  return d;
 }
@@ -898,7 +939,7 @@ async function loadData(){
  CURRENT_USER=d.user;
  DB.staff=d.staff;DB.campaigns=d.campaigns;DB.content=d.content;DB.tasks=d.tasks;DB.leads=d.leads;DB.connections=d.connections;
  DB.insights=d.insights;DB.segments=d.segments;DB.trends=d.trends;DB.competitors=d.competitors;DB.kpis=d.kpis;
- DB.okrs=d.okrs||[];DB.brand=d.brand||[];ROLES=d.roles||ROLES;CAN_APPROVE=!!d.canApprove;
+ DB.okrs=d.okrs||[];DB.brand=d.brand||[];ROLES=d.roles||ROLES;DB.rbac=d.rbac||DB.rbac||null;CAN_APPROVE=!!d.canApprove;
  DB.projects=d.projects||[];DB.project=d.project||null;S.project=DB.project?DB.project.id:null;
 }
 async function refreshData(){await loadData();renderSbFoot();renderNav();render()}
@@ -907,26 +948,65 @@ function renderSbFoot(){
  el.innerHTML=`<span class="av" style="background:${avc(CURRENT_USER.name)}">${initials(CURRENT_USER.name)}</span><div style="flex:1;min-width:0"><b style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CURRENT_USER.name}</b><span>${CURRENT_USER.title||''}</span></div><button class="iconbtn" title="Đăng xuất" onclick="doLogout()" style="background:transparent;border-color:rgba(255,255,255,.15);color:#c7d0de">${ic('x')}</button>`;
 }
 async function doLogout(){try{await apiPost('/api/auth.php?action=logout',{})}catch(e){}location.reload()}
+function showLoginErr(msg){
+ const errEl=$('#li-err');
+ if(!errEl)return;
+ if(!msg){errEl.style.display='none';errEl.innerHTML='';return}
+ errEl.style.display='block';
+ errEl.innerHTML='⚠️ '+esc(msg);
+}
+function toggleLoginPw(){
+ const inp=$('#li-pass'),btn=$('#li-pw-toggle');
+ if(!inp)return;
+ if(inp.type==='password'){inp.type='text';if(btn)btn.textContent='🙈 Ẩn'}
+ else{inp.type='password';if(btn)btn.textContent='👁️ Hiện'}
+ inp.focus();
+}
 function renderLogin(err){
+ try{
+  if(window.IB){if(IB.timer){clearInterval(IB.timer);IB.timer=null}if(IB.cTimer){clearInterval(IB.cTimer);IB.cTimer=null}}
+  if(typeof _notifTimer!=='undefined'&&_notifTimer){clearInterval(_notifTimer);_notifTimer=null}
+ }catch(e){}
+ if($('#li-email') && !err) return;
+ const prevEmail=($('#li-email')&&$('#li-email').value)||lsGet('mkt.last_email','')||'';
  document.body.innerHTML=`<div style="min-height:100vh;display:grid;place-items:center;background:var(--bg);padding:20px">
-  <div style="width:100%;max-width:360px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)">
+  <div style="width:100%;max-width:390px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:var(--shadow-lg)">
    <div style="display:flex;align-items:center;gap:11px;margin-bottom:20px">
     <div style="width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#9f67ff,#6d28d9);display:grid;place-items:center;flex-shrink:0">${ic('zap').replace('stroke-width="1.9"','stroke="#fff" stroke-width="2.1"')}</div>
-    <div><b style="font-family:var(--disp);font-size:16px;display:block">Marketing Hub</b><span class="mini">Phòng Marketing</span></div>
+    <div><b style="font-family:var(--disp);font-size:16px;display:block">Marketing Hub</b><span class="mini">Phòng Marketing · Chung Auto</span></div>
    </div>
-   <div class="field"><label>Email</label><input id="li-email" type="email" placeholder="email@congty.vn" autofocus></div>
-   <div class="field"><label>Mật khẩu</label><input id="li-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-   <div id="li-err" style="color:var(--bad);font-size:12.5px;margin:-4px 0 12px;min-height:16px">${err?err:''}</div>
-   <button class="btn primary" style="width:100%;justify-content:center" onclick="doLogin()">${ic('check')} Đăng nhập</button>
-   <div class="mini" style="margin-top:16px;line-height:1.6">Chưa có tài khoản? Liên hệ quản trị viên phòng Marketing.</div>
+   <div class="field">
+    <label>Email hoặc Tên tài khoản</label>
+    <input id="li-email" type="text" autocomplete="username" value="${esc(prevEmail)}" placeholder="VD: thu@chungauto.vn hoặc admin@chungauto.vn" autofocus onkeydown="if(event.key==='Enter'){const p=$('#li-pass');if(p&&!p.value)p.focus();else doLogin()}">
+   </div>
+   <div class="field">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+     <label style="margin:0">Mật khẩu</label>
+     <button type="button" id="li-pw-toggle" class="btn xs" style="padding:2px 8px;font-size:11.5px" onclick="toggleLoginPw()">👁️ Hiện</button>
+    </div>
+    <input id="li-pass" type="password" autocomplete="current-password" placeholder="Nhập mật khẩu đăng nhập…" onkeydown="if(event.key==='Enter')doLogin()">
+   </div>
+   <div id="li-err" style="display:${err?'block':'none'};background:#fef2f2;border:1px solid #ef4444;color:#b91c1c;padding:10px 12px;border-radius:8px;font-size:12.5px;font-weight:600;line-height:1.45;margin:4px 0 14px">${err?'⚠️ '+esc(err):''}</div>
+   <button id="li-btn" class="btn primary" style="width:100%;justify-content:center;padding:10px 16px;font-size:14px" onclick="doLogin()">${ic('check')} Đăng nhập</button>
+   <div class="mini" style="margin-top:16px;line-height:1.6">Mẹo: Bạn có thể bấm nút <b>👁️ Hiện</b> để kiểm tra mật khẩu trước khi bấm Đăng nhập.</div>
   </div></div>`;
 }
 async function doLogin(){
- const email=$('#li-email').value.trim(),pass=$('#li-pass').value;
- const errEl=$('#li-err');
- if(!email||!pass){errEl.textContent='Nhập đầy đủ email và mật khẩu';return}
- try{await apiPost('/api/auth.php?action=login',{email,password:pass});location.reload()}
- catch(e){errEl.textContent=e.message||'Đăng nhập thất bại'}
+ const emailEl=$('#li-email'),passEl=$('#li-pass'),btn=$('#li-btn');
+ const email=(emailEl?emailEl.value:'').trim(),pass=(passEl?passEl.value:'').trim();
+ showLoginErr('');
+ if(!email){showLoginErr('Vui lòng nhập Email đăng nhập (VD: thu@chungauto.vn)!');if(emailEl)emailEl.focus();return}
+ if(!pass){showLoginErr('Vui lòng nhập Mật khẩu đăng nhập!');if(passEl)passEl.focus();return}
+ const oldHtml=btn?btn.innerHTML:'';
+ if(btn){btn.disabled=true;btn.textContent='Đang kiểm tra đăng nhập…'}
+ try{
+  await apiPost('/api/auth.php?action=login',{email,password:pass});
+  lsSet('mkt.last_email',email);
+  location.reload();
+ }catch(e){
+  showLoginErr(e.message||'Đăng nhập thất bại, vui lòng thử lại.');
+  if(btn){btn.disabled=false;btn.innerHTML=oldHtml}
+ }
 }
 function notifyOauthResult(){
  const p=new URLSearchParams(location.search);
@@ -1012,8 +1092,8 @@ function toast(t,s){const el=document.createElement('div');el.className='toast';
 function layer(){return $('#layer')}
 let _layerT=null;
 function closeLayer(){const l=layer();l.style.pointerEvents='none';l.querySelectorAll('.drawer,.modal,.ov').forEach(x=>x.classList.remove('show'));if(_layerT)clearTimeout(_layerT);_layerT=setTimeout(()=>{l.innerHTML='';_layerT=null},250)}
-function openModal(html,cls){const l=layer();if(_layerT){clearTimeout(_layerT);_layerT=null}l.style.pointerEvents='auto';l.innerHTML=`<div class="ov" onclick="closeLayer()"></div><div class="modal ${cls||''}">${html}</div>`;requestAnimationFrame(()=>{l.querySelector('.ov').classList.add('show');l.querySelector('.modal').classList.add('show')})}
-function openDrawer(html){const l=layer();if(_layerT){clearTimeout(_layerT);_layerT=null}l.style.pointerEvents='auto';l.innerHTML=`<div class="ov" onclick="closeLayer()"></div><div class="drawer">${html}</div>`;requestAnimationFrame(()=>{l.querySelector('.ov').classList.add('show');l.querySelector('.drawer').classList.add('show')})}
+function openModal(html,cls){const l=layer();if(_layerT){clearTimeout(_layerT);_layerT=null}l.style.pointerEvents='auto';l.innerHTML=`<div class="ov" onclick="closeLayer()"></div><div class="modal ${cls||''}">${html}</div>`;enforceDomPermissions(l.querySelector('.modal'),true);requestAnimationFrame(()=>{l.querySelector('.ov').classList.add('show');l.querySelector('.modal').classList.add('show')})}
+function openDrawer(html){const l=layer();if(_layerT){clearTimeout(_layerT);_layerT=null}l.style.pointerEvents='auto';l.innerHTML=`<div class="ov" onclick="closeLayer()"></div><div class="drawer">${html}</div>`;enforceDomPermissions(l.querySelector('.drawer'),true);requestAnimationFrame(()=>{l.querySelector('.ov').classList.add('show');l.querySelector('.drawer').classList.add('show')})}
 function dlCSV(head,rows,fn){const esc=v=>'"'+String(v==null?'':v).replace(/<[^>]+>/g,'').replace(/"/g,'""')+'"';const csv='﻿'+[head.map(esc).join(','),...rows.map(r=>r.map(esc).join(','))].join('\n');const b=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);toast('Đã xuất Excel',fn)}
 function globalSearch(v){}
 function badge(map,key){const m=(map&&map[key])||{t:key,c:'mut'};return `<span class="badge b-${m.c}"><span class="dot"></span>${m.t}</span>`}
@@ -1053,7 +1133,7 @@ Object.assign(TITLES,{inbox:'Cửa sổ chat',channels:'Kênh marketing',setting
 function navCount(k){if(k==='inbox')return IB.unread||null;return {ads:DB.campaigns.length,caremenu:DB.tasks.length+DB.content.length,leadsmenu:DB.leads.length,channels:(DB.connections||[]).length}[k]}
 function renderNav(){
  $('#nav').innerHTML=NAV.map(grp=>{
-  const items=grp.items.map(([k,t,i,ext])=>{
+  const items=grp.items.filter(([k])=>k==='portfolio'||k==='aiplan'||canPerm(k,'view')).map(([k,t,i,ext])=>{
    if(ext&&ext.href)return `<a class="nav-i ext" href="${ext.href}" target="_blank" rel="noopener">${ic(i)}<span>${t}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px;margin-left:auto;opacity:.55"><path d="M7 17 17 7M7 7h10v10"/></svg></a>`;
    const c=navCount(k);const ai=k==='aiplan';return `<div class="nav-i ${ai?'ai ':''}${S.page===k?'on':''}" onclick="go('${k}')">${ic(i)}<span>${t}</span>${ai?'<span class="aitag">AI</span>':(c!=null?`<span class="cnt">${c}</span>`:'')}</div>`}).join('');
   return (grp.g?`<div class="sb-grp">${grp.g}</div>`:'<div style="height:10px"></div>')+items;
@@ -2036,6 +2116,7 @@ function channelDetail(c,hist){
     <td class="r-mut" style="white-space:nowrap">${esc(fmtTs(v.at))}</td>${vid?`<td class="tar mono">${fmtDur(v.dur)}</td>`:''}${hasViews?`<td class="tar mono"><b>${num(v.views)}</b></td>`:''}<td class="tar mono">${num(v.likes)}</td><td class="tar mono">${num(v.comments)}</td>${list.some(x=>x.shares!=null)?`<td class="tar mono">${v.shares!=null?num(v.shares):'—'}</td>`:''}<td class="tar mono">${e.er!=null?e.er.toFixed(2)+'%':num(e.i)}</td></tr>`}).join('')}</tbody></table></div>
    <div class="mini" style="margin-top:6px">"Nổi bật" = lượt xem ≥ 1,5× trung vị các ${unit} của kênh. Số liệu là số hiện tại của từng ${unit} tại lần đồng bộ gần nhất (tự đồng bộ mỗi ngày).</div>`;
  } else if(['tiktok','youtube','facebook_page'].includes(c.provider))html+=`<div class="mini" style="margin-top:12px">Danh sách ${['tiktok','youtube'].includes(c.provider)?'video':'bài đăng'} sẽ hiện sau lần đồng bộ tiếp theo — bấm Đồng bộ.</div>`;
+ if(c.provider==='ga4'&&c.external_account_id)html+=ga4CtaPanel([c]);
  html+=topTables([c]);
  return html+'</div></div>';
 }
@@ -2622,8 +2703,11 @@ function dataSettingsHtml(){
   ${d.can_edit?`<input id="ds-${k}" class="mono" placeholder="${d[k].has_key?'Để trống = giữ khoá đang dùng':'Dán API key'}">`:''}<div class="mini" style="margin-top:4px">${help}</div></div>`;
  return `<div class="card" style="max-width:760px"><div class="card-h">${ic('globe')}<h3>Nguồn dữ liệu thị trường</h3></div><div class="card-b">
   <div class="field"><label>Đăng nhập Google (OAuth Client) ${d.google.has_client?`<span class="badge b-ok">Đã có · ${esc(d.google.client_id.slice(0,14))}…</span>`:'<span class="badge b-mut">Chưa có</span>'}</label>
-   ${d.can_edit&&!d.google.from_config?`<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="ds-gcid" class="mono" placeholder="${d.google.has_client?'Client ID mới (để trống = giữ)':'Client ID …apps.googleusercontent.com'}" style="flex:1;min-width:240px"><input id="ds-gcsec" class="mono" placeholder="Client Secret" style="flex:1;min-width:180px"></div>`:''}
+   ${d.can_edit?`<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="ds-gcid" class="mono" placeholder="${d.google.has_client?'Client ID mới (để trống = giữ)':'Client ID …apps.googleusercontent.com'}" style="flex:1;min-width:240px"><input id="ds-gcsec" class="mono" placeholder="Client Secret" style="flex:1;min-width:180px"></div>`:''}
    <div class="mini" style="margin-top:4px">Dùng cho <b>Kết nối nhanh website</b> (Search Console + GA4), đăng nhập YouTube / Google Ads. Redirect URI cần thêm trong Google Cloud: <code style="user-select:all">${esc(d.google.redirect_uri)}</code></div></div>
+  <div class="field"><label>Đăng nhập Facebook / Meta (App ID & Secret) ${d.meta&&d.meta.has_client?`<span class="badge b-ok">Đã có · ${esc(d.meta.app_id)}</span>`:'<span class="badge b-mut">Chưa có</span>'}</label>
+   ${d.can_edit?`<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="ds-maid" class="mono" placeholder="${d.meta&&d.meta.has_client?'App ID mới (để trống = giữ '+esc(d.meta.app_id)+')':'App ID (dãy số)'}" style="flex:1;min-width:240px"><input id="ds-masec" class="mono" type="password" placeholder="App Secret" style="flex:1;min-width:180px"></div>`:''}
+   <div class="mini" style="margin-top:4px">Dùng cho <b>Fanpage, Instagram, Quảng cáo Meta (Facebook Ads)</b>. Redirect URI trong Meta App: <code style="user-select:all">${esc(d.meta?d.meta.redirect_uri:'')}</code></div></div>
   ${row('serpapi','Google Trends — khoá SerpApi','Dùng cho trang <b>Xu hướng</b>: cập nhật độ quan tâm 3 tháng của từng xu hướng và tìm từ khoá đang lên. Google không có API Trends chính thức nên dùng <a href="https://serpapi.com/manage-api-key" target="_blank" rel="noopener">SerpApi</a> (gói miễn phí 100 lượt tìm/tháng; mỗi xu hướng cập nhật = 1 lượt).')}
   ${d.can_edit?`<div class="field"><label>Khu vực Google Trends</label><input id="ds-geo" value="${esc(d.trends_geo||'VN')}" style="max-width:120px"><div class="mini">Mã nước (VN, US…) hoặc tỉnh (VN-SG = TP.HCM, VN-HN = Hà Nội).</div></div>`:''}
   ${row('places','Google Maps — Google Places API key','Dùng cho trang <b>Nghiên cứu → Đối thủ</b>: tìm địa điểm của đối thủ trên Google Maps, theo dõi điểm sao và số đánh giá. Google Cloud → bật <i>Places API (New)</i> → Credentials → API key (nên giới hạn key chỉ dùng Places API). Có tính phí theo lượt, kèm hạn mức miễn phí hằng tháng.')}
@@ -2633,7 +2717,7 @@ function dataSettingsHtml(){
 }
 async function dataSettingsSave(){
  const v=k=>(($('#ds-'+k)||{}).value||'').trim();
- try{await apiPost('/api/settings_data.php',{serpapi_key:v('serpapi'),places_key:v('places'),trends_geo:v('geo')||'VN',google_client_id:v('gcid'),google_client_secret:v('gcsec')});toast('Đã lưu');DSET.loaded=false;render()}catch(e){toast('Lỗi',e.message)}
+ try{await apiPost('/api/settings_data.php',{serpapi_key:v('serpapi'),places_key:v('places'),trends_geo:v('geo')||'VN',google_client_id:v('gcid'),google_client_secret:v('gcsec'),meta_app_id:v('maid'),meta_app_secret:v('masec')});toast('Đã lưu');DSET.loaded=false;render()}catch(e){toast('Lỗi',e.message)}
 }
 
 /* ================= CHĂM SÓC BÌNH LUẬN ================= */
@@ -3157,7 +3241,7 @@ async function nsTest(kind){
 const STX={users:null,stats:{},period:30,act:[],actMore:false,actLoaded:false,af:{user:'',entity:''},busy:{},err:''};
 const ENTITY_LBL={campaign:'Chiến dịch',content:'Nội dung',task:'Công việc',lead:'Đầu mối',connection:'Kênh',user:'Tài khoản',insight:'Insight',segment:'Phân khúc',trend:'Xu hướng',competitor:'Đối thủ',okr:'OKR',brand:'Thương hiệu',post:'Bài đăng',comment:'Bình luận',automation:'Kịch bản tự động',sequence:'Chuỗi chăm sóc',notification:'Thông báo',settings:'Cấu hình',assistant:'Trợ lý AI',ai:'AI',ai_generate:'AI viết nội dung'};
 const ACTION_ST={ai:{t:'Dùng AI',c:'vio'},ai_generate:{t:'AI viết',c:'vio'},error:{t:'Lỗi',c:'bad'},sync:{t:'Đồng bộ',c:'info'},submit:{t:'Gửi duyệt',c:'warn'},enroll:{t:'Đưa vào chuỗi',c:'info'},run:{t:'Chạy',c:'info'},create:{t:'Tạo',c:'info'},update:{t:'Sửa',c:'mut'},delete:{t:'Xoá',c:'bad'},approve:{t:'Duyệt',c:'ok'},reject:{t:'Từ chối',c:'warn'},publish:{t:'Xuất bản',c:'vio'},move:{t:'Chuyển bước',c:'info'},login:{t:'Đăng nhập',c:'mut'},lock:{t:'Khoá',c:'bad'},unlock:{t:'Mở khoá',c:'ok'},reset_password:{t:'Đặt lại MK',c:'warn'},change_password:{t:'Đổi MK',c:'mut'},sync:{t:'Đồng bộ',c:'info'}};
-function roleBadge(r){return badge({admin:{t:ROLES.admin||'Quản trị',c:'vio'},manager:{t:ROLES.manager||'Trưởng nhóm',c:'info'},staff:{t:ROLES.staff||'Nhân viên',c:'mut'}},r)}
+function roleBadge(r){const rd=(DB.rbac&&DB.rbac.roles&&DB.rbac.roles[r])||(STX.rbac&&STX.rbac.roles&&STX.rbac.roles[r])||null;const map={admin:{t:ROLES.admin||'Quản trị',c:'vio'},manager:{t:ROLES.manager||'Trưởng nhóm',c:'info'},staff:{t:ROLES.staff||'Nhân viên',c:'ok'},content:{t:ROLES.content||'Chuyên viên Nội dung',c:'info'},ads:{t:ROLES.ads||'Chuyên viên Quảng cáo',c:'warn'},sale:{t:ROLES.sale||'Kinh doanh / CSKH',c:'ok'},viewer:{t:ROLES.viewer||'Chỉ xem',c:'mut'}};if(rd)map[r]={t:rd.name||ROLES[r]||r,c:rd.color||'info'};else if(!map[r])map[r]={t:ROLES[r]||r,c:'info'};return badge(map,r)}
 function permErr(e,title){if(e&&e.message==='unauth')return;toast(title||'Không thực hiện được',esc(e&&e.message||'Lỗi không xác định'))}
 function todayStr(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
 function dueLate(d){return /^\d{4}-\d{2}-\d{2}$/.test(d||'')&&d<todayStr()}
@@ -3169,10 +3253,10 @@ function stActUrl(before){const q=['limit=50'];if(STX.af.user)q.push('user_id='+
 function stLoad(kind){
  const key=kind==='stats'?'stats'+STX.period:kind;if(STX.busy[key])return;STX.busy[key]=true;
  let p;
- if(kind==='users')p=apiGet('/api/users.php').then(d=>{STX.users=d.users||[]});
+ if(kind==='users')p=apiGet('/api/users.php').then(d=>{STX.users=d.users||[];if(d.roles)ROLES=d.roles;if(d.rbac){STX.rbac=d.rbac;DB.rbac=d.rbac}});
  else if(kind==='stats'){const per=STX.period;p=apiGet('/api/users.php?action=stats&period='+per).then(d=>{STX.stats[per]=d})}
  else p=apiGet(stActUrl()).then(d=>{STX.act=d.activity||[];STX.actMore=!!d.more;STX.actLoaded=true});
- p.catch(e=>{if(e.message!=='unauth')STX.err=e.message}).finally(()=>{STX.busy[key]=false;if(S.page==='staff')render()});
+ p.catch(e=>{if(e.message!=='unauth')STX.err=e.message}).finally(()=>{STX.busy[key]=false;if(S.page==='staff'||S.page==='settings')render()});
 }
 function stInvalidate(){STX.users=null;STX.stats={};STX.actLoaded=false;STX.err=''}
 function stRefresh(){stInvalidate();refreshData()}
@@ -3202,7 +3286,7 @@ function stPeople(){
    <td>${u.role==='admin'?'<span class="badge b-ok"><span class="dot"></span>Có (quản trị)</span>':u.approve?'<span class="badge b-ok"><span class="dot"></span>Có</span>':'<span class="badge b-mut"><span class="dot"></span>Không</span>'}</td>
    <td>${u.active?'<span class="badge b-ok"><span class="dot"></span>Hoạt động</span>':'<span class="badge b-bad"><span class="dot"></span>Đã khoá</span>'}</td>
    <td class="r-mut" title="${esc(fmtTs(u.last_login_at))}">${u.last_login_at?relTime(u.last_login_at):'Chưa đăng nhập'}</td>
-   <td onclick="event.stopPropagation()"><div class="rowact">${canEditUser(u)?`<button class="iconbtn" title="Sửa thông tin" onclick="staffForm('${u.id}')">${ic('edit')}</button>`:''}${adm?`<button class="iconbtn" title="Đặt lại mật khẩu" onclick="staffResetPw('${u.id}')">${ic('shield')}</button>${u.id!==me?`<button class="iconbtn" title="${u.active?'Khoá tài khoản':'Mở khoá'}" onclick="staffLock('${u.id}',${u.active?1:0})" style="${u.active?'color:var(--bad)':'color:var(--ok)'}">${ic(u.active?'x':'check')}</button>`:''}`:''}</div></td></tr>`).join('')||'<tr><td colspan="8" class="mini" style="text-align:center;padding:16px">Chưa có nhân viên</td></tr>'}
+   <td onclick="event.stopPropagation()"><div class="rowact">${adm||canPerm('settings','edit')?`<button class="iconbtn" title="Phân quyền chức năng (Xem/Thêm/Sửa/Xoá)" onclick="userPermModal('${u.id}')">${ic('layers')}</button>`:''}${canEditUser(u)?`<button class="iconbtn" title="Sửa thông tin & Vai trò" onclick="staffForm('${u.id}')">${ic('edit')}</button>`:''}${adm||canPerm('settings','edit')?`<button class="btn xs" title="Đổi mật khẩu" onclick="staffPwModal('${u.id}')">${ic('shield')} Đổi MK</button>${u.id!==me?`<button class="iconbtn" title="${u.active?'Khoá tài khoản':'Mở khoá'}" onclick="staffLock('${u.id}',${u.active?1:0})" style="${u.active?'color:var(--warn)':'color:var(--ok)'}">${ic(u.active?'x':'check')}</button><button class="iconbtn" title="Xoá người dùng" onclick="staffDelete('${u.id}')" style="color:var(--bad)">${ic('trash')}</button>`:''}`:''}</div></td></tr>`).join('')||'<tr><td colspan="8" class="mini" style="text-align:center;padding:16px">Chưa có nhân viên</td></tr>'}
   </tbody></table></div>
   <div class="mini" style="margin-top:10px">Nhấp vào một người để xem việc đang làm và nhật ký thao tác.${adm?' Tài khoản bị khoá sẽ bị đăng xuất ngay và không đăng nhập lại được.':''}</div>`;
 }
@@ -3269,32 +3353,270 @@ function openStaffPerson(id){
  apiGet('/api/activity.php?limit=20&user_id='+encodeURIComponent(id)).then(d=>{const el=$('#sp-act');if(el)el.innerHTML=(d.activity||[]).map(a=>actRow(a,false)).join('')||'<div class="mini" style="padding:12px 0">Chưa có thao tác nào</div>'}).catch(e=>{const el=$('#sp-act');if(el)el.innerHTML=`<div class="mini neg" style="padding:12px 0">${esc(e.message)}</div>`});
 }
 function staffBrOptions(coId,sel){const c=ORG.companies.find(x=>x.id===coId);return `<option value="">Tất cả chi nhánh</option>`+(c?c.branches:[]).map(b=>`<option value="${b.id}" ${sel===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}
-function staffForm(id){
- const u=id?(STX.users||[]).find(x=>x.id===id):{role:'staff',approve:false,co:'',br:''};if(!u)return;
- const adm=isAdmin();
- openModal(`<div class="mh">${ic('users')}<h3>${id?'Sửa thông tin nhân viên':'Thêm nhân viên mới'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
-  <div class="mb">
-   <div class="frow"><div class="field"><label>Họ tên</label><input id="sf-name" value="${esc(u.name||'')}" placeholder="VD: Nguyễn Văn A"></div><div class="field"><label>Email đăng nhập</label><input id="sf-email" type="email" value="${esc(u.email||'')}" placeholder="ten@congty.vn" ${adm?'':'disabled'}></div></div>
-   <div class="frow"><div class="field"><label>Chức danh</label><input id="sf-title" value="${esc(u.title||'')}" placeholder="VD: Chuyên viên Content"></div><div class="field"><label>Số điện thoại</label><input id="sf-phone" value="${esc(u.phone||'')}" placeholder="09xx xxx xxx"></div></div>
-   ${adm?`<div class="frow"><div class="field"><label>Vai trò hệ thống</label><select id="sf-role">${Object.keys(ROLES).map(k=>`<option value="${k}" ${u.role===k?'selected':''}>${ROLES[k]}</option>`).join('')}</select></div><div class="field"><label>Quyền duyệt</label><label style="display:flex;gap:8px;align-items:center;height:40px;font-weight:500;text-transform:none;letter-spacing:0"><input id="sf-approve" type="checkbox" style="width:auto;height:auto" ${u.approve?'checked':''}> Được duyệt chiến dịch / nội dung / công việc</label></div></div>`:''}
-   <div class="frow f3"><div class="field"><label>Công ty</label><select id="sf-co" ${adm?'':'disabled'} onchange="$('#sf-br').innerHTML=staffBrOptions(this.value,'')"><option value="">Toàn phòng</option>${ORG.companies.map(c=>`<option value="${c.id}" ${u.co===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Chi nhánh</label><select id="sf-br">${staffBrOptions(u.co,u.br)}</select></div><div class="field"><label>Phạm vi phụ trách</label><input id="sf-scope" value="${esc(u.scope||'')}" placeholder="VD: Tập đoàn / Brand"></div></div>
-   ${id?'':`<div class="field"><label>Mật khẩu ban đầu (tối thiểu 8 ký tự)</label><input id="sf-pw" type="text" placeholder="Để trống để hệ thống tạo ngẫu nhiên"></div>`}
-   <div id="sf-err" style="color:var(--bad);font-size:12.5px;min-height:16px"></div>
-  </div>
-  <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitStaffForm(${id?`'${id}'`:''})">${ic('check')} ${id?'Lưu thay đổi':'Tạo tài khoản'}</button></div>`);
+const DEFAULT_RBAC_MODULES={
+ inbox:{name:'Cửa sổ chat & Hội thoại',group:'Chăm sóc & Khách hàng'},
+ overview:{name:'Tổng quan dự án',group:'Quản trị dự án'},
+ market:{name:'Phân tích thị trường',group:'Quản trị dự án'},
+ planmenu:{name:'Mục tiêu & Kế hoạch',group:'Quản trị dự án'},
+ channels:{name:'Kênh marketing & Đăng bài',group:'Triển khai marketing'},
+ ads:{name:'Chiến dịch quảng cáo (Ads)',group:'Triển khai marketing'},
+ caremenu:{name:'Chăm sóc dự án & Công việc',group:'Triển khai marketing'},
+ automation:{name:'Chiến dịch Automation',group:'Triển khai marketing'},
+ leadsmenu:{name:'Khách hàng & Lead (CRM)',group:'Chăm sóc & Khách hàng'},
+ reports:{name:'Báo cáo & Đo lường (GA4/Ads)',group:'Đo lường & Quản trị'},
+ utilities:{name:'Tiện ích & Địa điểm',group:'Đo lường & Quản trị'},
+ staff:{name:'Nhân sự & Hiệu suất',group:'Đo lường & Quản trị'},
+ settings:{name:'Cài đặt & Phân quyền',group:'Đo lường & Quản trị'}
+};
+const DEFAULT_RBAC_ACTIONS={view:'Xem',create:'Thêm',edit:'Sửa',delete:'Xoá',approve:'Duyệt'};
+function rbacMeta(){
+ const src=(DB.rbac&&DB.rbac.modules)?DB.rbac:(STX.rbac&&STX.rbac.modules)?STX.rbac:null;
+ return {
+  modules:(src&&src.modules)||DEFAULT_RBAC_MODULES,
+  actions:(src&&src.actions)||DEFAULT_RBAC_ACTIONS,
+  roles:(src&&src.roles)||{}
+ };
 }
+function roleDefaultPerms(roleKey){
+ const meta=rbacMeta();
+ const r=meta.roles&&meta.roles[roleKey];
+ if(r&&r.perms)return JSON.parse(JSON.stringify(r.perms));
+ const out={};
+ Object.keys(meta.modules).forEach(m=>{
+  const isFull=roleKey==='admin'||roleKey==='manager';
+  const isView=roleKey==='viewer';
+  out[m]={view:true,create:!isView,edit:!isView,delete:isFull,approve:isFull};
+ });
+ return out;
+}
+function renderPermMatrixRows(prefix,perms,disabled){
+ const meta=rbacMeta();
+ const acts=Object.keys(meta.actions);
+ return Object.entries(meta.modules).map(([mKey,mInfo])=>{
+  const mp=(perms&&perms[mKey])||{};
+  const allOn=acts.every(a=>!!mp[a]);
+  return `<tr>
+   <td><div style="font-weight:600;color:var(--ink)">${esc(mInfo.name||mKey)}</div><div class="mini">${esc(mInfo.group||'')}</div></td>
+   ${acts.map(a=>`<td style="text-align:center"><input type="checkbox" data-perm-prefix="${esc(prefix)}" data-mod="${esc(mKey)}" data-act="${esc(a)}" ${mp[a]?'checked':''} ${disabled?'disabled':''} onchange="syncPermRowAll('${esc(prefix)}','${esc(mKey)}')" style="width:17px;height:17px;cursor:${disabled?'not-allowed':'pointer'};accent-color:var(--brand)"></td>`).join('')}
+   <td style="text-align:center"><input type="checkbox" id="${esc(prefix)}-all-${esc(mKey)}" ${allOn?'checked':''} ${disabled?'disabled':''} onchange="togglePermRow('${esc(prefix)}','${esc(mKey)}',this.checked)" style="width:17px;height:17px;cursor:${disabled?'not-allowed':'pointer'};accent-color:#2563eb" title="Chọn / bỏ chọn cả dòng"></td>
+  </tr>`;
+ }).join('');
+}
+function syncPermRowAll(prefix,mod){
+ const meta=rbacMeta();
+ const acts=Object.keys(meta.actions);
+ const allOn=acts.every(a=>{const el=document.querySelector(`input[data-perm-prefix="${prefix}"][data-mod="${mod}"][data-act="${a}"]`);return el&&el.checked});
+ const rowAll=document.getElementById(`${prefix}-all-${mod}`);
+ if(rowAll)rowAll.checked=allOn;
+}
+function togglePermRow(prefix,mod,checked){
+ document.querySelectorAll(`input[data-perm-prefix="${prefix}"][data-mod="${mod}"]`).forEach(el=>{if(!el.disabled)el.checked=!!checked});
+}
+function togglePermAll(prefix,mode){
+ const meta=rbacMeta();
+ Object.keys(meta.modules).forEach(m=>{
+  Object.keys(meta.actions).forEach(a=>{
+   const el=document.querySelector(`input[data-perm-prefix="${prefix}"][data-mod="${m}"][data-act="${a}"]`);
+   if(el&&!el.disabled){
+    if(mode==='all')el.checked=true;
+    else if(mode==='none')el.checked=false;
+    else if(mode==='view')el.checked=(a==='view');
+   }
+  });
+  syncPermRowAll(prefix,m);
+ });
+}
+function readPermMatrix(prefix){
+ const meta=rbacMeta();
+ const out={};
+ Object.keys(meta.modules).forEach(m=>{
+  out[m]={};
+  Object.keys(meta.actions).forEach(a=>{
+   const el=document.querySelector(`input[data-perm-prefix="${prefix}"][data-mod="${m}"][data-act="${a}"]`);
+   out[m][a]=!!(el&&el.checked);
+  });
+ });
+ return out;
+}
+function onStaffFormRoleChange(roleKey){
+ const chk=$('#sf-custom-perm');
+ if(chk&&chk.checked)return;
+ const perms=roleDefaultPerms(roleKey);
+ const meta=rbacMeta();
+ Object.keys(meta.modules).forEach(m=>{
+  Object.keys(meta.actions).forEach(a=>{
+   const el=document.querySelector(`input[data-perm-prefix="sfp"][data-mod="${m}"][data-act="${a}"]`);
+   if(el)el.checked=!!(perms[m]&&perms[m][a]);
+  });
+  syncPermRowAll('sfp',m);
+ });
+}
+
+function staffForm(id){
+ const u=id?((STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id)):{role:'staff',approve:false,co:'',br:'',projects:{}};
+ if(!u)return;
+ const adm=isAdmin()||canPerm('settings','edit')||canPerm('staff','create');
+ const sysRole=u.role&&ROLES[u.role]?u.role:(u.sysrole||'staff');
+ const curProjId=S.project||(DB.project&&DB.project.id)||'';
+ const curProjRole=(u.projects&&u.projects[curProjId])||u.prole||(sysRole==='admin'?'owner':sysRole==='manager'?'manager':sysRole==='ads'?'ads':sysRole==='viewer'?'viewer':'content');
+ const hasCustom=!!(u.custom_permissions&&Object.keys(u.custom_permissions).length);
+ const effPerms=u.permissions||roleDefaultPerms(sysRole);
+ const meta=rbacMeta();
+ const pRoles=window.PROJECT_ROLES_LABEL||{owner:'Chủ dự án',manager:'Quản lý dự án',content:'Nhân sự nội dung',ads:'Nhân sự quảng cáo',client:'Khách hàng',viewer:'Chỉ xem'};
+
+ openModal(`<div class="mh">${ic('users')}<h3>${id?'Sửa thông tin & Phân quyền người dùng':'Tạo người dùng (User) mới'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+  <div class="mb" style="max-height:78vh;overflow-y:auto">
+   <div class="frow"><div class="field"><label>Họ tên *</label><input id="sf-name" value="${esc(u.name||'')}" placeholder="VD: Nguyễn Văn A"></div><div class="field"><label>Email đăng nhập *</label><input id="sf-email" type="email" value="${esc(u.email||'')}" placeholder="ten@chungauto.vn" ${adm?'':'disabled'}></div></div>
+   <div class="frow"><div class="field"><label>Chức danh</label><input id="sf-title" value="${esc(u.title||'')}" placeholder="VD: Chuyên viên Content / Ads"></div><div class="field"><label>Số điện thoại</label><input id="sf-phone" value="${esc(u.phone||'')}" placeholder="09xx xxx xxx"></div></div>
+   ${adm?`<div class="frow f3">
+    <div class="field"><label>Vai trò hệ thống (Role)</label><select id="sf-role" onchange="onStaffFormRoleChange(this.value)">${Object.keys(ROLES).map(k=>`<option value="${esc(k)}" ${sysRole===k?'selected':''}>${esc(ROLES[k])}</option>`).join('')}</select></div>
+    <div class="field"><label>Vai trò trong dự án hiện tại</label><select id="sf-prole">${Object.entries(pRoles).map(([k,v])=>`<option value="${esc(k)}" ${curProjRole===k?'selected':''}>${esc(v)}</option>`).join('')}</select></div>
+    <div class="field"><label>Quyền duyệt nhanh</label><label style="display:flex;gap:8px;align-items:center;height:40px;font-weight:500;text-transform:none;letter-spacing:0"><input id="sf-approve" type="checkbox" style="width:auto;height:auto" ${u.approve?'checked':''}> Được duyệt bài / chiến dịch</label></div>
+   </div>`:''}
+   <div id="sf-top-alert" style="display:none;padding:10px 12px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:10px"></div>
+   <div class="card" style="margin:10px 0 12px;border:1px solid #cbd5e1;background:#f8fafc">
+    <div class="card-b" style="padding:12px 14px">
+     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+      <b style="display:flex;align-items:center;gap:6px;color:var(--ink)">${ic('shield')} ${id?'Đổi mật khẩu đăng nhập':'Mật khẩu đăng nhập ban đầu'}</b>
+      <button type="button" class="btn xs" onclick="genRandomPwInput('#sf-pw')">🎲 Tạo mật khẩu ngẫu nhiên</button>
+     </div>
+     <div style="display:flex;gap:8px;align-items:center">
+      <input id="sf-pw" type="text" style="flex:1" placeholder="${id?'Nhập mật khẩu mới (tối thiểu 6 ký tự) — để trống nếu không đổi':'Nhập mật khẩu (tối thiểu 6 ký tự) hoặc để trống để tự sinh'}">
+      ${id&&adm?`<button type="button" id="btn-qpw" class="btn primary" onclick="quickSaveUserPw('${esc(id)}',$('#sf-pw').value)">${ic('check')} Đổi mật khẩu ngay</button>`:''}
+     </div>
+     <div id="sf-pw-alert" style="display:none;margin-top:8px;padding:9px 12px;border-radius:8px;font-size:12.5px;font-weight:600"></div>
+     <div class="mini" style="margin-top:4px">${id?'Nhập mật khẩu mới rồi bấm "Đổi mật khẩu ngay" (hoặc bấm "Lưu thay đổi" ở cuối biểu mẫu).':'Nếu để trống, hệ thống sẽ tự sinh mật khẩu ngẫu nhiên và hiển thị sau khi tạo.'}</div>
+    </div>
+   </div>
+   <div class="frow f3"><div class="field"><label>Công ty</label><select id="sf-co" ${adm?'':'disabled'} onchange="$('#sf-br').innerHTML=staffBrOptions(this.value,'')"><option value="">Toàn phòng</option>${ORG.companies.map(c=>`<option value="${c.id}" ${u.co===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label>Chi nhánh</label><select id="sf-br">${staffBrOptions(u.co,u.br)}</select></div><div class="field"><label>Phạm vi phụ trách</label><input id="sf-scope" value="${esc(u.scope||'')}" placeholder="VD: Tập đoàn / Brand"></div></div>
+   ${adm?`<div class="card" style="margin:12px 0 4px;border:1px solid var(--line);background:#f8fafc">
+    <div class="card-h" style="padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+     <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;margin:0"><input id="sf-custom-perm" type="checkbox" style="width:16px;height:16px" ${hasCustom?'checked':''} onchange="$('#sf-perm-wrap').style.display=this.checked?'block':'none'"> Phân quyền chức năng riêng cho người dùng này (Xem / Thêm / Sửa / Xoá / Duyệt)</label>
+     <div style="display:flex;gap:6px">
+      <button type="button" class="btn xs" onclick="$('#sf-custom-perm').checked=true;$('#sf-perm-wrap').style.display='block';togglePermAll('sfp','all')">Chọn tất cả</button>
+      <button type="button" class="btn xs" onclick="$('#sf-custom-perm').checked=true;$('#sf-perm-wrap').style.display='block';togglePermAll('sfp','view')">Chỉ xem</button>
+      <button type="button" class="btn xs" onclick="$('#sf-custom-perm').checked=false;$('#sf-perm-wrap').style.display='none';onStaffFormRoleChange($('#sf-role').value)">Theo mặc định vai trò</button>
+     </div>
+    </div>
+    <div id="sf-perm-wrap" style="display:${hasCustom?'block':'none'};padding:0 10px 10px">
+     <div class="mini" style="margin-bottom:8px">Khi bật tuỳ chọn này, bảng quyền bên dưới sẽ ghi đè quyền mặc định của vai trò cho riêng tài khoản này.</div>
+     <div class="tbl-wrap" style="max-height:260px;overflow-y:auto"><table class="tbl"><thead><tr><th>Chức năng hệ thống</th>${Object.values(meta.actions).map(a=>`<th style="text-align:center;width:68px">${esc(a)}</th>`).join('')}<th style="text-align:center;width:68px">Cả dòng</th></tr></thead><tbody>
+      ${renderPermMatrixRows('sfp',effPerms,false)}
+     </tbody></table></div>
+    </div>
+   </div>`:''}
+   <div id="sf-err" style="color:var(--bad);font-size:12.5px;min-height:16px;margin-top:6px"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitStaffForm(${id?`'${id}'`:''})">${ic('check')} ${id?'Lưu thay đổi':'Tạo người dùng'}</button></div>`);
+}
+
+function showFormAlert(elId,type,msg){
+ const el=$(elId);
+ if(el){
+  el.style.display='block';
+  el.style.background=type==='ok'?'#ecfdf5':'#fef2f2';
+  el.style.border=type==='ok'?'1px solid #10b981':'1px solid #ef4444';
+  el.style.color=type==='ok'?'#065f46':'#b91c1c';
+  el.innerHTML=(type==='ok'?'✅ ':'⚠️ ')+esc(msg);
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+ }
+ toast(type==='ok'?'Thành công':'Cảnh báo',esc(msg));
+}
+
 async function submitStaffForm(id){
- const v=s=>{const el=$(s);return el?el.value.trim():undefined};const err=$('#sf-err');err.textContent='';
+ const v=s=>{const el=$(s);return el?el.value.trim():undefined};
+ const err=$('#sf-err');if(err)err.textContent='';
+ const topAlert=$('#sf-top-alert');if(topAlert)topAlert.style.display='none';
+ const adm=isAdmin()||canPerm('settings','edit')||canPerm('staff','create');
  const body={name:v('#sf-name'),title:v('#sf-title'),phone:v('#sf-phone'),scope:v('#sf-scope'),br:v('#sf-br')};
- if(isAdmin()){Object.assign(body,{email:v('#sf-email'),role:v('#sf-role'),approve:$('#sf-approve').checked,co:v('#sf-co')})}
- if(!body.name){err.textContent='Nhập họ tên';return}
- if(!id){if(!body.email){err.textContent='Nhập email đăng nhập';return}const pw=v('#sf-pw');if(pw&&pw.length<8){err.textContent='Mật khẩu cần tối thiểu 8 ký tự';return}body.password=pw}
+ if(adm){
+  Object.assign(body,{email:v('#sf-email'),role:v('#sf-role'),project_role:v('#sf-prole'),approve:$('#sf-approve')?$('#sf-approve').checked:false,co:v('#sf-co')});
+  const useCustom=$('#sf-custom-perm')&&$('#sf-custom-perm').checked;
+  body.custom_permissions=useCustom?readPermMatrix('sfp'):null;
+ }
+ if(!body.name){showFormAlert('#sf-top-alert','bad','Vui lòng nhập họ tên người dùng!');if(err)err.textContent='⚠️ Vui lòng nhập họ tên người dùng';return}
+ const pw=v('#sf-pw');
+ if(!id){
+  if(!body.email){showFormAlert('#sf-top-alert','bad','Vui lòng nhập email đăng nhập!');if(err)err.textContent='⚠️ Vui lòng nhập email đăng nhập';return}
+  if(pw&&pw.length<6){showFormAlert('#sf-pw-alert','bad','Mật khẩu ban đầu quá ngắn! Cần tối thiểu 6 ký tự.');if(err)err.textContent='⚠️ Mật khẩu cần tối thiểu 6 ký tự';return}
+  body.password=pw;
+ } else if(pw){
+  if(pw.length<6){showFormAlert('#sf-pw-alert','bad','Mật khẩu mới quá ngắn! Cần tối thiểu 6 ký tự.');if(err)err.textContent='⚠️ Mật khẩu mới cần tối thiểu 6 ký tự';return}
+  body.password=pw;
+ }
  try{
   const d=await apiPost('/api/users.php',Object.assign({action:id?'update':'create',id:id||undefined},body));
-  stInvalidate();await refreshData();
-  if(!id&&d.password)showSecret('Đã tạo tài khoản',body.email,d.password);else{closeLayer();toast(id?'Đã lưu thông tin':'Đã tạo tài khoản',esc(body.name))}
- }catch(e){if(e.message!=='unauth')err.textContent=e.message}
+  UT.members=null;stInvalidate();await refreshData();stLoad('users');
+  if(!id&&d.password){
+   showSecret('Đã tạo tài khoản người dùng',body.email,d.password);
+  } else if(!id&&pw){
+   showSecret('Đã tạo tài khoản người dùng',body.email,pw);
+  } else if(id&&pw){
+   showSecret('Đã cập nhật thông tin & Đổi mật khẩu',body.email||body.name,pw);
+  } else {
+   closeLayer();
+   toast(id?'Đã cập nhật người dùng':'Đã tạo người dùng mới',esc(body.name));
+  }
+ }catch(e){
+  if(e.message!=='unauth'){
+   showFormAlert('#sf-top-alert','bad',e.message);
+   if(err)err.textContent='⚠️ '+e.message;
+  }
+ }
 }
+
+function userPermModal(id){
+ const u=(STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id);if(!u)return;
+ const sysRole=u.role&&ROLES[u.role]?u.role:(u.sysrole||'staff');
+ const isSysAdmin=sysRole==='admin';
+ const hasCustom=!!(u.custom_permissions&&Object.keys(u.custom_permissions).length);
+ const effPerms=u.permissions||roleDefaultPerms(sysRole);
+ const meta=rbacMeta();
+ openModal(`<div class="mh">${ic('shield')}<h3>Phân quyền chức năng: ${esc(u.name)}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+  <div class="mb" style="max-height:78vh;overflow-y:auto">
+   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+    <div>Vai trò hiện tại: ${roleBadge(sysRole)} ${hasCustom?'<span class="badge b-warn"><span class="dot"></span>Đang dùng quyền tuỳ chỉnh riêng</span>':'<span class="badge b-info"><span class="dot"></span>Đang theo quyền mặc định của vai trò</span>'}</div>
+    ${isSysAdmin?'':`<div style="display:flex;gap:6px">
+     <button class="btn xs" onclick="togglePermAll('upm','all')">Bật tất cả</button>
+     <button class="btn xs" onclick="togglePermAll('upm','view')">Chỉ xem</button>
+     <button class="btn xs" onclick="resetUserPermToRole('${esc(u.id)}','${esc(sysRole)}')">Khôi phục theo vai trò (${esc(ROLES[sysRole]||sysRole)})</button>
+    </div>`}
+   </div>
+   ${isSysAdmin?`<div class="mech" style="margin-bottom:12px"><p class="note ok"><b>Tài khoản Quản trị viên (Admin)</b>Mặc định có toàn quyền Xem, Thêm, Sửa, Xoá, Duyệt trên tất cả chức năng hệ thống.</p></div>`:''}
+   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Chức năng / Phân hệ</th>${Object.values(meta.actions).map(a=>`<th style="text-align:center;width:72px">${esc(a)}</th>`).join('')}<th style="text-align:center;width:72px">Tất cả</th></tr></thead><tbody>
+    ${renderPermMatrixRows('upm',effPerms,isSysAdmin)}
+   </tbody></table></div>
+   <div id="upm-err" style="color:var(--bad);font-size:12.5px;min-height:16px;margin-top:8px"></div>
+  </div>
+  <div class="mf"><button class="btn" onclick="closeLayer()">Đóng</button>${isSysAdmin?'':`<button class="btn primary" onclick="saveUserPermModal('${esc(u.id)}')">${ic('check')} Lưu phân quyền cho ${esc(u.name)}</button>`}</div>`);
+}
+async function resetUserPermToRole(id,roleKey){
+ try{
+  await apiPost('/api/users.php',{action:'update',id,custom_permissions:null});
+  closeLayer();toast('Đã khôi phục quyền mặc định theo vai trò');
+  stInvalidate();await refreshData();stLoad('users');
+ }catch(e){permErr(e,'Không đặt lại được quyền')}
+}
+async function saveUserPermModal(id){
+ const err=$('#upm-err');if(err)err.textContent='';
+ try{
+  const matrix=readPermMatrix('upm');
+  await apiPost('/api/users.php',{action:'update',id,custom_permissions:matrix});
+  closeLayer();toast('Đã lưu phân quyền riêng cho người dùng');
+  stInvalidate();await refreshData();stLoad('users');
+ }catch(e){if(err)err.textContent=e.message;else permErr(e)}
+}
+
+async function staffDelete(id){
+ const u=(STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id)||{name:id,email:''};
+ if(!confirm(`Xoá vĩnh viễn tài khoản người dùng "${u.name}" (${u.email||id})?\n\nCác công việc/chiến dịch cũ của người này vẫn được giữ nguyên lịch sử.`))return;
+ try{
+  await apiPost('/api/users.php',{action:'delete',id});
+  toast('Đã xoá người dùng',esc(u.name));
+  UT.members=null;stInvalidate();await refreshData();stLoad('users');
+ }catch(e){permErr(e,'Không xoá được người dùng')}
+}
+
 function showSecret(title,who,pw){
  openModal(`<div class="mh">${ic('shield')}<h3>${esc(title)}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
   <div class="mb"><div class="mini" style="margin-bottom:8px">Mật khẩu tạm cho <b>${esc(who)}</b> — chỉ hiển thị <b>một lần</b>. Gửi cho nhân viên và nhắc đổi mật khẩu ở Thiết lập › Tài khoản sau khi đăng nhập.</div>
@@ -3303,33 +3625,287 @@ function showSecret(title,who,pw){
 }
 function copySecret(){const i=$('#sec-pw');if(!i)return;i.select();const done=()=>toast('Đã sao chép');if(navigator.clipboard)navigator.clipboard.writeText(i.value).then(done).catch(()=>{document.execCommand('copy');done()});else{document.execCommand('copy');done()}}
 async function staffLock(id,lock){
- const u=(STX.users||[]).find(x=>x.id===id)||{name:id};
+ const u=(STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id)||{name:id};
  if(!confirm(lock?`Khoá tài khoản ${u.name}? Người này sẽ bị đăng xuất ngay và không đăng nhập được.`:`Mở khoá tài khoản ${u.name}?`))return;
- try{await apiPost('/api/users.php',{action:lock?'lock':'unlock',id});toast(lock?'Đã khoá tài khoản':'Đã mở khoá tài khoản',esc(u.name));stInvalidate();await refreshData()}
+ try{await apiPost('/api/users.php',{action:lock?'lock':'unlock',id});toast(lock?'Đã khoá tài khoản':'Đã mở khoá tài khoản',esc(u.name));stInvalidate();await refreshData();stLoad('users')}
  catch(e){permErr(e,lock?'Không khoá được':'Không mở khoá được')}
 }
+function genRandomPwInput(sel){
+ const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+ let s='';for(let i=0;i<8;i++)s+=chars[Math.floor(Math.random()*chars.length)];
+ s+=Math.floor(10+Math.random()*89);
+ const el=$(sel);if(el){el.value=s;el.focus();el.select()}
+}
+async function quickSaveUserPw(id,pw){
+ pw=(pw||'').trim();
+ const u=(STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id)||{name:id,email:''};
+ const boxId=$('#sf-pw-alert')?'#sf-pw-alert':'#pw-mod-err';
+ if(!pw){
+  showFormAlert(boxId,'bad','Vui lòng nhập mật khẩu mới trước khi bấm lưu!');
+  const inp=$('#sf-pw')||$('#pwm-inp');if(inp)inp.focus();
+  return;
+ }
+ if(pw.length<6){
+  showFormAlert(boxId,'bad','Mật khẩu quá ngắn ('+pw.length+' ký tự)! Vui lòng nhập tối thiểu 6 ký tự.');
+  const inp=$('#sf-pw')||$('#pwm-inp');if(inp)inp.focus();
+  return;
+ }
+ const btn=$('#btn-qpw')||$('#btn-pwm-save');
+ const oldTxt=btn?btn.innerHTML:'';
+ if(btn){btn.disabled=true;btn.textContent='Đang lưu…'}
+ try{
+  await apiPost('/api/users.php',{action:'set_password',id,password:pw});
+  if($('#sf-pw-alert')){
+   showFormAlert('#sf-pw-alert','ok','Đã đổi mật khẩu thành công cho '+u.name+' ('+(u.email||'')+'). Mật khẩu mới: '+pw);
+  } else {
+   showSecret('Đã đổi mật khẩu thành công',u.email||u.name,pw);
+  }
+ }catch(e){
+  showFormAlert(boxId,'bad',e.message||'Không đổi được mật khẩu');
+ }finally{
+  if(btn){btn.disabled=false;btn.innerHTML=oldTxt}
+ }
+}
+function staffPwModal(id){
+ const u=(STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id)||{name:id,email:''};
+ openModal(`<div class="mh">${ic('shield')}<h3>Đổi mật khẩu: ${esc(u.name)}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+  <div class="mb">
+   <div class="mini" style="margin-bottom:10px">Tài khoản đăng nhập: <b>${esc(u.email||u.name)}</b></div>
+   <div class="field">
+    <label>Mật khẩu mới (tối thiểu 6 ký tự)</label>
+    <div style="display:flex;gap:8px">
+     <input id="pwm-inp" type="text" placeholder="Nhập mật khẩu mới cho người dùng…" style="flex:1" onkeydown="if(event.key==='Enter')quickSaveUserPw('${esc(id)}',this.value)">
+     <button type="button" class="btn" onclick="genRandomPwInput('#pwm-inp')">🎲 Tự sinh MK</button>
+    </div>
+   </div>
+   <div id="pw-mod-err" style="display:none;padding:9px 12px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:8px"></div>
+  </div>
+  <div class="mf">
+   <button class="btn" onclick="closeLayer()">Huỷ</button>
+   <button id="btn-pwm-save" class="btn primary" onclick="quickSaveUserPw('${esc(id)}',$('#pwm-inp').value)">${ic('check')} Lưu mật khẩu mới</button>
+  </div>`);
+ setTimeout(()=>{const el=$('#pwm-inp');if(el)el.focus()},50);
+}
 async function staffResetPw(id){
- const u=(STX.users||[]).find(x=>x.id===id)||{name:id,email:''};
+ const u=(STX.users||[]).find(x=>x.id===id)||(DB.staff||[]).find(x=>x.id===id)||{name:id,email:''};
  if(!confirm(`Đặt lại mật khẩu cho ${u.name}? Mật khẩu cũ sẽ không dùng được nữa.`))return;
  try{const d=await apiPost('/api/users.php',{action:'reset_password',id});STX.actLoaded=false;showSecret('Đã đặt lại mật khẩu',u.email||u.name,d.password)}
  catch(e){permErr(e,'Không đặt lại được mật khẩu')}
 }
-/** Thiết lập › Phân quyền: bảng vai trò thật + quyền của từng vai trò (khớp kiểm tra ở server). */
-function permSection(){
- const adm=isAdmin();const ord={admin:0,manager:1,staff:2};
- const staff=[...DB.staff].sort((a,b)=>(ord[a.sysrole]-ord[b.sysrole])||(b.active-a.active));
- const cnt=r=>DB.staff.filter(s=>s.active&&s.sysrole===r).length;
- const li=a=>`<ul style="margin:8px 0 0 18px;line-height:1.7;font-size:12.5px;color:var(--ink2)">${a.map(x=>`<li>${x}</li>`).join('')}</ul>`;
- return `<div class="card"><div class="card-h">${ic('shield')}<h3>Vai trò & quyền duyệt</h3><span class="sub">${cnt('admin')} quản trị · ${cnt('manager')} trưởng nhóm · ${cnt('staff')} nhân viên</span>${adm?`<div class="hact"><button class="btn sm primary" onclick="S.tab.staff='people';go('staff')">${ic('users')} Quản lý nhân sự</button></div>`:''}</div>
-  <div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Nhân sự</th><th>Chức danh</th><th>Vai trò</th><th>Phạm vi</th><th>Quyền duyệt</th><th>Trạng thái</th></tr></thead><tbody>
-   ${staff.map(s=>`<tr style="${s.active?'':'opacity:.55'}"><td><div class="cellmain"><span class="av sm" style="background:${avc(s.name)}">${esc(initials(s.name))}</span><b>${esc(s.name)}</b></div></td><td class="r-mut">${esc(s.role||'—')}</td><td>${roleBadge(s.sysrole)}</td><td class="r-mut">${esc(orgLabel(s))}${s.scope&&s.scope!=='—'?' · '+esc(s.scope):''}</td><td>${s.sysrole==='admin'?'<span class="badge b-ok"><span class="dot"></span>Có (quản trị)</span>':s.approve?'<span class="badge b-ok"><span class="dot"></span>Có</span>':'<span class="badge b-mut"><span class="dot"></span>Không</span>'}</td><td>${s.active?'<span class="badge b-ok"><span class="dot"></span>Hoạt động</span>':'<span class="badge b-bad"><span class="dot"></span>Đã khoá</span>'}</td></tr>`).join('')}
-  </tbody></table></div></div>
-  <div class="grid3" style="margin-bottom:16px">
-   <div class="card" style="margin:0"><div class="card-b">${roleBadge('admin')}${li(['Toàn quyền trên mọi dữ liệu','Tạo, sửa, khoá / mở khoá tài khoản, đặt lại mật khẩu','Gán vai trò và quyền duyệt','Thêm, sửa và <b>xoá</b> kênh kết nối','Xoá chiến dịch, nội dung, công việc, đầu mối','Luôn có quyền duyệt','Xem hiệu suất & nhật ký toàn phòng'])}</div></div>
-   <div class="card" style="margin:0"><div class="card-b">${roleBadge('manager')}${li(['Xem danh sách nhân sự, hiệu suất và nhật ký của mọi người','Sửa thông tin nhân viên cùng công ty','Thêm / sửa kênh kết nối (không xoá)','Xoá chiến dịch, nội dung, công việc, đầu mối','Đổi người nhận việc, người phụ trách chiến dịch','Duyệt nếu được cấp quyền duyệt'])}</div></div>
-   <div class="card" style="margin:0"><div class="card-b">${roleBadge('staff')}${li(['Tạo và cập nhật chiến dịch, nội dung, công việc, đầu mối, insight','Gửi duyệt / gửi duyệt lại','Chỉ xem hiệu suất và nhật ký của chính mình','Không xoá dữ liệu, không cấu hình kênh','Duyệt nếu được cấp quyền duyệt'])}</div></div>
+
+/* ---- Quản lý Vai trò (Roles) & Ma trận Xem / Thêm / Sửa / Xoá / Duyệt ---- */
+function roleFormModal(roleKey){
+ const meta=rbacMeta();
+ const r=roleKey&&meta.roles[roleKey]?meta.roles[roleKey]:{name:'',color:'info',desc:'',perms:roleDefaultPerms('staff')};
+ const isEdit=!!(roleKey&&meta.roles[roleKey]);
+ const isAdminRole=roleKey==='admin';
+ const colors=[['info','Xanh dương'],['ok','Xanh lá'],['vio','Tím'],['warn','Cam'],['mut','Xám'],['bad','Đỏ']];
+ openModal(`<div class="mh">${ic('shield')}<h3>${isEdit?'Sửa vai trò & Phân quyền: '+esc(r.name):'Tạo vai trò (Role) mới'}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div>
+  <div class="mb" style="max-height:78vh;overflow-y:auto">
+   <div class="frow f3">
+    <div class="field"><label>Tên vai trò *</label><input id="rf-name" value="${esc(r.name||'')}" placeholder="VD: Trưởng phòng Content"></div>
+    <div class="field"><label>Mã vai trò (tự tạo nếu để trống)</label><input id="rf-key" value="${esc(roleKey||'')}" placeholder="VD: content_lead" ${isEdit?'disabled':''}></div>
+    <div class="field"><label>Màu nhãn (Badge)</label><select id="rf-color">${colors.map(([k,v])=>`<option value="${k}" ${(r.color||'info')===k?'selected':''}>${v}</option>`).join('')}</select></div>
+   </div>
+   <div class="field"><label>Mô tả phạm vi & trách nhiệm của vai trò</label><input id="rf-desc" value="${esc(r.desc||'')}" placeholder="VD: Phụ trách lên kế hoạch nội dung, viết bài, đăng bài và duyệt cộng tác viên"></div>
+   <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px;flex-wrap:wrap;gap:8px">
+    <b>Phân quyền chức năng (Xem / Thêm / Sửa / Xoá / Duyệt)</b>
+    ${isAdminRole?'':`<div style="display:flex;gap:6px">
+     <button type="button" class="btn xs" onclick="togglePermAll('rfp','all')">Chọn tất cả</button>
+     <button type="button" class="btn xs" onclick="togglePermAll('rfp','view')">Chỉ xem</button>
+     <button type="button" class="btn xs" onclick="togglePermAll('rfp','none')">Bỏ chọn hết</button>
+    </div>`}
+   </div>
+   <div class="tbl-wrap" style="max-height:310px;overflow-y:auto"><table class="tbl"><thead><tr><th>Chức năng / Phân hệ</th>${Object.values(meta.actions).map(a=>`<th style="text-align:center;width:68px">${esc(a)}</th>`).join('')}<th style="text-align:center;width:68px">Tất cả</th></tr></thead><tbody>
+    ${renderPermMatrixRows('rfp',r.perms||roleDefaultPerms('staff'),isAdminRole)}
+   </tbody></table></div>
+   <div id="rf-err" style="color:var(--bad);font-size:12.5px;min-height:16px;margin-top:8px"></div>
   </div>
-  <div class="mech"><p class="note bad"><b>Nguyên tắc kiểm soát</b>Duyệt / từ chối chiến dịch, công việc, nội dung (kể cả xuất bản, yêu cầu sửa) và xác nhận CRM nhận đầu mối chỉ dành cho người có <b>quyền duyệt</b>. Không ai được tự duyệt việc do chính mình phụ trách (trừ quản trị). Mọi quy tắc được kiểm tra ở server và mọi thao tác đều ghi nhật ký.</p></div>`;
+  <div class="mf"><button class="btn" onclick="closeLayer()">Huỷ</button><button class="btn primary" onclick="submitRoleForm('${esc(roleKey||'')}')">${ic('check')} ${isEdit?'Lưu vai trò':'Tạo vai trò mới'}</button></div>`);
+}
+
+async function submitRoleForm(existingKey){
+ const err=$('#rf-err');if(err)err.textContent='';
+ const name=($('#rf-name')&&$('#rf-name').value.trim())||'';
+ const key=existingKey||(($('#rf-key')&&$('#rf-key').value.trim())||'');
+ const color=($('#rf-color')&&$('#rf-color').value)||'info';
+ const desc=($('#rf-desc')&&$('#rf-desc').value.trim())||'';
+ if(!name){if(err)err.textContent='Vui lòng nhập tên vai trò';return}
+ const perms=readPermMatrix('rfp');
+ try{
+  const d=await apiPost('/api/users.php',{action:'save_role',key,name,color,desc,perms});
+  if(d.roles)ROLES=d.roles;
+  if(d.rbac_roles){if(!DB.rbac)DB.rbac={modules:DEFAULT_RBAC_MODULES,actions:DEFAULT_RBAC_ACTIONS,roles:{}};DB.rbac.roles=d.rbac_roles;if(STX.rbac)STX.rbac.roles=d.rbac_roles}
+  S.selRole=d.key||key||'admin';
+  closeLayer();toast('Đã lưu vai trò & phân quyền',esc(name));
+  stInvalidate();await refreshData();stLoad('users');
+ }catch(e){if(err)err.textContent=e.message;else permErr(e)}
+}
+
+async function saveInlineRolePerms(roleKey){
+ const meta=rbacMeta();
+ const r=meta.roles[roleKey]||{name:ROLES[roleKey]||roleKey,color:'info',desc:''};
+ const perms=readPermMatrix('rmat-'+roleKey);
+ try{
+  const d=await apiPost('/api/users.php',{action:'save_role',key:roleKey,name:r.name,color:r.color,desc:r.desc,perms});
+  if(d.roles)ROLES=d.roles;
+  if(d.rbac_roles){if(!DB.rbac)DB.rbac={modules:DEFAULT_RBAC_MODULES,actions:DEFAULT_RBAC_ACTIONS,roles:{}};DB.rbac.roles=d.rbac_roles;if(STX.rbac)STX.rbac.roles=d.rbac_roles}
+  toast('Đã lưu bảng phân quyền',esc(r.name));
+  stInvalidate();await refreshData();stLoad('users');
+ }catch(e){permErr(e,'Không lưu được phân quyền')}
+}
+
+async function deleteRole(roleKey){
+ const meta=rbacMeta();
+ const r=meta.roles[roleKey]||{name:roleKey};
+ if(!confirm(`Xoá vai trò "${r.name}" (${roleKey})?\nCác tài khoản đang giữ vai trò này sẽ được chuyển về vai trò Nhân viên (staff).`))return;
+ try{
+  const d=await apiPost('/api/users.php',{action:'delete_role',key:roleKey});
+  if(d.roles)ROLES=d.roles;
+  if(d.rbac_roles){if(DB.rbac)DB.rbac.roles=d.rbac_roles;if(STX.rbac)STX.rbac.roles=d.rbac_roles}
+  S.selRole='manager';
+  toast('Đã xoá vai trò',esc(r.name));
+  stInvalidate();await refreshData();stLoad('users');
+ }catch(e){permErr(e,'Không xoá được vai trò')}
+}
+
+function summarizeUserPerms(u){
+ const sys=u.role||u.sysrole||'staff';
+ if(sys==='admin')return '<span class="badge b-vio"><span class="dot"></span>Toàn quyền (Xem · Thêm · Sửa · Xoá · Duyệt)</span>';
+ const meta=rbacMeta();
+ const p=u.permissions||roleDefaultPerms(sys);
+ const mods=Object.keys(meta.modules);
+ const cnt=act=>mods.filter(m=>p[m]&&p[m][act]).length;
+ const hasCustom=!!(u.custom_permissions&&Object.keys(u.custom_permissions).length);
+ return `<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center">
+  <span class="chip" title="Số phân hệ được quyền Xem">Xem: <b>${cnt('view')}/${mods.length}</b></span>
+  <span class="chip" title="Số phân hệ được quyền Thêm">Thêm: <b>${cnt('create')}</b></span>
+  <span class="chip" title="Số phân hệ được quyền Sửa">Sửa: <b>${cnt('edit')}</b></span>
+  <span class="chip" title="Số phân hệ được quyền Xoá">Xoá: <b>${cnt('delete')}</b></span>
+  <span class="chip" title="Số phân hệ được quyền Duyệt">Duyệt: <b>${cnt('approve')}</b></span>
+  ${hasCustom?'<span class="badge b-warn" title="Tài khoản này có bảng phân quyền riêng">Tuỳ chỉnh riêng</span>':''}
+ </div>`;
+}
+
+function rbacSettingsPanel(){
+ if(!STX.users&&!STX.busy.users){stLoad('users')}
+ const users=STX.users||DB.staff||[];
+ const meta=rbacMeta();
+ const rolesObj=Object.keys(meta.roles).length?meta.roles:Object.fromEntries(Object.entries(ROLES).map(([k,v])=>[k,{name:v,color:k==='admin'?'vio':k==='manager'?'info':'ok',desc:'',system:['admin','manager','staff'].includes(k),perms:roleDefaultPerms(k)}]));
+ const canManage=isAdmin()||canPerm('settings','edit')||canPerm('staff','create');
+ const me=CURRENT_USER&&CURRENT_USER.id;
+ const sub=S.rbacSub||'users';
+ const selRole=(S.selRole&&rolesObj[S.selRole])?S.selRole:(rolesObj.manager?'manager':Object.keys(rolesObj)[0]||'admin');
+ const curRoleObj=rolesObj[selRole]||{name:selRole,color:'info',desc:'',perms:roleDefaultPerms(selRole)};
+ const isSelAdmin=selRole==='admin';
+ const curProjId=S.project||(DB.project&&DB.project.id)||'';
+ const pRoles=window.PROJECT_ROLES_LABEL||{owner:'Chủ dự án',manager:'Quản lý dự án',content:'Nhân sự nội dung',ads:'Nhân sự quảng cáo',client:'Khách hàng',viewer:'Chỉ xem'};
+
+ const nAct=users.filter(u=>u.active!==false).length;
+ const nRoles=Object.keys(rolesObj).length;
+
+ const topTabs=`<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+  <div class="chips" style="margin:0">
+   <button class="fchip ${sub==='users'?'on':''}" onclick="S.rbacSub='users';render()">${ic('users')} Quản lý Người dùng (${users.length})</button>
+   <button class="fchip ${sub==='roles'?'on':''}" onclick="S.rbacSub='roles';render()">${ic('shield')} Phân quyền Vai trò: Xem · Thêm · Sửa · Xoá (${nRoles})</button>
+   <button class="fchip ${sub==='proj'?'on':''}" onclick="S.rbacSub='proj';render()">${ic('flag')} Thành viên theo Dự án</button>
+  </div>
+  ${canManage?`<div style="display:flex;gap:8px">
+   <button class="btn" onclick="roleFormModal()">${ic('plus')} Tạo vai trò mới</button>
+   <button class="btn primary" onclick="staffForm()">${ic('plus')} Tạo người dùng mới</button>
+  </div>`:''}
+ </div>`;
+
+ if(sub==='users'){
+  return `${topTabs}
+  <div class="card">
+   <div class="card-h">${ic('users')}<h3>Danh sách Người dùng (Users) & Phân quyền</h3><span class="sub">${nAct} đang hoạt động · ${users.length-nAct} đã khoá · Nhấn "Phân quyền" để chỉnh Xem / Thêm / Sửa / Xoá / Duyệt cho từng người</span></div>
+   <div class="filterbar" style="padding:12px 16px 0"><div class="fb-search">${ic('search')}<input placeholder="Tìm theo họ tên, email, SĐT, vai trò…" oninput="liveFilter(this)"></div>
+    <div class="fb-act">
+     ${Object.entries(rolesObj).map(([rk,rv])=>{const c=users.filter(u=>(u.role||u.sysrole)===rk).length;return `<span class="chip">${esc(rv.name)}: <b>${c}</b></span>`}).join('')}
+    </div>
+   </div>
+   <div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr>
+    <th>Người dùng</th><th>Chức danh / Đơn vị</th><th>Vai trò (Role)</th><th>Dự án hiện tại</th><th>Quyền chức năng (Xem / Thêm / Sửa / Xoá / Duyệt)</th><th>Trạng thái</th><th style="text-align:right">Thao tác</th>
+   </tr></thead><tbody>
+    ${users.map(u=>{
+     const sys=u.role&&ROLES[u.role]?u.role:(u.sysrole||'staff');
+     const uProle=(u.projects&&u.projects[curProjId])||u.prole||'';
+     return `<tr style="${u.active!==false?'':'opacity:.6'}">
+      <td><div class="cellmain"><span class="av sm" style="background:${avc(u.name)}">${esc(initials(u.name))}</span><div><b>${esc(u.name)}</b>${u.id===me?' <span class="chip">Bạn</span>':''}<div class="r-mut">${esc(u.email||'')}${u.phone?' · '+esc(u.phone):''}</div></div></div></td>
+      <td class="r-mut"><div>${esc(u.title||u.role||'—')}</div><div class="mini">${esc(orgLabel(u))}${u.scope&&u.scope!=='—'?' · '+esc(u.scope):''}</div></td>
+      <td>${roleBadge(sys)}</td>
+      <td>${projAdmin()&&curProjId?`<select style="height:32px;font-size:12.5px;padding:0 8px" onchange="memberSet('${esc(u.id)}',this.value)"><option value="">— Chưa tham gia —</option>${Object.entries(pRoles).map(([pk,pv])=>`<option value="${esc(pk)}" ${uProle===pk?'selected':''}>${esc(pv)}</option>`).join('')}</select>`:(uProle?`<span class="chip">${esc(pRoles[uProle]||uProle)}</span>`:'<span class="r-mut">—</span>')}</td>
+      <td>${summarizeUserPerms(u)}</td>
+      <td>${u.active!==false?'<span class="badge b-ok"><span class="dot"></span>Hoạt động</span>':'<span class="badge b-bad"><span class="dot"></span>Đã khoá</span>'}</td>
+      <td style="text-align:right"><div class="rowact" style="justify-content:flex-end">
+       ${canManage?`<button class="btn xs" title="Cấu hình quyền Xem / Thêm / Sửa / Xoá / Duyệt riêng" onclick="userPermModal('${esc(u.id)}')">${ic('shield')} Phân quyền</button>`:''}
+       ${canEditUser(u)||canManage?`<button class="btn xs" title="Sửa thông tin, vai trò & mật khẩu" onclick="staffForm('${esc(u.id)}')">${ic('edit')} Sửa</button>`:''}
+       ${canManage?`<button class="btn xs" title="Đổi mật khẩu cho người dùng này" onclick="staffPwModal('${esc(u.id)}')">${ic('shield')} Đổi MK</button>`:''}
+       ${canManage&&u.id!==me?`<button class="iconbtn" title="${u.active!==false?'Khoá tài khoản':'Mở khoá tài khoản'}" onclick="staffLock('${esc(u.id)}',${u.active!==false?1:0})" style="${u.active!==false?'color:var(--warn)':'color:var(--ok)'}">${ic(u.active!==false?'x':'check')}</button><button class="iconbtn" title="Xoá người dùng" onclick="staffDelete('${esc(u.id)}')" style="color:var(--bad)">${ic('trash')}</button>`:''}
+      </div></td>
+     </tr>`;
+    }).join('')||'<tr><td colspan="7" class="mini" style="text-align:center;padding:20px">Chưa có người dùng nào</td></tr>'}
+   </tbody></table></div>
+  </div>`;
+ }
+
+ if(sub==='roles'){
+  return `${topTabs}
+  <div class="grid3" style="margin-bottom:14px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
+   ${Object.entries(rolesObj).map(([rk,rv])=>{
+    const cntU=users.filter(u=>(u.role||u.sysrole)===rk).length;
+    const activeCard=rk===selRole;
+    return `<div class="card clk" onclick="S.selRole='${esc(rk)}';render()" style="margin:0;cursor:pointer;border:${activeCard?'2px solid var(--brand)':'1px solid var(--line)'};background:${activeCard?'#f0fdf9':'#fff'}">
+     <div class="card-b" style="padding:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+       ${roleBadge(rk)}
+       <span class="chip">${cntU} người dùng</span>
+      </div>
+      <div class="mini" style="min-height:34px;color:var(--ink2)">${esc(rv.desc||'Vai trò phân quyền chức năng hệ thống')}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">
+       <span class="mini" style="font-family:monospace">Mã: ${esc(rk)}</span>
+       ${canManage?`<div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+        <button class="btn xs" onclick="roleFormModal('${esc(rk)}')">${ic('edit')} Sửa</button>
+        ${!['admin','manager','staff'].includes(rk)?`<button class="btn xs" style="color:var(--bad)" onclick="deleteRole('${esc(rk)}')">${ic('trash')}</button>`:''}
+       </div>`:''}
+      </div>
+     </div>
+    </div>`;
+   }).join('')}
+  </div>
+
+  <div class="card">
+   <div class="card-h" style="flex-wrap:wrap;gap:10px">
+    ${ic('shield')}
+    <div>
+     <h3>Bảng phân quyền chức năng của vai trò: ${esc(curRoleObj.name)} (${esc(selRole)})</h3>
+     <div class="sub">${esc(curRoleObj.desc||'Tích chọn các quyền Xem, Thêm, Sửa, Xoá, Duyệt cho từng phân hệ bên dưới')}</div>
+    </div>
+    ${canManage&&!isSelAdmin?`<div class="hact" style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+     <button class="btn sm" onclick="togglePermAll('rmat-${esc(selRole)}','all')">Chọn tất cả</button>
+     <button class="btn sm" onclick="togglePermAll('rmat-${esc(selRole)}','view')">Chỉ xem</button>
+     <button class="btn sm" onclick="togglePermAll('rmat-${esc(selRole)}','none')">Bỏ chọn hết</button>
+     <button class="btn sm primary" onclick="saveInlineRolePerms('${esc(selRole)}')">${ic('check')} Lưu phân quyền "${esc(curRoleObj.name)}"</button>
+    </div>`:''}
+   </div>
+   ${isSelAdmin?`<div class="card-b" style="padding-bottom:0"><div class="mech"><p class="note ok"><b>Vai trò Quản trị viên (Admin)</b>Mặc định luôn có toàn quyền Xem, Thêm, Sửa, Xoá, Duyệt trên mọi chức năng để đảm bảo an toàn hệ thống. Hãy chọn các vai trò khác ở trên (hoặc bấm <b>+ Tạo vai trò mới</b>) để tuỳ chỉnh quyền Xem / Thêm / Sửa / Xoá.</p></div></div>`:''}
+   <div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr>
+    <th>Chức năng / Phân hệ</th>
+    ${Object.entries(meta.actions).map(([ak,av])=>`<th style="text-align:center;width:95px">${esc(av)}<div class="mini" style="font-weight:400;text-transform:none">${esc(ak)}</div></th>`).join('')}
+    <th style="text-align:center;width:95px">Tất cả dòng</th>
+   </tr></thead><tbody>
+    ${renderPermMatrixRows('rmat-'+selRole,curRoleObj.perms||roleDefaultPerms(selRole),!canManage||isSelAdmin)}
+   </tbody></table></div>
+   ${canManage&&!isSelAdmin?`<div class="card-b" style="display:flex;justify-content:flex-end;border-top:1px solid var(--line)"><button class="btn primary" onclick="saveInlineRolePerms('${esc(selRole)}')">${ic('check')} Lưu phân quyền vai trò "${esc(curRoleObj.name)}"</button></div>`:''}
+  </div>`;
+ }
+
+ return `${topTabs}${projMembersCard()}`;
+}
+
+function permSection(){
+ return rbacSettingsPanel();
 }
 
 /* ================= PHÂN CÔNG CÔNG VIỆC (KANBAN) ================= */
@@ -3809,14 +4385,25 @@ function oauthSetupCard(){
 }
 function connectionsSection(){
  const all=DB.connections||[];
+ const canCfg=isAdmin()||(canWriteMod('channels')||canWriteMod('settings'));
+ const canCreateConn=isAdmin()||canCreateMod('channels')||canCreateMod('settings');
+ if(!canCfg){
+  return `<div class="card"><div class="card-h"><div><h3>Danh sách kênh đã kết nối</h3><div class="sub">Tài khoản của bạn đang ở chế độ Chỉ xem — không hiển thị biểu mẫu kết nối hay chỉnh sửa API.</div></div></div>
+   <div class="card-b" style="padding-top:6px">
+    ${CHANNEL_TYPES.map(t=>{const rows=all.filter(c=>c.provider===t.provider);if(!rows.length)return '';return `<div class="connsec">
+     <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px"><span class="av sm" style="background:${t.color}">${t.short}</span><div><b style="font-size:14px">${t.name}</b> <span class="chip">${rows.length}</span></div></div>
+     <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Kênh</th><th>${t.idLabel}</th><th>Trạng thái</th><th>Số liệu 30 ngày</th><th class="tar">Thao tác</th></tr></thead><tbody>${rows.map(connRow).join('')}</tbody></table></div>
+    </div>`}).join('')||'<div class="mini" style="padding:12px 0">Chưa có kênh nào được kết nối.</div>'}
+   </div></div>`;
+ }
  const form=S.connForm||null;
  if(!DSET.loaded&&!DSET.req){DSET.req=true;dataSettingsLoad().finally(()=>{DSET.req=false})}
- return `${oauthSetupCard()}${quickWebCard()}${quickChannelCard()}${zaloUserCard()}<div class="card"><div class="card-h"><div><h3>Bước 2 — Thêm kênh</h3><div class="sub">Bấm <b>Thêm kết nối</b>, chọn nền tảng, đăng nhập trong cửa sổ nhỏ là xong. Thêm bao nhiêu kênh cũng được; nhập tay chỉ dành cho trường hợp nâng cao.</div></div>
-  <div class="hact"><button class="btn primary" onclick="addConnModal()">${ic('plus')} Thêm kết nối</button><button class="btn sm" onclick="syncAll()">${ic('search')} Kiểm tra kết nối</button><button class="iconbtn" title="Tải lại" onclick="refreshData().then(()=>toast('Đã tải lại'))">${ic('trend')}</button></div></div>
+ return `${canCreateConn?`${oauthSetupCard()}${quickWebCard()}${quickChannelCard()}${zaloUserCard()}`:''}<div class="card"><div class="card-h"><div><h3>Bước 2 — Thêm & quản lý kênh</h3><div class="sub">Bấm <b>Thêm kết nối</b>, chọn nền tảng, đăng nhập trong cửa sổ nhỏ là xong.</div></div>
+  <div class="hact">${canCreateConn?`<button class="btn primary" onclick="addConnModal()">${ic('plus')} Thêm kết nối</button>`:''}<button class="btn sm" onclick="syncAll()">${ic('search')} Kiểm tra kết nối</button><button class="iconbtn" title="Tải lại" onclick="refreshData().then(()=>toast('Đã tải lại'))">${ic('trend')}</button></div></div>
   <div class="card-b" style="padding-top:6px">
  ${CHANNEL_TYPES.map(t=>{const rows=all.filter(c=>c.provider===t.provider);const f=MANUAL_FIELDS[t.provider];const open=form&&form.provider===t.provider;const editing=open&&form.id?all.find(c=>c.id===form.id):null;return `<div class="connsec">
   <div style="display:flex;align-items:center;gap:10px;margin:14px 0 10px"><span class="av sm" style="background:${t.color}">${t.short}</span><div><b style="font-size:14px">${t.name}</b> <span class="chip">${rows.length}</span> <span class="badge ${f?(f.oauth?'b-ok':'b-mut'):'b-ok'}" style="font-weight:500">${!f||t.provider==='tiktok'?'Đăng nhập':f.oauth?'Đăng nhập · hoặc nhập tay':'Nhập tay'}</span><div class="mini">${t.desc}</div></div>
-   <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${(!f||t.provider==='tiktok'||f.oauth)?`<button class="btn sm primary" onclick="oauthNew('${t.provider}')">${ic('link')} Kết nối ${OA_WHY[t.auth]||'Google'}</button>${f&&t.provider!=='tiktok'?`<button class="btn sm" onclick="openConnForm('${t.provider}')">Nhập tay</button>`:''}`:`<button class="btn sm primary" onclick="openConnForm('${t.provider}')">${ic('plus')} ${f.add}</button>`}</div></div>
+   ${canCreateConn?`<div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${(!f||t.provider==='tiktok'||f.oauth)?`<button class="btn sm primary" onclick="oauthNew('${t.provider}')">${ic('link')} Kết nối ${OA_WHY[t.auth]||'Google'}</button>${f&&t.provider!=='tiktok'?`<button class="btn sm" onclick="openConnForm('${t.provider}')">Nhập tay</button>`:''}`:`<button class="btn sm primary" onclick="openConnForm('${t.provider}')">${ic('plus')} ${f.add}</button>`}</div>`:''}</div>
   ${open?(editing?manualForm(t,editing):connAddForm(t)):''}
   ${rows.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Kênh</th><th>${t.idLabel}</th><th>Trạng thái</th><th>Số liệu 30 ngày</th><th class="tar">Thao tác</th></tr></thead><tbody>${rows.map(connRow).join('')}</tbody></table></div>`:(open?'':`<div class="mini" style="padding:4px 0 6px">Chưa có kênh nào.</div>`)}
  </div>`}).join('')}
@@ -4037,10 +4624,18 @@ async function syncAll(){
  toast('Đồng bộ xong',ok+'/'+list.length+' kênh thành công');
 }
 async function submitChangePassword(){
- const cur=$('#pw-cur').value,nw=$('#pw-new').value,err=$('#pw-err');
- err.textContent='';
- try{await apiPost('/api/auth.php?action=change_password',{current:cur,new:nw});toast('Đã đổi mật khẩu');$('#pw-cur').value='';$('#pw-new').value=''}
- catch(e){err.textContent=e.message}
+ const cur=($('#pw-cur')&&$('#pw-cur').value)||'',nw=($('#pw-new')&&$('#pw-new').value)||'';
+ const err=$('#pw-err');
+ if(err){err.style.display='none';err.textContent=''}
+ if(!cur){showFormAlert('#pw-err','bad','Vui lòng nhập mật khẩu hiện tại!');return}
+ if(!nw||nw.length<6){showFormAlert('#pw-err','bad','Mật khẩu mới cần tối thiểu 6 ký tự!');return}
+ try{
+  await apiPost('/api/auth.php?action=change_password',{current:cur,new:nw});
+  showFormAlert('#pw-err','ok','Đã đổi mật khẩu cá nhân thành công!');
+  $('#pw-cur').value='';$('#pw-new').value='';
+ }catch(e){
+  showFormAlert('#pw-err','bad',e.message||'Không đổi được mật khẩu');
+ }
 }
 
 /* ================= TRỢ LÝ AI LẬP KẾ HOẠCH ================= */
@@ -4209,7 +4804,83 @@ function hq(key){if(!HELP[key])return '';return `<button class="hq" onclick="eve
 function showTip(el,key){const h=HELP[key];if(!h)return;hideTip();const t=document.createElement('div');t.className='hqtip';t.id='hqtip';t.innerHTML=`<b>${h.t}</b>${h.tip}<br><span style="opacity:.6">Nhấp để xem đầy đủ</span>`;document.body.appendChild(t);const r=el.getBoundingClientRect();let left=r.left+r.width/2-t.offsetWidth/2,top=r.bottom+9;if(left<8)left=8;if(left+t.offsetWidth>innerWidth-8)left=innerWidth-t.offsetWidth-8;if(top+t.offsetHeight>innerHeight-8)top=r.top-t.offsetHeight-9;t.style.left=left+'px';t.style.top=top+'px';requestAnimationFrame(()=>t.classList.add('show'))}
 function hideTip(){const t=$('#hqtip');if(t)t.remove()}
 function openHelp(key){const h=HELP[key];if(!h)return;hideTip();openModal(`<div class="mh">${ic('doc')}<h3>${h.t}</h3><button class="x" onclick="closeLayer()">${ic('x')}</button></div><div class="mb" style="max-height:66vh">${h.html()}</div><div class="mf"><button class="btn" onclick="closeLayer()">Đóng</button></div>`,'')}
-function hqAttach(){const c=$('#content');if(!c)return;const h=c.querySelector('.pagehead h1');if(h&&HELP[S.page]&&!h.querySelector('.hq'))h.insertAdjacentHTML('beforeend',hq(S.page))}
+function enforceDomPermissions(root,isLayer){
+ if(!root||!CURRENT_USER||isAdmin())return;
+ const mod=pageMod(S.page);
+ const allowView=canPerm(mod,'view');
+ const allowCreate=canCreateMod(mod);
+ const allowEdit=canEditMod(mod);
+ const allowDelete=canDeleteMod(mod);
+ const allowApprove=canApproveMod(mod);
+ const readOnly=!allowCreate&&!allowEdit;
+
+ if(!isLayer&&!allowView&&S.page!=='portfolio'){
+  root.innerHTML=`<div class="card" style="max-width:560px;margin:32px auto"><div class="card-h">${ic('shield')}<h3>Không có quyền truy cập</h3></div><div class="card-b"><p class="mini" style="font-size:13.5px">Tài khoản của bạn chưa được cấp quyền <b>Xem (view)</b> chức năng này. Vui lòng liên hệ Quản trị viên để được cấp quyền.</p></div></div>`;
+  return;
+ }
+
+ // Đắn nhãn Chế độ Chỉ xem trên tiêu đề trang nếu phân hệ này không có quyền Thêm & Sửa
+ if(!isLayer&&readOnly){
+  const h=root.querySelector('.menuhead h1, .pagehead h1');
+  if(h&&!h.querySelector('.ro-badge')){
+   h.insertAdjacentHTML('beforeend',' <span class="badge b-mut ro-badge" style="font-size:12px;vertical-align:middle;margin-left:8px"><span class="dot"></span>Chỉ xem</span>');
+  }
+ }
+
+ // Kiểm tra các nút bấm & liên kết thao tác
+ root.querySelectorAll('button, a.btn').forEach(btn=>{
+  const oc=(btn.getAttribute('onclick')||'').trim();
+  const txt=(btn.textContent||'').trim().toLowerCase();
+  const ttl=(btn.getAttribute('title')||'').trim().toLowerCase();
+
+  // Luôn cho phép các nút điều hướng, chuyển tab, lọc, đóng modal, xuất CSV, hoặc đổi mật khẩu cá nhân
+  if(btn.classList.contains('fchip')||btn.classList.contains('x')||btn.closest('.seg')||btn.closest('.tabs'))return;
+  if(/^(go|tabOf|chOf|stPeriod|fset|closeLayer|dlCSV|toggleNav|doLogout|submitChangePassword|copySecret|ga4Cta|adsRep|genRandomPwInput|quickSaveUserPw|staffPwModal)\b/.test(oc))return;
+
+  // 1. Kiểm tra quyền Xoá (delete)
+  const isDel=/(delete|remove|archive|disconnect|del\b|rm\b|Trash|Xoá|Xóa|Gỡ|Ngắt kết nối|Lưu trữ)/i.test(oc+' '+txt+' '+ttl);
+  if(isDel&&!allowDelete){btn.style.display='none';return}
+
+  // 2. Kiểm tra quyền Duyệt (approve)
+  const isApr=/(approve|reject|setApr|Duyệt|Từ chối)/i.test(oc+' '+txt+' '+ttl);
+  if(isApr&&!allowApprove){btn.style.display='none';return}
+
+  // 3. Kiểm tra quyền Thêm (create)
+  const isCreate=/(create|addConn|oauthNew|openConnForm|quickWeb|quickChannel|new\b|staffForm\(\)|roleFormModal\(\)|\+\s*Thêm|\+\s*Tạo|Tạo mới|Thêm mới|Thêm kết nối|Kết nối với|Kết nối\b|Nhập tay)/i.test(oc+' '+txt+' '+ttl);
+  if(isCreate&&!allowCreate){btn.style.display='none';return}
+
+  // 4. Kiểm tra quyền Sửa (edit)
+  const isEdit=/(save|update|edit|rename|memberSet|Lock|ResetPw|sync| pickAccounts|ttConnect|metaSync|Cấu hình|Sửa|Lưu|Đổi tên|Đồng bộ|Gửi tin thử)/i.test(oc+' '+txt+' '+ttl);
+  if(isEdit&&!allowEdit&&!allowCreate){btn.style.display='none';return}
+
+  // 5. Nếu đang ở chế độ Chỉ xem hoàn toàn (readOnly), ẩn mọi nút hành động còn sót lại (trừ nút Xem/Chi tiết/Tải lại)
+  if(readOnly){
+   const isSafeView=/(open|view|detail|load|refresh|filter|search|xem|chi tiết|tải lại|làm mới|thử lại|đóng|huỷ)/i.test(oc+' '+txt+' '+ttl);
+   if(!isSafeView)btn.style.display='none';
+  }
+ });
+
+ // Nếu ở chế độ Chỉ xem (readOnly), khoá / ẩn các ô input nhập liệu (trừ ô tìm kiếm, bộ lọc và đổi mật khẩu cá nhân)
+ if(readOnly){
+  root.querySelectorAll('input, textarea, select').forEach(inp=>{
+   const id=inp.id||'';
+   if(id==='pw-cur'||id==='pw-new'||id==='proj-sel')return;
+   if(inp.closest('.fb-search')||inp.closest('.filterbar')||inp.closest('.chips'))return;
+   const oi=(inp.getAttribute('oninput')||'')+(inp.getAttribute('onchange')||'');
+   if(/(liveFilter|fset|Period|ga4Cta|adsRep)/.test(oi))return;
+   inp.disabled=true;
+   inp.readOnly=true;
+   inp.style.pointerEvents='none';
+   inp.style.backgroundColor='#f1f5f9';
+   inp.style.color='#64748b';
+  });
+ }
+}
+function hqAttach(){
+ const c=$('#content');if(!c)return;
+ const h=c.querySelector('.pagehead h1');if(h&&HELP[S.page]&&!h.querySelector('.hq'))h.insertAdjacentHTML('beforeend',hq(S.page));
+ enforceDomPermissions(c,false);
+}
 
 /* ================= KHỞI ĐỘNG ================= */
 /* ================= LỚP DỰ ÁN (11/10/2026) =================
@@ -4218,8 +4889,8 @@ function hqAttach(){const c=$('#content');if(!c)return;const h=c.querySelector('
 const PROJECT_ROLES_LABEL={owner:'Chủ dự án',manager:'Quản lý dự án',content:'Nhân sự nội dung',ads:'Nhân sự quảng cáo',client:'Khách hàng',viewer:'Chỉ xem'};
 function proj(){return DB.project||null}
 function projRole(){const p=proj();return p?p.role:null}
-function projAdmin(){return ['owner','manager'].includes(projRole())||isAdmin()}
-function projWrite(){return ['owner','manager','content','ads'].includes(projRole())||isAdmin()}
+function projAdmin(){if(isAdmin())return true;if(isViewerRole())return false;return ['owner','manager'].includes(projRole())&&canWriteMod('settings')}
+function projWrite(mod){if(isAdmin())return true;if(isViewerRole())return false;return ['owner','manager','content','ads'].includes(projRole())&&canWriteMod(mod||pageMod(S.page))}
 function PH(h){return Object.assign({'X-Project':S.project||''},h||{})}
 
 /* Đổi dự án: huỷ dữ liệu đang giữ của dự án cũ, nạp lại từ đầu. Request cũ về muộn bị bỏ qua nhờ S.projSeq. */
@@ -4316,12 +4987,14 @@ function pgPlanMenu(){
 function pgChannelsMenu(){
  const ch=chOf('channels','web');const cur=CH_TABS.find(x=>x[0]===ch)||CH_TABS[0];
  const tabs=CH_TABS.map(x=>[x[0],x[1],null,x[2].length?connsCount(x[2]):null]);
- const sub=tabOf('chsub','tongquan');
- const subs=[['tongquan','Tổng quan & hiệu suất','chart'],['noidung','Nội dung & lịch','send'],['tuongtac','Tương tác','users'],['api','Kết nối API','link']];
+ const canCfgConn=isAdmin()||canWriteMod('channels')||canWriteMod('settings');
+ const subs=[['tongquan','Tổng quan & hiệu suất','chart'],['noidung','Nội dung & lịch','send'],['tuongtac','Tương tác','users']].concat(canCfgConn?[['api','Kết nối API','link']]:[]);
+ let sub=tabOf('chsub','tongquan');
+ if(!subs.find(x=>x[0]===sub)){sub='tongquan';S.tab.chsub='tongquan'}
  let body='';
  if(ch==='email'){ body=hlEmailTab(); } else if(sub==='tongquan'){
-  if(ch==='tt'){if(!TT.d)ttLoad();const a=(TT.d&&TT.d.app)||{};body+=`<div class="mini" style="margin-bottom:8px">TikTok: ${a.env==='production'?'<span class="badge b-ok">PRODUCTION</span>':'<span class="badge b-warn">SANDBOX</span>'} · khoá ${esc(a.key_hint||'…')} · ${esc(a.source_label||'')}</div>`}
-  body+=`<div class="ph-act" style="margin-bottom:10px"><button class="btn" onclick="go('settings','integ')">${ic('settings')} Quản lý kênh</button><button class="btn primary" onclick="syncAll()">${ic('trend')} Đồng bộ tất cả</button></div>${measureTable(cur[2])}`;
+  if(ch==='tt'&&canCfgConn){if(!TT.d)ttLoad();const a=(TT.d&&TT.d.app)||{};body+=`<div class="mini" style="margin-bottom:8px">TikTok: ${a.env==='production'?'<span class="badge b-ok">PRODUCTION</span>':'<span class="badge b-warn">SANDBOX</span>'} · khoá ${esc(a.key_hint||'…')} · ${esc(a.source_label||'')}</div>`}
+  body+=`${canCfgConn?`<div class="ph-act" style="margin-bottom:10px"><button class="btn" onclick="go('settings','integ')">${ic('settings')} Quản lý kênh</button><button class="btn primary" onclick="syncAll()">${ic('trend')} Đồng bộ tất cả</button></div>`:''}${measureTable(cur[2])}`;
  } else if(sub==='noidung'){
   const pubProv={fb:'facebook_page',yt:'youtube',tt:'tiktok',x:'x'}[ch];
   if(pubProv){pubS().flt.channel=pubProv;body=pgPublish()}
@@ -4334,16 +5007,131 @@ function pgChannelsMenu(){
  } else body=(ch==='tt'?tiktokPanel():ch==='x'?xPanel():'')+connectionsSection();
  return `<div class="menuhead"><h1>Kênh marketing</h1><div class="sub">${esc((proj()||{}).name||'')} · mỗi tab là một nền tảng; số liệu, nội dung và tương tác của đúng kênh đó</div></div>${chBar('channels',tabs,ch)}${ch==='email'?'':seg('chsub',subs,sub)}${body}`;
 }
+/* ================= BÁO CÁO ĐO LƯỜNG CLICK FORM & CALL-TO-ACTION (GA4) ================= */
+const GC={conn:'',range:'last_30d',since:'',until:'',scope:'all',cat:'all',q:'',sort:'total_cta',dir:-1,d:null,busy:false,err:'',key:''};
+const GC_RANGES=[['today','Hôm nay'],['yesterday','Hôm qua'],['last_7d','7 ngày qua'],['last_14d','14 ngày qua'],['last_30d','30 ngày qua'],['last_90d','90 ngày qua'],['this_month','Tháng này'],['last_month','Tháng trước'],['custom','Tuỳ chọn…']];
+const GC_SCOPES=[['all','Toàn trang'],['post','Bài viết / Tin tức'],['product','Trang Sản phẩm'],['home_cat','Trang chủ & Danh mục']];
+const GC_CATS=[['all','Tất cả CTA & Form'],['form','Form / Đặt hàng / Liên hệ / Giỏ hàng'],['zalo','Click Zalo CTA'],['messenger','Click Messenger / FB'],['maps','Click Chỉ đường Maps'],['download','Tải App / Tra cứu BH']];
+const GC_PKIND={post:{t:'Bài viết',c:'info'},product:{t:'Sản phẩm',c:'ok'},home:{t:'Trang chủ',c:'warn'},category:{t:'Danh mục',c:'mut'},form_page:{t:'Trang Form/GH',c:'ok'}};
+function gcUrl(refresh){const q={conn_id:GC.conn,range:GC.range};if(GC.range==='custom'){q.since=GC.since;q.until=GC.until}if(refresh)q.refresh=1;return '/api/ga4_cta_report.php?'+new URLSearchParams(q)}
+async function gcLoad(refresh){
+ if(!GC.conn)return;if(GC.range==='custom'&&(!GC.since||!GC.until)){GC.err='Chọn ngày bắt đầu và kết thúc';render();return}
+ const key=gcUrl(false);GC.busy=true;GC.err='';GC.key=key;render();
+ try{const d=await apiGet(gcUrl(refresh));if(GC.key===key)GC.d=d}
+ catch(e){if(GC.key===key){GC.err=e.message;GC.d=null}}
+ finally{if(GC.key===key){GC.busy=false;render()}}
+}
+function gcSet(k,v){GC[k]=v;if(['conn','range','since','until'].includes(k)){GC.d=null;gcLoad()}else render()}
+function gcSort(k){if(GC.sort===k)GC.dir=-GC.dir;else{GC.sort=k;GC.dir=k==='path'?1:-1}render()}
+function gcFilterPages(D){
+ const q=GC.q.trim().toLowerCase();
+ let R=(D.pages||[]).filter(p=>{
+  if(GC.scope==='post'&&p.kind!=='post')return false;
+  if(GC.scope==='product'&&p.kind!=='product')return false;
+  if(GC.scope==='home_cat'&&!['home','category','form_page'].includes(p.kind))return false;
+  if(GC.cat!=='all'&&!(p[GC.cat]>0))return false;
+  if(q&&!((p.path+' '+(p.title||'')).toLowerCase().includes(q)))return false;
+  return true;
+ });
+ R.sort((a,b)=>GC.sort==='path'?String(a.path).localeCompare(String(b.path))*GC.dir:((a[GC.sort]||0)-(b[GC.sort]||0))*GC.dir);
+ return R;
+}
+function gcFilterCtas(D){
+ const q=GC.q.trim().toLowerCase();
+ return (D.ctas||[]).filter(x=>{
+  if(GC.scope==='post'&&x.page_kind!=='post')return false;
+  if(GC.scope==='product'&&x.page_kind!=='product')return false;
+  if(GC.scope==='home_cat'&&!['home','category','form_page'].includes(x.page_kind))return false;
+  if(GC.cat!=='all'&&x.cat!==GC.cat)return false;
+  if(q&&!((x.url+' '+x.page+' '+(x.page_title||'')+' '+x.cat_label).toLowerCase().includes(q)))return false;
+  return true;
+ });
+}
+function gcCSV(){
+ const D=GC.d;if(!D)return;const R=gcFilterPages(D);
+ dlCSV(['Đường dẫn Bài viết / Trang','Tiêu đề','Loại trang','Lượt xem','Click Form / Liên hệ / Giỏ hàng','Click Zalo CTA','Click Messenger / FB','Click Chỉ đường Maps','Click Tải / Tra cứu','CTA Khác','Tổng Click CTA & Form','CTR (%)'],
+  R.map(p=>[p.path,p.title||'',(GC_PKIND[p.kind]||{t:p.kind}).t,p.views,p.form,p.zalo,p.messenger,p.maps,p.download,p.other_cta,p.total_cta,p.ctr]),
+  `GA4_Form_CTA_BaiViet_${D.range.since}_${D.range.until}.csv`);
+}
+function gcCtaCSV(){
+ const D=GC.d;if(!D)return;const R=gcFilterCtas(D);
+ dlCSV(['Nhóm CTA / Form','Tên hành động','Link / Đích đến','Đặt tại Bài viết / Trang','Tiêu đề trang','Loại trang','Lượt click','Người dùng'],
+  R.map(x=>[x.cat,x.cat_label,x.url,x.page,x.page_title||'',(GC_PKIND[x.page_kind]||{t:x.page_kind}).t,x.clicks,x.users]),
+  `GA4_ChiTiet_Nut_CTA_${D.range.since}_${D.range.until}.csv`);
+}
+function ga4CtaPanel(acc){
+ const valid=(acc||[]).filter(c=>c.external_account_id);
+ const list=valid.length?valid:(acc||[]);
+ if(!list.length)return '';
+ if(!list.some(c=>c.id===GC.conn)){GC.conn=list[0].id;GC.d=null}
+ const c=list.find(x=>x.id===GC.conn)||list[0];
+ if(!GC.d&&!GC.busy&&!GC.err)setTimeout(()=>gcLoad(),0);
+ const D=GC.d;
+ const opts=GC_RANGES.map(r=>`<option value="${r[0]}" ${GC.range===r[0]?'selected':''}>${r[1]}</option>`).join('');
+ const bar=`<div class="card" style="margin-bottom:14px;border-color:#0d9488"><div class="card-h"><div><h3>📊 Báo cáo Đo lường Click vào Form &amp; Call-To-Action (GA4 — Bài viết &amp; Toàn trang)</h3><div class="sub">Đo lường thực tế từ Google Analytics 4 (${esc(c.label)} · Property ${esc(c.external_account_id||'')}) — thống kê khách bấm Zalo, Messenger, Form đăng ký, Giỏ hàng, Đặt hàng và Chỉ đường trên từng bài viết &amp; toàn website</div></div>
+  <div class="hact"><select onchange="gcSet('range',this.value)" title="Khoảng thời gian">${opts}</select>
+  ${GC.range==='custom'?`<input type="date" value="${esc(GC.since)}" onchange="GC.since=this.value"> → <input type="date" value="${esc(GC.until)}" onchange="GC.until=this.value"><button class="btn sm primary" onclick="GC.d=null;gcLoad()">Xem</button>`:''}
+  <button class="btn sm" onclick="gcLoad(true)" ${GC.busy?'disabled':''}>${ic('trend')} ${GC.busy?'Đang tải GA4…':'Làm mới'}</button>
+  ${D&&D.pages?`<button class="btn sm" onclick="gcCSV()">${ic('download')} Xuất Excel (Bài viết)</button><button class="btn sm" onclick="gcCtaCSV()">${ic('download')} Xuất Excel (Từng nút CTA)</button>`:''}</div></div>
+  <div class="card-b" style="padding-top:8px">`;
+ if(GC.err)return bar+`<div class="pub-bad">${esc(GC.err)} <button class="btn sm" onclick="gcLoad(true)">Thử lại</button></div></div></div>`;
+ if(!D)return bar+`<div class="mini">Đang truy vấn dữ liệu Click Form &amp; Call-To-Action từ Google Analytics 4…</div></div></div>`;
+ const s=D.summary||{},S2=D.series||[],pages=gcFilterPages(D),ctas=gcFilterCtas(D);
+ const kpis=`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(185px,1fr));margin-bottom:14px">
+  ${kpi('Tổng Click CTA & Form (Toàn trang)',num(s.total_cta_clicks),'target','#0d9488','CTR toàn trang: '+s.site_cta_ctr+'% ('+num(s.site_views)+' xem)')}
+  ${kpi('Click CTA & Form ở Bài viết / SP',num(s.post_cta_clicks),'file','#2563eb','CTR bài viết: '+s.post_cta_ctr+'% ('+num(s.post_views)+' xem)')}
+  ${kpi('Click Zalo Tư vấn (zalo.me)',num(s.zalo_clicks),'chat','#0068ff','Nút chat Zalo trên bài & toàn trang')}
+  ${kpi('Click Messenger / Fanpage FB',num(s.messenger_clicks),'send','#1877f2','Nút m.me & Fanpage ChungAuto')}
+  ${kpi('Click Chỉ đường Google Maps',num(s.maps_clicks),'globe','#16a34a','Bấm xem bản đồ đại lý / cửa hàng')}
+  ${kpi('Click Form Đăng ký (Biểu mẫu)',num(s.form_clicks),'check','#7c3aed','Click Google Forms & sự kiện form')}
+  ${kpi('Mở Form Liên hệ & Giỏ hàng',num((s.contact_views||0)+(s.cart_views||0)),'users','#d97706','Liên hệ: '+num(s.contact_views)+' · Giỏ hàng: '+num(s.cart_views))}
+  ${kpi('Đặt hàng thành công',num(s.order_success_views),'star','#dc2626','Hoàn tất gửi đơn (/dat-hang-thanh-cong)')}
+ </div>`;
+ const chart=S2.length>1?`<div class="card" style="margin:0 0 14px"><div class="card-h"><h3>Diễn biến Click vào Form &amp; Call-To-Action theo ngày (${esc(D.range.since)} → ${esc(D.range.until)})</h3></div><div class="card-b">${chLine(stThin(S2.map(x=>stDay(x.d))),[{name:'Lượt click CTA',color:'#0d9488',values:S2.map(x=>x.clicks||0)},{name:'Người bấm',color:'#2563eb',values:S2.map(x=>x.users||0)}])}</div></div>`:'';
+ const fltBar=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0">
+  <div class="segbar" style="margin:0">${GC_SCOPES.map(x=>`<button class="seg ${GC.scope===x[0]?'on':''}" onclick="gcSet('scope','${x[0]}')">${x[1]}</button>`).join('')}</div>
+  <select onchange="gcSet('cat',this.value)" title="Loại nút CTA / Form">${GC_CATS.map(x=>`<option value="${x[0]}" ${GC.cat===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select>
+  <input placeholder="Tìm bài viết, đường dẫn hoặc link CTA…" value="${esc(GC.q)}" oninput="GC.q=this.value;render()" style="flex:1;min-width:220px">
+  <span class="mini">${pages.length} trang/bài viết · ${ctas.length} nút/link CTA</span>
+ </div>`;
+ const th=(k,lbl,r)=>`<th class="${r?'tar ':''}clk" onclick="gcSort('${k}')">${lbl}${GC.sort===k?(GC.dir>0?' ▲':' ▼'):''}</th>`;
+ const tblPages=`<div class="card" style="margin:0 0 14px"><div class="card-h"><h3>1. Báo cáo Click vào Form &amp; Call-To-Action ở từng Bài viết / Trang (${pages.length})</h3><span class="sub">Bấm tiêu đề cột để sắp xếp · cho biết bài viết nào mang lại nhiều tương tác Form, Zalo, Messenger, Maps nhất</span></div>
+  <div class="tbl-wrap" style="max-height:480px;overflow:auto"><table class="tbl"><thead><tr>
+   ${th('path','Bài viết / Trang',false)}<th>Loại</th>${th('views','Lượt xem',true)}${th('form','Form / LH / GH',true)}${th('zalo','Click Zalo',true)}${th('messenger','Click FB/Mess',true)}${th('maps','Chỉ đường Maps',true)}${th('download','Tải / Tra cứu',true)}${th('total_cta','Tổng Click CTA & Form',true)}${th('ctr','CTR (%)',true)}
+  </tr></thead><tbody>${pages.slice(0,100).map(p=>{const pk=GC_PKIND[p.kind]||{t:p.kind,c:'mut'};return `<tr>
+   <td style="max-width:340px"><a href="https://chungauto.vn${esc(p.path)}" target="_blank" rel="noopener"><b>${esc(p.title||p.path)}</b></a><div class="mini mono r-mut" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.path)}</div></td>
+   <td><span class="badge b-${pk.c}">${pk.t}</span></td>
+   <td class="tar mono">${num(p.views)}</td>
+   <td class="tar mono">${p.form?`<b style="color:#7c3aed">${num(p.form)}</b>`:'—'}</td>
+   <td class="tar mono">${p.zalo?`<b style="color:#0068ff">${num(p.zalo)}</b>`:'—'}</td>
+   <td class="tar mono">${p.messenger?`<b style="color:#1877f2">${num(p.messenger)}</b>`:'—'}</td>
+   <td class="tar mono">${p.maps?`<b style="color:#16a34a">${num(p.maps)}</b>`:'—'}</td>
+   <td class="tar mono">${p.download?num(p.download):'—'}</td>
+   <td class="tar mono"><b style="color:var(--ink)">${num(p.total_cta)}</b></td>
+   <td class="tar mono">${p.views?p.ctr.toFixed(2)+'%':'—'}</td>
+  </tr>`}).join('')||'<tr><td colspan="10" class="mini">Không có bài viết/trang nào khớp bộ lọc</td></tr>'}</tbody></table></div></div>`;
+ const tblBreakdown=`<div class="grid2" style="margin-bottom:14px">
+  <div class="card" style="margin:0"><div class="card-h"><h3>2. Tổng hợp Click Form &amp; CTA Toàn trang theo loại nút</h3></div><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Loại Call-To-Action / Form</th><th class="tar">Lượt click / mở</th><th>Ghi chú</th></tr></thead><tbody>
+   ${(D.breakdown||[]).map(b=>`<tr><td><b>${esc(b.label)}</b></td><td class="tar mono"><b>${num(b.clicks)}</b></td><td class="mini r-mut">${esc(b.note)}</td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="card" style="margin:0"><div class="card-h"><h3>3. Chi tiết từng Nút / Link Call-To-Action &amp; Form được bấm (${ctas.length})</h3></div><div class="tbl-wrap" style="border:0;box-shadow:none;max-height:380px;overflow:auto"><table class="tbl"><thead><tr><th>Hành động CTA / Form</th><th>Tại Bài viết / Trang</th><th class="tar">Lượt click</th><th class="tar">Người bấm</th></tr></thead><tbody>
+   ${ctas.slice(0,80).map(x=>`<tr><td style="max-width:240px"><b>${esc(x.cat_label)}</b><div class="mini mono r-mut" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url)}</a></div></td>
+    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.page)}"><a href="https://chungauto.vn${esc(x.page)}" target="_blank" rel="noopener">${esc(x.page_title||x.page)}</a><div class="mini mono r-mut">${esc(x.page)}</div></td>
+    <td class="tar mono"><b>${num(x.clicks)}</b></td><td class="tar mono">${num(x.users)}</td></tr>`).join('')||'<tr><td colspan="4" class="mini">Chưa có dữ liệu</td></tr>'}
+  </tbody></table></div></div>
+ </div>`;
+ return bar+kpis+chart+fltBar+tblPages+tblBreakdown+'</div></div>';
+}
 /* ================= CHIẾN DỊCH QUẢNG CÁO: tab theo nền tảng ================= */
-const ADS_TABS=[['gads','Google Ads',['google_ads'],/google/i],['fbads','Facebook Ads',['meta_ads'],/facebook|meta|instagram/i],['ttads','TikTok Ads',['tiktok_ads'],/tiktok/i]];
-function adsDefault(){const has=t=>(DB.connections||[]).some(c=>t[2].includes(c.provider))||DB.campaigns.some(c=>(c.channels||[]).some(k=>t[3].test(k)));return (ADS_TABS.find(has)||ADS_TABS[0])[0]}
+const ADS_TABS=[['fbads','Facebook Ads',['meta_ads'],/facebook|meta|instagram/i],['gads','Google Ads',['google_ads'],/google/i],['ttads','TikTok Ads',['tiktok_ads'],/tiktok/i],['ga4cta','Đo lường Form & CTA (GA4)',['ga4'],/website|seo|ga4|blog/i]];
+function adsDefault(){const hasAct=t=>(DB.connections||[]).some(c=>t[2].includes(c.provider)&&c.external_account_id);const f1=ADS_TABS.find(hasAct);if(f1)return f1[0];return 'fbads'}
 function adsFilter(c){if(S.page!=='ads')return true;const a=ADS_TABS.find(x=>x[0]===chOf('ads',adsDefault()));return !a||(c.channels||[]).some(ch=>a[3].test(ch))}
 function pgAds(){
  if(MA._pid!==(proj()||{}).id){MA._pid=(proj()||{}).id;MA.pixel='';MA.look=null;maLoadPixel().then(()=>{if(MA.pixel||MA.app)render()})}
  const ch=chOf('ads',adsDefault());const a=ADS_TABS.find(x=>x[0]===ch)||ADS_TABS[0];
- const tabs=ADS_TABS.map(x=>[x[0],x[1],null,DB.campaigns.filter(c=>(c.channels||[]).some(k=>x[3].test(k))).length]);
+ const tabs=ADS_TABS.map(x=>[x[0],x[1],null,DB.campaigns.filter(c=>(c.channels||[]).some(k=>x[3].test(k))).length||(DB.connections||[]).filter(c=>x[2].includes(c.provider)).length]);
  const acc=(DB.connections||[]).filter(c=>a[2].includes(c.provider));
- const accBox=acc.length?(ch==='fbads'?adsReportPanel(acc):`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tài khoản quảng cáo ${esc(a[1])}</h3><span class="sub">${acc.length} tài khoản · số liệu 30 ngày tại lần đồng bộ gần nhất</span></div><div class="card-b" style="padding:0">${measureTable(a[2])}</div></div>`)
+ const accBox=acc.length?(ch==='fbads'?adsReportPanel(acc):ch==='ga4cta'?ga4CtaPanel(acc):`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tài khoản quảng cáo ${esc(a[1])}</h3><span class="sub">${acc.length} tài khoản · số liệu 30 ngày tại lần đồng bộ gần nhất</span></div><div class="card-b" style="padding:0">${measureTable(a[2])}</div></div>`)
   :(ch==='fbads'?metaAdsCard():noData(`Chưa kết nối tài khoản ${esc(a[1])}`,'Chiến dịch bên dưới là bản ghi nội bộ (kế hoạch, ngân sách kế hoạch, duyệt). Chi tiêu thật, hiển thị, click chỉ hiện khi tài khoản quảng cáo được kết nối. Tạo/sửa chiến dịch trên nền tảng vẫn làm ở trình quản lý quảng cáo.',`<button class="btn" onclick="go('settings','integ')">${ic('link')} Kết nối tài khoản</button>`));
  const pxBox=(ch==='fbads'&&acc.length&&MA.pixel)?`<div class="mini" style="margin:-8px 0 12px">Pixel của dự án: <span class="mono">${esc(MA.pixel)}</span> · dùng cho mã đo trên website + Conversions API</div>`:'';
  return `<div class="menuhead"><h1>Chiến dịch quảng cáo</h1><div class="sub">${esc((proj()||{}).name||'')} · ngân sách kế hoạch tách riêng với chi tiêu thật trên nền tảng</div></div>${chBar('ads',tabs,ch)}${accBox}${pxBox}${pgCampaigns()}`;
@@ -4390,8 +5178,9 @@ function adsReportPanel(acc){
   ${AR.range==='custom'?`<input type="date" value="${esc(AR.since)}" onchange="AR.since=this.value"> → <input type="date" value="${esc(AR.until)}" onchange="AR.until=this.value"><button class="btn sm primary" onclick="AR.d=null;arLoad()">Xem</button>`:''}
   ${D&&D.range?`<span class="mini">${esc(D.range.since)} → ${esc(D.range.until)} · so với ${esc(D.range.prev_since)} → ${esc(D.range.prev_until)}</span>`:''}
   <div class="hact"><span class="mini">${AR.busy?'Đang lấy số liệu từ Meta…':D&&D.cached_at?'Cập nhật '+esc(D.cached_at.slice(11,16))+(D.from_cache?' (bộ nhớ đệm)':''):''}</span>
-  <button class="btn sm" onclick="arLoad(true)" ${AR.busy?'disabled':''}>${ic('trend')} Làm mới</button>${D&&D.rows?`<button class="btn sm" onclick="arCSV()">${ic('check')} Xuất Excel</button>`:''}<a class="btn sm" style="text-decoration:none" href="${connStartUrl(c)}" title="Đăng nhập Facebook lại để cấp thêm quyền / tài khoản">${ic('link')} Kết nối lại</a></div></div></div>`;
- if(AR.err)return bar+`<div class="card" style="margin-bottom:14px">${noData('Chưa lấy được số liệu quảng cáo',esc(AR.err),`<button class="btn" onclick="arLoad(true)">Thử lại</button>`)}</div>`;
+  <button class="btn sm" onclick="arLoad(true)" ${AR.busy?'disabled':''}>${ic('trend')} Làm mới</button>${D&&D.rows?`<button class="btn sm" onclick="arCSV()">${ic('check')} Xuất Excel</button>`:''}<button class="btn sm" onclick="MA.showCard=!MA.showCard;render()" title="Dán System User Token hoặc thêm tài khoản quảng cáo khác">${ic('plus')} Nhập Token / Thêm TKQC</button><button class="btn sm" onclick="metaClientModal('meta_ads')" title="Đổi Meta App ID / App Secret">${ic('settings')} Cài App Meta</button><a class="btn sm" style="text-decoration:none" href="${connStartUrl(c)}" title="Đăng nhập Facebook lại để cấp thêm quyền / tài khoản">${ic('link')} Kết nối lại</a></div></div></div>`
+ +(MA.showCard?metaAdsCard():'');
+ if(AR.err)return bar+`<div class="card" style="margin-bottom:14px">${noData('Chưa lấy được số liệu quảng cáo',esc(AR.err),`<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn" onclick="arLoad(true)">Thử lại</button><button class="btn" onclick="metaClientModal('meta_ads')">${ic('settings')} Đổi Meta App ID / Secret</button><a class="btn primary" style="text-decoration:none" href="${connStartUrl(c)}">${ic('link')} Đăng nhập lại Facebook</a></div>`)}</div>`+(MA.showCard?'':metaAdsCard());
  if(!D)return bar+`<div class="card" style="margin-bottom:14px"><div class="card-b"><div class="mini">Đang lấy số liệu từ Meta…</div></div></div>`;
  if(D.need_account){
   const L=D.accounts||[];
@@ -4909,7 +5698,15 @@ async function ideaDelete(id){if(!confirm('Xoá ý tưởng này?'))return;try{a
 /* ================= CÀI ĐẶT DỰ ÁN ================= */
 function pgSettingsMenu(){
  const t=tabOf('setmenu','project');
- const tabs=[['project','Thông tin dự án','flag'],['members','Thành viên & quyền','users'],['integ','Tài khoản kết nối','link',(DB.connections||[]).length]].concat(isManager()?[['staff','Nhân sự & hiệu suất','users']]:[]).concat(isAdmin()?[['system','Hệ thống (AI, dữ liệu, gửi tin)','settings']]:[]).concat([['account','Tài khoản của tôi','users']]);
+  const canCfgSet=isAdmin()||canWriteMod('settings');
+ const canCfgConn=isAdmin()||canWriteMod('settings')||canWriteMod('channels');
+ const tabs=[['project','Thông tin dự án','flag']]
+  .concat((canCfgSet||canWriteMod('staff'))?[['members','Người dùng & Phân quyền','shield']]:[])
+  .concat(canCfgConn?[['integ','Tài khoản kết nối','link',(DB.connections||[]).length]]:[])
+  .concat(isManager()?[['staff','Nhân sự & hiệu suất','users']]:[])
+  .concat(canCfgSet?[['system','Hệ thống (AI, dữ liệu, gửi tin)','settings']]:[])
+  .concat([['account','Tài khoản của tôi','users']]);
+ if(!tabs.find(x=>x[0]===t)){S.tab.setmenu=tabs[0][0];return pgSettingsMenu()}
  let body='';const p=proj()||{};
  if(t==='project'){
   body=`<div class="card" style="max-width:720px"><div class="card-h"><h3>Thông tin dự án</h3><span class="sub">Mã: ${esc(p.id||'')}</span></div><div class="card-b">
@@ -4938,13 +5735,16 @@ async function projSave(){
 }
 async function projArchive(){if(!confirm('Lưu trữ dự án này? Dữ liệu giữ nguyên, dự án ẩn khỏi danh sách.'))return;try{await apiPost('/api/projects.php',{action:'archive',id:S.project});toast('Đã lưu trữ');S.project=null;resetProjectCaches();await loadData();renderScope();renderNav();go('portfolio')}catch(e){toast('Lỗi',e.message)}}
 function projMembers(){
+ return rbacSettingsPanel();
+}
+function projMembersCard(){
  if(!UT.members){(async()=>{try{const d=await apiGet('/api/projects.php?id='+encodeURIComponent(S.project));UT.members=d.project.members||[];UT.roles=d.roles}catch(e){UT.members=[];toast('Lỗi',e.message)}render()})();return '<div class="empty">Đang tải…</div>'}
  const roles=UT.roles||PROJECT_ROLES_LABEL;
- const all=(DB.staff||[]);const inM=new Set(UT.members.map(m=>m.user_id));
- return `<div class="card" style="max-width:860px"><div class="card-h"><h3>Thành viên dự án</h3><span class="sub">${UT.members.length} người · vai trò theo dự án, tách khỏi vai trò hệ thống</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thành viên</th><th>Vai trò trong dự án</th><th>Từ</th><th></th></tr></thead><tbody>
+ const all=(STX.users&&STX.users.length?STX.users:DB.staff)||[];const inM=new Set(UT.members.map(m=>m.user_id));
+ return `<div class="card" style="max-width:920px"><div class="card-h"><h3>Thành viên dự án hiện tại</h3><span class="sub">${UT.members.length} người · vai trò theo dự án, tách khỏi vai trò hệ thống</span></div><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Thành viên</th><th>Vai trò trong dự án</th><th>Từ</th><th></th></tr></thead><tbody>
   ${UT.members.map(m=>`<tr><td><b>${esc(m.name)}</b><div class="mini">${esc(m.email||'')}${m.title?' · '+esc(m.title):''}${m.active?'':' · <span class="badge b-bad">đã khoá</span>'}</div></td><td>${projAdmin()?`<select onchange="memberSet('${esc(m.user_id)}',this.value)">${Object.entries(roles).map(([k,v])=>`<option value="${k}"${m.role===k?' selected':''}>${v}</option>`).join('')}</select>`:esc(m.role_label||roles[m.role]||m.role)}</td><td class="r-mut">${esc((m.since||'').slice(0,10))}</td><td>${projAdmin()?`<button class="btn xs" onclick="memberRemove('${esc(m.user_id)}')">Gỡ</button>`:''}</td></tr>`).join('')}
- </tbody></table></div>${projAdmin()&&isManager()?`<div class="card-b"><div class="grid2"><div class="field"><label>Thêm tài khoản</label><select id="mb-user">${all.filter(u=>!inM.has(u.id)&&u.active).map(u=>`<option value="${esc(u.id)}">${esc(u.name)} (${esc(u.role||u.sysrole||'')})</option>`).join('')||'<option value="">— mọi tài khoản đã là thành viên —</option>'}</select><div class="mini">Tài khoản mới tạo ở Nhân sự & hiệu suất (quản trị). Khách hàng cũng là một tài khoản với vai trò "Khách hàng".</div></div><div class="field"><label>Vai trò</label><select id="mb-role">${Object.entries(roles).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div><button class="btn primary" onclick="memberSet($('#mb-user').value,$('#mb-role').value)">${ic('plus')} Thêm vào dự án</button></div>`:''}
- <div class="card-b mini">Quyền: Chủ/Quản lý dự án — quản lý kênh, duyệt, thành viên, ngân sách. Nội dung — soạn, đề nghị duyệt. Quảng cáo — chiến dịch ads. Khách hàng — xem báo cáo, duyệt nội dung. Chỉ xem — không sửa. Backend kiểm tra ở mọi API, không chỉ ẩn nút.</div></div>`;
+ </tbody></table></div>${projAdmin()&&isManager()?`<div class="card-b"><div class="grid2"><div class="field"><label>Thêm tài khoản có sẵn vào dự án</label><select id="mb-user">${all.filter(u=>!inM.has(u.id)&&u.active!==false).map(u=>`<option value="${esc(u.id)}">${esc(u.name)} (${esc(ROLES[u.role||u.sysrole]||u.role||u.sysrole||'')})</option>`).join('')||'<option value="">— mọi tài khoản đang hoạt động đã thuộc dự án này —</option>'}</select><div class="mini">Muốn tạo tài khoản mới chưa có trong danh sách? Bấm nút <b>+ Tạo người dùng mới</b> ở góc phải phía trên.</div></div><div class="field"><label>Vai trò trong dự án</label><select id="mb-role">${Object.entries(roles).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div><button class="btn primary" onclick="memberSet($('#mb-user').value,$('#mb-role').value)">${ic('plus')} Thêm vào dự án</button></div>`:''}
+ <div class="card-b mini">Quyền trong dự án: Chủ/Quản lý dự án — quản lý kênh, duyệt, thành viên, ngân sách. Nội dung — soạn, đề nghị duyệt. Quảng cáo — chiến dịch ads. Khách hàng — xem báo cáo, duyệt nội dung. Chỉ xem — không sửa.</div></div>`;
 }
 async function memberSet(uid,role){if(!uid)return;try{const d=await apiPost('/api/projects.php',{action:'member_set',id:S.project,user_id:uid,role});UT.members=d.members;toast('Đã cập nhật thành viên');await loadData();render()}catch(e){toast('Lỗi',e.message)}}
 async function memberRemove(uid){if(!confirm('Gỡ thành viên khỏi dự án?'))return;try{const d=await apiPost('/api/projects.php',{action:'member_remove',id:S.project,user_id:uid});UT.members=d.members;await loadData();render()}catch(e){toast('Lỗi',e.message)}}
