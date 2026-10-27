@@ -2075,7 +2075,7 @@ async function setContentState(id,state){
 /* ================= KÊNH & QUẢNG CÁO ================= */
 const MEASURE_TABS=[['fb','Fanpage Facebook',['facebook_page']],['yt','YouTube',['youtube']],['tt','TikTok',['tiktok']],['x','X (Twitter)',['x']],['web','Website (GA4)',['ga4']],['seo','Google Search (SEO)',['gsc']],['maps','Google Maps',['gbp']],['zalo','Zalo OA',['zalo_oa']],['ads','Quảng cáo',['meta_ads','google_ads']]];
 /* Bảng xếp hạng đi kèm số liệu (vd Search Console: từ khoá / trang top). */
-function topTables(rows){return rows.filter(c=>c.metrics&&(c.metrics.top||[]).length).map(c=>`<div class="grid2" style="margin-top:12px">${c.metrics.top.map(t=>`<div class="card" style="margin:0"><div class="card-h"><h3>${esc(t.label)}</h3><span class="sub">${esc(c.label)}</span></div><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr>${t.cols.map((h,i)=>`<th${i?' class="tar"':''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map(r=>`<tr>${r.map((v,i)=>i?`<td class="tar mono">${typeof v==='number'?num(v):esc(v)}</td>`:`<td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(v)}">${/^https?:/.test(v)?`<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\/[^/]+/,'')||'/')}</a>`:esc(v)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="5" class="mini">Chưa có dữ liệu</td></tr>'}</tbody></table></div></div>`).join('')}</div>`).join('')}
+function topTables(rows){return rows.filter(c=>c.metrics&&(c.metrics.top||[]).length).map(c=>`<div class="grid2" style="margin-top:12px">${c.metrics.top.map(t=>`<div class="card" style="margin:0"><div class="card-h"><h3>${esc(t.label)}</h3><span class="sub">${esc(c.label)}</span>${c.provider==='ga4'&&/CTA|Form/i.test(t.label)?`<div class="hact"><button class="btn sm primary" onclick="gcOpenFull('${esc(c.id)}','${/Bài viết/i.test(t.label)?'post':'all'}','all')" title="Mở bảng danh sách đầy đủ, có bộ lọc theo ngày, loại trang, loại CTA, tìm kiếm, xuất Excel">${ic('search')} Xem đầy đủ</button></div>`:''}</div><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr>${t.cols.map((h,i)=>`<th${i?' class="tar"':''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map(r=>`<tr>${r.map((v,i)=>i?`<td class="tar mono">${typeof v==='number'?num(v):esc(v)}</td>`:`<td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(v)}">${/^https?:/.test(v)?`<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\/[^/]+/,'')||'/')}</a>`:esc(v)}</td>`).join('')}</tr>`).join('')||'<tr><td colspan="5" class="mini">Chưa có dữ liệu</td></tr>'}</tbody></table></div></div>`).join('')}</div>`).join('')}
 /* ---- Chi tiết từng kênh: chỉ số, biểu đồ lịch sử, danh sách video / bài kèm số liệu ---- */
 function fmtDur(s){if(!s)return '';const m=Math.floor(s/60),x=s%60;return m>=60?Math.floor(m/60)+':'+String(m%60).padStart(2,'0')+':'+String(x).padStart(2,'0'):m+':'+String(x).padStart(2,'0')}
 function ctEng(v){const i=(v.likes||0)+(v.comments||0)+(v.shares||0);return {i,er:v.views?i/v.views*100:null}}
@@ -4421,8 +4421,125 @@ function pgChannelsMenu(){
  } else body=(ch==='tt'?tiktokPanel():ch==='x'?xPanel():'')+connectionsSection();
  return `<div class="menuhead"><h1>Kênh marketing</h1><div class="sub">${esc((proj()||{}).name||'')} · mỗi tab là một nền tảng; số liệu, nội dung và tương tác của đúng kênh đó</div></div>${chBar('channels',tabs,ch)}${ch==='email'?'':seg('chsub',subs,sub)}${body}`;
 }
+/* ================= BÁO CÁO ĐO LƯỜNG CLICK FORM & CALL-TO-ACTION (GA4) ================= */
+const GC={conn:'',range:'last_30d',since:'',until:'',scope:'all',cat:'all',q:'',sort:'total_cta',dir:-1,d:null,busy:false,err:'',key:''};
+const GC_RANGES=[['today','Hôm nay'],['yesterday','Hôm qua'],['last_7d','7 ngày qua'],['last_14d','14 ngày qua'],['last_30d','30 ngày qua'],['last_90d','90 ngày qua'],['this_month','Tháng này'],['last_month','Tháng trước'],['custom','Tuỳ chọn…']];
+const GC_SCOPES=[['all','Toàn trang'],['post','Bài viết / Tin tức'],['product','Trang Sản phẩm'],['home_cat','Trang chủ & Danh mục']];
+const GC_CATS=[['all','Tất cả CTA & Form'],['form','Form / Đặt hàng / Liên hệ / Giỏ hàng'],['zalo','Click Zalo CTA'],['messenger','Click Messenger / FB'],['maps','Click Chỉ đường Maps'],['download','Tải App / Tra cứu BH']];
+const GC_PKIND={post:{t:'Bài viết',c:'info'},product:{t:'Sản phẩm',c:'ok'},home:{t:'Trang chủ',c:'warn'},category:{t:'Danh mục',c:'mut'},form_page:{t:'Trang Form/GH',c:'ok'}};
+function gcUrl(refresh){const q={conn_id:GC.conn,range:GC.range};if(GC.range==='custom'){q.since=GC.since;q.until=GC.until}if(refresh)q.refresh=1;return '/api/ga4_cta_report.php?'+new URLSearchParams(q)}
+async function gcLoad(refresh){
+ if(!GC.conn)return;if(GC.range==='custom'&&(!GC.since||!GC.until)){GC.err='Chọn ngày bắt đầu và kết thúc';render();return}
+ const key=gcUrl(false);GC.busy=true;GC.err='';GC.key=key;render();
+ try{const d=await apiGet(gcUrl(refresh));if(GC.key===key)GC.d=d}
+ catch(e){if(GC.key===key){GC.err=e.message;GC.d=null}}
+ finally{if(GC.key===key){GC.busy=false;render()}}
+}
+function gcSet(k,v){GC[k]=v;if(['conn','range','since','until'].includes(k)){GC.d=null;gcLoad()}else render()}
+function gcSort(k){if(GC.sort===k)GC.dir=-GC.dir;else{GC.sort=k;GC.dir=k==='path'?1:-1}render()}
+function gcFilterPages(D){
+ const q=GC.q.trim().toLowerCase();
+ let R=(D.pages||[]).filter(p=>{
+  if(GC.scope==='post'&&p.kind!=='post')return false;
+  if(GC.scope==='product'&&p.kind!=='product')return false;
+  if(GC.scope==='home_cat'&&!['home','category','form_page'].includes(p.kind))return false;
+  if(GC.cat!=='all'&&!(p[GC.cat]>0))return false;
+  if(q&&!((p.path+' '+(p.title||'')).toLowerCase().includes(q)))return false;
+  return true;
+ });
+ R.sort((a,b)=>GC.sort==='path'?String(a.path).localeCompare(String(b.path))*GC.dir:((a[GC.sort]||0)-(b[GC.sort]||0))*GC.dir);
+ return R;
+}
+function gcFilterCtas(D){
+ const q=GC.q.trim().toLowerCase();
+ return (D.ctas||[]).filter(x=>{
+  if(GC.scope==='post'&&x.page_kind!=='post')return false;
+  if(GC.scope==='product'&&x.page_kind!=='product')return false;
+  if(GC.scope==='home_cat'&&!['home','category','form_page'].includes(x.page_kind))return false;
+  if(GC.cat!=='all'&&x.cat!==GC.cat)return false;
+  if(q&&!((x.url+' '+x.page+' '+(x.page_title||'')+' '+x.cat_label).toLowerCase().includes(q)))return false;
+  return true;
+ });
+}
+function gcCSV(){
+ const D=GC.d;if(!D)return;const R=gcFilterPages(D);
+ dlCSV(['Đường dẫn Bài viết / Trang','Tiêu đề','Loại trang','Lượt xem','Click Form / Liên hệ / Giỏ hàng','Click Zalo CTA','Click Messenger / FB','Click Chỉ đường Maps','Click Tải / Tra cứu','CTA Khác','Tổng Click CTA & Form','CTR (%)'],
+  R.map(p=>[p.path,p.title||'',(GC_PKIND[p.kind]||{t:p.kind}).t,p.views,p.form,p.zalo,p.messenger,p.maps,p.download,p.other_cta,p.total_cta,p.ctr]),
+  `GA4_Form_CTA_BaiViet_${D.range.since}_${D.range.until}.csv`);
+}
+function gcCtaCSV(){
+ const D=GC.d;if(!D)return;const R=gcFilterCtas(D);
+ dlCSV(['Nhóm CTA / Form','Tên hành động','Link / Đích đến','Đặt tại Bài viết / Trang','Tiêu đề trang','Loại trang','Lượt click','Người dùng'],
+  R.map(x=>[x.cat,x.cat_label,x.url,x.page,x.page_title||'',(GC_PKIND[x.page_kind]||{t:x.page_kind}).t,x.clicks,x.users]),
+  `GA4_ChiTiet_Nut_CTA_${D.range.since}_${D.range.until}.csv`);
+}
+function ga4CtaPanel(acc){
+ const valid=(acc||[]).filter(c=>c.external_account_id);
+ const list=valid.length?valid:(acc||[]);
+ if(!list.length)return '';
+ if(!list.some(c=>c.id===GC.conn)){GC.conn=list[0].id;GC.d=null}
+ const c=list.find(x=>x.id===GC.conn)||list[0];
+ if(!GC.d&&!GC.busy&&!GC.err)setTimeout(()=>gcLoad(),0);
+ const D=GC.d;
+ const opts=GC_RANGES.map(r=>`<option value="${r[0]}" ${GC.range===r[0]?'selected':''}>${r[1]}</option>`).join('');
+ const bar=`<div class="card" style="margin-bottom:14px;border-color:#0d9488"><div class="card-h"><div><h3>📊 Báo cáo Đo lường Click vào Form &amp; Call-To-Action (GA4 — Bài viết &amp; Toàn trang)</h3><div class="sub">Đo lường thực tế từ Google Analytics 4 (${esc(c.label)} · Property ${esc(c.external_account_id||'')}) — thống kê khách bấm Zalo, Messenger, Form đăng ký, Giỏ hàng, Đặt hàng và Chỉ đường trên từng bài viết &amp; toàn website</div></div>
+  <div class="hact"><select onchange="gcSet('range',this.value)" title="Khoảng thời gian">${opts}</select>
+  ${GC.range==='custom'?`<input type="date" value="${esc(GC.since)}" onchange="GC.since=this.value"> → <input type="date" value="${esc(GC.until)}" onchange="GC.until=this.value"><button class="btn sm primary" onclick="GC.d=null;gcLoad()">Xem</button>`:''}
+  <button class="btn sm" onclick="gcLoad(true)" ${GC.busy?'disabled':''}>${ic('trend')} ${GC.busy?'Đang tải GA4…':'Làm mới'}</button>
+  ${D&&D.pages?`<button class="btn sm" onclick="gcCSV()">${ic('download')} Xuất Excel (Bài viết)</button><button class="btn sm" onclick="gcCtaCSV()">${ic('download')} Xuất Excel (Từng nút CTA)</button>`:''}</div></div>
+  <div class="card-b" style="padding-top:8px">`;
+ if(GC.err)return bar+`<div class="pub-bad">${esc(GC.err)} <button class="btn sm" onclick="gcLoad(true)">Thử lại</button></div></div></div>`;
+ if(!D)return bar+`<div class="mini">Đang truy vấn dữ liệu Click Form &amp; Call-To-Action từ Google Analytics 4…</div></div></div>`;
+ const s=D.summary||{},S2=D.series||[],pages=gcFilterPages(D),ctas=gcFilterCtas(D);
+ const kpis=`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(185px,1fr));margin-bottom:14px">
+  ${kpi('Tổng Click CTA & Form (Toàn trang)',num(s.total_cta_clicks),'target','#0d9488','CTR toàn trang: '+s.site_cta_ctr+'% ('+num(s.site_views)+' xem)')}
+  ${kpi('Click CTA & Form ở Bài viết / SP',num(s.post_cta_clicks),'file','#2563eb','CTR bài viết: '+s.post_cta_ctr+'% ('+num(s.post_views)+' xem)')}
+  ${kpi('Click Zalo Tư vấn (zalo.me)',num(s.zalo_clicks),'chat','#0068ff','Nút chat Zalo trên bài & toàn trang')}
+  ${kpi('Click Messenger / Fanpage FB',num(s.messenger_clicks),'send','#1877f2','Nút m.me & Fanpage ChungAuto')}
+  ${kpi('Click Chỉ đường Google Maps',num(s.maps_clicks),'globe','#16a34a','Bấm xem bản đồ đại lý / cửa hàng')}
+  ${kpi('Click Form Đăng ký (Biểu mẫu)',num(s.form_clicks),'check','#7c3aed','Click Google Forms & sự kiện form')}
+  ${kpi('Mở Form Liên hệ & Giỏ hàng',num((s.contact_views||0)+(s.cart_views||0)),'users','#d97706','Liên hệ: '+num(s.contact_views)+' · Giỏ hàng: '+num(s.cart_views))}
+  ${kpi('Đặt hàng thành công',num(s.order_success_views),'star','#dc2626','Hoàn tất gửi đơn (/dat-hang-thanh-cong)')}
+ </div>`;
+ const chart=S2.length>1?`<div class="card" style="margin:0 0 14px"><div class="card-h"><h3>Diễn biến Click vào Form &amp; Call-To-Action theo ngày (${esc(D.range.since)} → ${esc(D.range.until)})</h3></div><div class="card-b">${chLine(stThin(S2.map(x=>stDay(x.d))),[{name:'Lượt click CTA',color:'#0d9488',values:S2.map(x=>x.clicks||0)},{name:'Người bấm',color:'#2563eb',values:S2.map(x=>x.users||0)}])}</div></div>`:'';
+ const fltBar=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0">
+  <div class="segbar" style="margin:0">${GC_SCOPES.map(x=>`<button class="seg ${GC.scope===x[0]?'on':''}" onclick="gcSet('scope','${x[0]}')">${x[1]}</button>`).join('')}</div>
+  <select onchange="gcSet('cat',this.value)" title="Loại nút CTA / Form">${GC_CATS.map(x=>`<option value="${x[0]}" ${GC.cat===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select>
+  <input placeholder="Tìm bài viết, đường dẫn hoặc link CTA…" value="${esc(GC.q)}" oninput="GC.q=this.value;render()" style="flex:1;min-width:220px">
+  <span class="mini">${pages.length} trang/bài viết · ${ctas.length} nút/link CTA</span>
+ </div>`;
+ const th=(k,lbl,r)=>`<th class="${r?'tar ':''}clk" onclick="gcSort('${k}')">${lbl}${GC.sort===k?(GC.dir>0?' ▲':' ▼'):''}</th>`;
+ const tblPages=`<div class="card" style="margin:0 0 14px"><div class="card-h"><h3>1. Báo cáo Click vào Form &amp; Call-To-Action ở từng Bài viết / Trang (${pages.length})</h3><span class="sub">Bấm tiêu đề cột để sắp xếp · cho biết bài viết nào mang lại nhiều tương tác Form, Zalo, Messenger, Maps nhất</span></div>
+  <div class="tbl-wrap" style="max-height:480px;overflow:auto"><table class="tbl"><thead><tr>
+   ${th('path','Bài viết / Trang',false)}<th>Loại</th>${th('views','Lượt xem',true)}${th('form','Form / LH / GH',true)}${th('zalo','Click Zalo',true)}${th('messenger','Click FB/Mess',true)}${th('maps','Chỉ đường Maps',true)}${th('download','Tải / Tra cứu',true)}${th('total_cta','Tổng Click CTA & Form',true)}${th('ctr','CTR (%)',true)}
+  </tr></thead><tbody>${pages.slice(0,100).map(p=>{const pk=GC_PKIND[p.kind]||{t:p.kind,c:'mut'};return `<tr>
+   <td style="max-width:340px"><a href="https://chungauto.vn${esc(p.path)}" target="_blank" rel="noopener"><b>${esc(p.title||p.path)}</b></a><div class="mini mono r-mut" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.path)}</div></td>
+   <td><span class="badge b-${pk.c}">${pk.t}</span></td>
+   <td class="tar mono">${num(p.views)}</td>
+   <td class="tar mono">${p.form?`<b style="color:#7c3aed">${num(p.form)}</b>`:'—'}</td>
+   <td class="tar mono">${p.zalo?`<b style="color:#0068ff">${num(p.zalo)}</b>`:'—'}</td>
+   <td class="tar mono">${p.messenger?`<b style="color:#1877f2">${num(p.messenger)}</b>`:'—'}</td>
+   <td class="tar mono">${p.maps?`<b style="color:#16a34a">${num(p.maps)}</b>`:'—'}</td>
+   <td class="tar mono">${p.download?num(p.download):'—'}</td>
+   <td class="tar mono"><b style="color:var(--ink)">${num(p.total_cta)}</b></td>
+   <td class="tar mono">${p.views?p.ctr.toFixed(2)+'%':'—'}</td>
+  </tr>`}).join('')||'<tr><td colspan="10" class="mini">Không có bài viết/trang nào khớp bộ lọc</td></tr>'}</tbody></table></div></div>`;
+ const tblBreakdown=`<div class="grid2" style="margin-bottom:14px">
+  <div class="card" style="margin:0"><div class="card-h"><h3>2. Tổng hợp Click Form &amp; CTA Toàn trang theo loại nút</h3></div><div class="tbl-wrap" style="border:0;box-shadow:none"><table class="tbl"><thead><tr><th>Loại Call-To-Action / Form</th><th class="tar">Lượt click / mở</th><th>Ghi chú</th></tr></thead><tbody>
+   ${(D.breakdown||[]).map(b=>`<tr><td><b>${esc(b.label)}</b></td><td class="tar mono"><b>${num(b.clicks)}</b></td><td class="mini r-mut">${esc(b.note)}</td></tr>`).join('')}
+  </tbody></table></div></div>
+  <div class="card" style="margin:0"><div class="card-h"><h3>3. Chi tiết từng Nút / Link Call-To-Action &amp; Form được bấm (${ctas.length})</h3></div><div class="tbl-wrap" style="border:0;box-shadow:none;max-height:380px;overflow:auto"><table class="tbl"><thead><tr><th>Hành động CTA / Form</th><th>Tại Bài viết / Trang</th><th class="tar">Lượt click</th><th class="tar">Người bấm</th></tr></thead><tbody>
+   ${ctas.slice(0,80).map(x=>`<tr><td style="max-width:240px"><b>${esc(x.cat_label)}</b><div class="mini mono r-mut" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.url)}</a></div></td>
+    <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(x.page)}"><a href="https://chungauto.vn${esc(x.page)}" target="_blank" rel="noopener">${esc(x.page_title||x.page)}</a><div class="mini mono r-mut">${esc(x.page)}</div></td>
+    <td class="tar mono"><b>${num(x.clicks)}</b></td><td class="tar mono">${num(x.users)}</td></tr>`).join('')||'<tr><td colspan="4" class="mini">Chưa có dữ liệu</td></tr>'}
+  </tbody></table></div></div>
+ </div>`;
+ return bar+kpis+chart+fltBar+tblPages+tblBreakdown+'</div></div>';
+}
+/** Mở báo cáo CTA đầy đủ (có bộ lọc) từ bảng CTA ở trang Kênh marketing. scope/cat: lọc sẵn theo bảng vừa bấm. */
+function gcOpenFull(connId,scope,cat){S.ch=S.ch||{};S.ch.ads='ga4cta';if(GC.conn!==connId){GC.conn=connId;GC.d=null;GC.err=''}if(scope)GC.scope=scope;if(cat)GC.cat=cat;GC.q='';go('ads');window.scrollTo(0,0)}
 /* ================= CHIẾN DỊCH QUẢNG CÁO: tab theo nền tảng ================= */
-const ADS_TABS=[['gads','Google Ads',['google_ads'],/google/i],['fbads','Facebook Ads',['meta_ads'],/facebook|meta|instagram/i],['ttads','TikTok Ads',['tiktok_ads'],/tiktok/i]];
+const ADS_TABS=[['gads','Google Ads',['google_ads'],/google/i],['fbads','Facebook Ads',['meta_ads'],/facebook|meta|instagram/i],['ttads','TikTok Ads',['tiktok_ads'],/tiktok/i],['ga4cta','Đo lường Form & CTA (GA4)',['ga4'],/website|seo|ga4|blog/i]];
 function adsDefault(){const has=t=>(DB.connections||[]).some(c=>t[2].includes(c.provider))||DB.campaigns.some(c=>(c.channels||[]).some(k=>t[3].test(k)));return (ADS_TABS.find(has)||ADS_TABS[0])[0]}
 function adsFilter(c){if(S.page!=='ads')return true;const a=ADS_TABS.find(x=>x[0]===chOf('ads',adsDefault()));return !a||(c.channels||[]).some(ch=>a[3].test(ch))}
 function pgAds(){
@@ -4430,7 +4547,7 @@ function pgAds(){
  const ch=chOf('ads',adsDefault());const a=ADS_TABS.find(x=>x[0]===ch)||ADS_TABS[0];
  const tabs=ADS_TABS.map(x=>[x[0],x[1],null,DB.campaigns.filter(c=>(c.channels||[]).some(k=>x[3].test(k))).length]);
  const acc=(DB.connections||[]).filter(c=>a[2].includes(c.provider));
- const accBox=acc.length?(ch==='fbads'?adsReportPanel(acc):`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tài khoản quảng cáo ${esc(a[1])}</h3><span class="sub">${acc.length} tài khoản · số liệu 30 ngày tại lần đồng bộ gần nhất</span></div><div class="card-b" style="padding:0">${measureTable(a[2])}</div></div>`)
+ const accBox=acc.length?(ch==='fbads'?adsReportPanel(acc):ch==='ga4cta'?ga4CtaPanel(acc):`<div class="card" style="margin-bottom:14px"><div class="card-h"><h3>Tài khoản quảng cáo ${esc(a[1])}</h3><span class="sub">${acc.length} tài khoản · số liệu 30 ngày tại lần đồng bộ gần nhất</span></div><div class="card-b" style="padding:0">${measureTable(a[2])}</div></div>`)
   :(ch==='fbads'?metaAdsCard():noData(`Chưa kết nối tài khoản ${esc(a[1])}`,'Chiến dịch bên dưới là bản ghi nội bộ (kế hoạch, ngân sách kế hoạch, duyệt). Chi tiêu thật, hiển thị, click chỉ hiện khi tài khoản quảng cáo được kết nối. Tạo/sửa chiến dịch trên nền tảng vẫn làm ở trình quản lý quảng cáo.',`<button class="btn" onclick="go('settings','integ')">${ic('link')} Kết nối tài khoản</button>`));
  const pxBox=(ch==='fbads'&&acc.length&&MA.pixel)?`<div class="mini" style="margin:-8px 0 12px">Pixel của dự án: <span class="mono">${esc(MA.pixel)}</span> · dùng cho mã đo trên website + Conversions API</div>`:'';
  return `<div class="menuhead"><h1>Chiến dịch quảng cáo</h1><div class="sub">${esc((proj()||{}).name||'')} · ngân sách kế hoạch tách riêng với chi tiêu thật trên nền tảng</div></div>${chBar('ads',tabs,ch)}${accBox}${pxBox}${pgCampaigns()}`;

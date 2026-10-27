@@ -164,13 +164,104 @@ function sync_connection(array $CFG, array $conn): array {
         if ($dev) $top[] = ['label' => 'Thiết bị', 'cols' => ['Thiết bị', 'Phiên'], 'rows' => array_map(fn($r) => [$r[0], (int)$r[1]], $dev)];
         $city = $rep(['city'], ['sessions'], 10, $byDesc('sessions'));
         if ($city) $top[] = ['label' => 'Thành phố', 'cols' => ['Thành phố', 'Phiên'], 'rows' => array_map(fn($r) => [$r[0], (int)$r[1]], $city)];
+        // Đo lường Click vào Form & Call-To-Action (CTA) ở Bài viết và Toàn trang
+        [$cCta, $rCta] = http_call('POST', 'https://analyticsdata.googleapis.com/v1beta/properties/' . rawurlencode($conn['external_account_id']) . ':runReport', [
+            'headers' => $auth,
+            'json' => [
+                'dateRanges' => [['startDate' => $since, 'endDate' => $until]],
+                'dimensions' => [['name' => 'pagePath'], ['name' => 'eventName'], ['name' => 'linkUrl']],
+                'dimensionFilter' => ['filter' => ['fieldName' => 'eventName', 'inListFilter' => ['values' => ['click', 'form_submit', 'form_start', 'generate_lead', 'contact', 'submit_form', 'file_download']]]],
+                'metrics' => [['name' => 'eventCount'], ['name' => 'totalUsers']],
+                'orderBys' => [['metric' => ['metricName' => 'eventCount'], 'desc' => true]],
+                'limit' => 1000,
+            ],
+        ]);
+        [$cFp, $rFp] = http_call('POST', 'https://analyticsdata.googleapis.com/v1beta/properties/' . rawurlencode($conn['external_account_id']) . ':runReport', [
+            'headers' => $auth,
+            'json' => [
+                'dateRanges' => [['startDate' => $since, 'endDate' => $until]],
+                'dimensions' => [['name' => 'pagePath'], ['name' => 'pageReferrer']],
+                'dimensionFilter' => ['orGroup' => ['expressions' => [
+                    ['filter' => ['fieldName' => 'pagePath', 'stringFilter' => ['matchType' => 'CONTAINS', 'value' => 'dat-hang-thanh-cong']]],
+                    ['filter' => ['fieldName' => 'pagePath', 'stringFilter' => ['matchType' => 'CONTAINS', 'value' => 'gio-hang']]],
+                    ['filter' => ['fieldName' => 'pagePath', 'stringFilter' => ['matchType' => 'CONTAINS', 'value' => 'contact']]],
+                    ['filter' => ['fieldName' => 'pagePath', 'stringFilter' => ['matchType' => 'CONTAINS', 'value' => 'lien-he']]],
+                ]]],
+                'metrics' => [['name' => 'screenPageViews'], ['name' => 'totalUsers']],
+                'limit' => 300,
+            ],
+        ]);
+        $ctaZalo = $ctaMsg = $ctaMaps = $ctaForm = $ctaOther = 0;
+        $ctaByPage = [];
+        $ctaLinks = [];
+        if ($cCta === 200) {
+            foreach ($rCta['rows'] ?? [] as $cr) {
+                $pp = (string)($cr['dimensionValues'][0]['value'] ?? '/');
+                $ev = (string)($cr['dimensionValues'][1]['value'] ?? 'click');
+                $lu = (string)($cr['dimensionValues'][2]['value'] ?? '');
+                $cnt = (int)($cr['metricValues'][0]['value'] ?? 0);
+                $usr = (int)($cr['metricValues'][1]['value'] ?? 0);
+                if ($ev === 'file_download') continue;
+                $uLow = strtolower($lu);
+                if (!isset($ctaByPage[$pp])) $ctaByPage[$pp] = ['form' => 0, 'zalo' => 0, 'other' => 0, 'tot' => 0];
+                if (in_array($ev, ['form_submit', 'form_start', 'generate_lead', 'contact'], true) || preg_match('#docs\.google\.com/forms|forms\.gle|form#i', $uLow)) {
+                    $ctaForm += $cnt; $ctaByPage[$pp]['form'] += $cnt;
+                } elseif (str_contains($uLow, 'zalo.me')) {
+                    $ctaZalo += $cnt; $ctaByPage[$pp]['zalo'] += $cnt;
+                } elseif (str_contains($uLow, 'm.me/') || str_contains($uLow, 'messenger.com') || str_contains($uLow, 'facebook.com')) {
+                    $ctaMsg += $cnt; $ctaByPage[$pp]['other'] += $cnt;
+                } elseif (str_contains($uLow, 'maps.app.goo.gl') || str_contains($uLow, 'google.com/maps')) {
+                    $ctaMaps += $cnt; $ctaByPage[$pp]['other'] += $cnt;
+                } else {
+                    $ctaOther += $cnt; $ctaByPage[$pp]['other'] += $cnt;
+                }
+                $ctaByPage[$pp]['tot'] += $cnt;
+                if (count($ctaLinks) < 25) $ctaLinks[] = [$lu ?: $ev, $pp, $cnt, $usr];
+            }
+        }
+        $formPageCnt = 0;
+        if ($cFp === 200) {
+            foreach ($rFp['rows'] ?? [] as $fr) {
+                $dp = (string)($fr['dimensionValues'][0]['value'] ?? '');
+                $rf = (string)($fr['dimensionValues'][1]['value'] ?? '');
+                $cnt = (int)($fr['metricValues'][0]['value'] ?? 0);
+                $formPageCnt += $cnt;
+                $rp = ($rf !== '' && str_contains($rf, 'chungauto.vn')) ? (parse_url($rf, PHP_URL_PATH) ?: '/') : $dp;
+                if (!isset($ctaByPage[$rp])) $ctaByPage[$rp] = ['form' => 0, 'zalo' => 0, 'other' => 0, 'tot' => 0];
+                $ctaByPage[$rp]['form'] += $cnt;
+                $ctaByPage[$rp]['tot'] += $cnt;
+            }
+        }
+        uasort($ctaByPage, fn($a, $b) => $b['tot'] <=> $a['tot']);
+        $ctaPageRows = [];
+        foreach (array_slice($ctaByPage, 0, 20, true) as $pp => $st) {
+            $ctaPageRows[] = [$pp, $st['form'], $st['zalo'], $st['other'], $st['tot']];
+        }
+        $ctaSummaryRows = [
+            ['Click Zalo Tư vấn (zalo.me)', $ctaZalo],
+            ['Click Chỉ đường Google Maps', $ctaMaps],
+            ['Click Messenger / Fanpage FB', $ctaMsg],
+            ['Click Form đăng ký (Google Forms / Sự kiện Form)', $ctaForm],
+            ['Mở Form Liên hệ / Giỏ hàng / Đặt hàng nội bộ', $formPageCnt],
+            ['Click Tải App / Tra cứu / CTA khác', $ctaOther],
+        ];
+        array_unshift($top,
+            ['label' => 'Đo lường Click Form & CTA toàn trang', 'cols' => ['Nhóm Hành động CTA / Form', 'Lượt tương tác'], 'rows' => $ctaSummaryRows],
+            ['label' => 'Click Form & CTA theo Bài viết / Trang', 'cols' => ['Bài viết / Trang', 'Form/LH', 'Zalo', 'FB/Maps/Khác', 'Tổng CTA'], 'rows' => $ctaPageRows],
+            ['label' => 'Top Nút / Link CTA & Form được bấm', 'cols' => ['Link / Nút CTA', 'Tại Bài viết / Trang', 'Lượt click', 'Người bấm'], 'rows' => $ctaLinks]
+        );
+        $totCtaAll = $ctaZalo + $ctaMsg + $ctaMaps + $ctaForm + $ctaOther;
         $series = array_map(fn($r) => ['d' => substr($r[0], 0, 4) . '-' . substr($r[0], 4, 2) . '-' . substr($r[0], 6, 2), 's' => (int)$r[1], 'u' => (int)$r[2]],
             $rep(['date'], ['sessions', 'totalUsers'], 60, [['dimension' => ['dimensionName' => 'date']]]));
         return metrics_save($conn, [
             mitem('Phiên', (int)($v[0] ?? 0), 'num', 'sessions'),
             mitem('Người dùng', (int)($v[1] ?? 0), 'num', 'users'),
             mitem('Lượt xem trang', (int)($v[2] ?? 0), 'num', 'pageviews'),
-            mitem('Sự kiện chính (chuyển đổi)', (int)($v[3] ?? 0), 'num', 'conversions'),
+            mitem('Click Nút CTA (Zalo/FB/Maps/Form)', $totCtaAll, 'num', 'cta_clicks'),
+            mitem('Click Zalo CTA', $ctaZalo, 'num', 'zalo_clicks'),
+            mitem('Click Messenger / FB', $ctaMsg, 'num', 'messenger_clicks'),
+            mitem('Click Chỉ đường Maps', $ctaMaps, 'num', 'maps_clicks'),
+            mitem('Form / Giỏ hàng / Liên hệ', $ctaForm + $formPageCnt, 'num', 'form_actions'),
             mitem('Tỉ lệ tương tác', round(((float)($v[4] ?? 0)) * 100, 1), 'pct', 'engagement_rate'),
         ], [], ['top' => $top, 'series' => $series, 'series_kind' => 'ga4']);
     }
