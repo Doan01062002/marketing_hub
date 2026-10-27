@@ -724,7 +724,7 @@ const API_MODULES = [
     'posts.php' => ['channels', 'caremenu'], 'comments.php' => ['channels', 'caremenu'], 'content.php' => ['caremenu'], 'tasks.php' => ['caremenu', 'planmenu'],
     'upload.php' => ['caremenu', 'channels', 'inbox'], 'brand.php' => ['planmenu', 'caremenu'],
     'trends.php' => ['market'], 'insights.php' => ['market'], 'segments.php' => ['market'], 'bot.php' => ['market'], 'competitors.php' => ['market', 'utilities'],
-    'okrs.php' => ['planmenu'], 'plan_auto.php' => ['planmenu'], 'automations.php' => ['automation'], 'stats.php' => ['reports', 'overview'],
+    'okrs.php' => ['planmenu'], 'plan_auto.php' => ['planmenu'], 'automations.php' => ['automation'], 'stats.php' => ['reports', 'overview'], 'ga4_cta_report.php' => ['reports', 'channels', 'ads'],
     'landings.php' => ['utilities'], 'ideas.php' => ['utilities'], 'ai_chat.php' => ['aiplan'], 'ai_generate.php' => ['aiplan', 'caremenu', 'inbox', 'utilities'],
 ];
 function custom_role_get(string $id, string $pid): array {
