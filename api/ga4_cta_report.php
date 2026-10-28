@@ -52,21 +52,31 @@ if (empty($_GET['refresh']) && is_file($cacheKey) && (time() - filemtime($cacheK
     }
 }
 
+/** GA4 không trả số liệu (hết hạn token, lỗi API): trả dữ liệu đã lưu gần nhất của property này, đánh dấu stale. */
+$fallback = function (string $why, int $code = 502) use ($cacheDir, $propId) {
+    $files = glob("$cacheDir/ga4_cta_{$propId}_*.json") ?: [];
+    usort($files, fn($a, $b) => filemtime($b) <=> filemtime($a));
+    foreach ($files as $fl) {
+        $d = json_decode((string)file_get_contents($fl), true);
+        if (is_array($d) && !empty($d['pages'])) respond($d + ['stale' => true, 'stale_reason' => $why, 'stale_at' => date('Y-m-d H:i', filemtime($fl))]);
+    }
+    fail($why, $code);
+};
 $manual = ($conn['auth_method'] ?? 'oauth') === 'manual';
 if ($manual) {
     [$token, $err] = google_sa_token($conn['secret'], PROVIDERS['ga4']['scope']);
-    if (!$token) fail('GA4 Service Account: ' . $err, 502);
+    if (!$token) $fallback('GA4 Service Account: ' . $err);
 } else {
     $token = google_access_token($CFG, $conn);
-    if (!$token) fail('Token Google GA4 hết hạn — hãy bấm Kết nối lại', 502);
+    if (!$token) $fallback('Kết nối Google Analytics 4 đã hết hạn — bấm Kết nối lại GA4 để lấy số liệu mới');
 }
 $auth = ['Authorization: Bearer ' . $token];
 $apiUrl = 'https://analyticsdata.googleapis.com/v1beta/properties/' . rawurlencode($propId) . ':runReport';
 
-$run = function (array $body) use ($apiUrl, $auth): array {
+$run = function (array $body) use ($apiUrl, $auth, $fallback): array {
     $c = 0; $r = [];
     [$c, $r] = http_call('POST', $apiUrl, ['headers' => $auth, 'json' => $body]);
-    if ($c !== 200) fail('GA4 API: ' . ($r['error']['message'] ?? "HTTP $c"), 502);
+    if ($c !== 200) $fallback('GA4 API: ' . ($r['error']['message'] ?? "HTTP $c"));
     return $r['rows'] ?? [];
 };
 
