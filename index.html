@@ -4511,7 +4511,7 @@ function ga4CtaPanel(acc){
  const fltBar=`<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0">
   <div class="segbar" style="margin:0">${GC_SCOPES.map(x=>`<button class="seg ${GC.scope===x[0]?'on':''}" onclick="gcSet('scope','${x[0]}')">${x[1]}</button>`).join('')}</div>
   <select onchange="gcSet('cat',this.value)" title="Loại nút CTA / Form">${GC_CATS.map(x=>`<option value="${x[0]}" ${GC.cat===x[0]?'selected':''}>${x[1]}</option>`).join('')}</select>
-  <input placeholder="Tìm bài viết, đường dẫn hoặc link CTA…" value="${esc(GC.q)}" oninput="GC.q=this.value;render()" style="flex:1;min-width:220px">
+  <input id="gc-q" placeholder="Tìm bài viết, đường dẫn hoặc link CTA…" value="${esc(GC.q)}" oninput="GC.q=this.value;clearTimeout(GC._t);GC._t=setTimeout(()=>{render();const i=$('#gc-q');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},250)" style="flex:1;min-width:220px">
   <span class="mini">${pages.length} trang/bài viết · ${ctas.length} nút/link CTA</span>
  </div>`;
  const th=(k,lbl,r)=>`<th class="${r?'tar ':''}clk" onclick="gcSort('${k}')">${lbl}${GC.sort===k?(GC.dir>0?' ▲':' ▼'):''}</th>`;
