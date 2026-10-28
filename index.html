@@ -4490,6 +4490,7 @@ function ga4CtaPanel(acc){
   <div class="card-b" style="padding-top:8px">`;
  if(GC.err)return bar+`<div class="pub-bad">${esc(GC.err)} <button class="btn sm" onclick="gcLoad(true)">Thử lại</button></div></div></div>`;
  if(!D)return bar+`<div class="mini">Đang truy vấn dữ liệu Click Form &amp; Call-To-Action từ Google Analytics 4…</div></div></div>`;
+ const stale=D.stale?`<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>⚠ Đang xem dữ liệu đã lưu</b><span>khoảng ${esc((D.range||{}).since||'')} → ${esc((D.range||{}).until||'')} (lưu lúc ${esc(D.stale_at||'')}). ${esc(D.stale_reason||'')}</span>${projAdmin()?`<a class="btn sm primary" style="text-decoration:none;margin-left:auto" href="${connStartUrl(c)}">${ic('link')} Kết nối lại GA4</a>`:''}</div>`:'';
  const s=D.summary||{},S2=D.series||[],pages=gcFilterPages(D),ctas=gcFilterCtas(D);
  const kpis=`<div class="kpis" style="grid-template-columns:repeat(auto-fill,minmax(185px,1fr));margin-bottom:14px">
   ${kpi('Tổng Click CTA & Form (Toàn trang)',num(s.total_cta_clicks),'target','#0d9488','CTR toàn trang: '+s.site_cta_ctr+'% ('+num(s.site_views)+' xem)')}
@@ -4534,15 +4535,19 @@ function ga4CtaPanel(acc){
     <td class="tar mono"><b>${num(x.clicks)}</b></td><td class="tar mono">${num(x.users)}</td></tr>`).join('')||'<tr><td colspan="4" class="mini">Chưa có dữ liệu</td></tr>'}
   </tbody></table></div></div>
  </div>`;
- return bar+kpis+chart+fltBar+tblPages+tblBreakdown+'</div></div>';
+ return bar+stale+kpis+chart+fltBar+tblPages+tblBreakdown+'</div></div>';
 }
 /** Mở báo cáo CTA đầy đủ (có bộ lọc) từ bảng CTA ở trang Kênh marketing. scope/cat: lọc sẵn theo bảng vừa bấm. */
-function gcOpenFull(connId,scope,cat){S.ch=S.ch||{};S.ch.ads='ga4cta';if(GC.conn!==connId){GC.conn=connId;GC.d=null;GC.err=''}if(scope)GC.scope=scope;if(cat)GC.cat=cat;GC.q='';go('ads');window.scrollTo(0,0)}
+function gcOpenFull(connId,scope,cat){const q=new URLSearchParams({conn:connId||'',scope:scope||'all',cat:cat||'all'});window.open(location.pathname+'#ads/ga4cta?'+q.toString(),'_blank','noopener')}
+/** Mở thẳng báo cáo CTA từ link #ads/ga4cta?conn=…&scope=…&cat=… */
+window._gcInitHash=location.hash;
+function gcFromHash(){const h=(window._gcInitHash||location.hash).slice(1);window._gcInitHash="";if(!/^ads\/ga4cta/.test(h))return false;const q=new URLSearchParams(h.split('?')[1]||'');S.ch=S.ch||{};S.ch.ads='ga4cta';if(q.get('conn')&&GC.conn!==q.get('conn')){GC.conn=q.get('conn');GC.d=null;GC.err=''}if(q.get('scope'))GC.scope=q.get('scope');if(q.get('cat'))GC.cat=q.get('cat');return true}
 /* ================= CHIẾN DỊCH QUẢNG CÁO: tab theo nền tảng ================= */
 const ADS_TABS=[['gads','Google Ads',['google_ads'],/google/i],['fbads','Facebook Ads',['meta_ads'],/facebook|meta|instagram/i],['ttads','TikTok Ads',['tiktok_ads'],/tiktok/i],['ga4cta','Đo lường Form & CTA (GA4)',['ga4'],/website|seo|ga4|blog/i]];
 function adsDefault(){const has=t=>(DB.connections||[]).some(c=>t[2].includes(c.provider))||DB.campaigns.some(c=>(c.channels||[]).some(k=>t[3].test(k)));return (ADS_TABS.find(has)||ADS_TABS[0])[0]}
 function adsFilter(c){if(S.page!=='ads')return true;const a=ADS_TABS.find(x=>x[0]===chOf('ads',adsDefault()));return !a||(c.channels||[]).some(ch=>a[3].test(ch))}
 function pgAds(){
+ if(!S._gcHash){S._gcHash=1;gcFromHash()}
  if(MA._pid!==(proj()||{}).id){MA._pid=(proj()||{}).id;MA.pixel='';MA.look=null;maLoadPixel().then(()=>{if(MA.pixel||MA.app)render()})}
  const ch=chOf('ads',adsDefault());const a=ADS_TABS.find(x=>x[0]===ch)||ADS_TABS[0];
  const tabs=ADS_TABS.map(x=>[x[0],x[1],null,DB.campaigns.filter(c=>(c.channels||[]).some(k=>x[3].test(k))).length]);
