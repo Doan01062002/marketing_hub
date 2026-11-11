@@ -863,6 +863,196 @@ html.chatapp .content{padding:0!important;height:100vh;height:100dvh;overflow:hi
 .ib-pico{width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;flex-shrink:0;overflow:hidden}.ib-pico svg{width:100%;height:100%;padding:1.5px}
 .ib-chips button.on .ib-pico{box-shadow:0 0 0 1.5px #fff}
 .zw-me{overflow:hidden}.zw-me img{width:100%;height:100%;object-fit:cover}
+/* Ứng dụng Chat: menu trái có chữ, Trang chủ, Hội thoại 3 cột, Danh bạ (11/11/2026) */
+.zw.cw{background:#f1f5f9;color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.cw-nav{width:240px;flex-shrink:0;background:#f1f5f9;display:flex;flex-direction:column;min-height:0}
+.cw-top{display:flex;align-items:center;gap:10px;padding:10px 8px 8px 14px;min-height:62px}
+.cw-ic{width:32px;height:32px;border-radius:8px;background:#eef3fb;color:#0068ff;display:grid;place-items:center;flex-shrink:0}.cw-ic svg{width:17px;height:17px}
+.cw-ic.lg{width:40px;height:40px;border-radius:10px}.cw-ic.lg svg{width:19px;height:19px}
+.cw-tt{flex:1;min-width:0}.cw-tt b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cw-tt small{display:block;font-size:12px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.cw-tog{width:30px;height:30px;border:0;background:none;color:#475569;border-radius:6px;display:grid;place-items:center;cursor:pointer}.cw-tog:hover{background:#e2e8f0}.cw-tog svg{width:17px;height:17px}
+.cw-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 8px;scrollbar-width:thin}
+.cw-g{font-size:11px;font-weight:600;color:#64748b;padding:8px 8px 4px;text-transform:uppercase;letter-spacing:.02em}
+.cw-sep{height:1px;background:#d9e0e9;margin:12px 4px 8px}
+.cw-it{position:relative;display:flex;align-items:center;gap:11px;width:100%;height:38px;padding:0 10px;margin-bottom:4px;border:1px solid transparent;border-radius:8px;background:transparent;color:#334155;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;text-align:left}
+.cw-it>svg{width:18px;height:18px;flex-shrink:0}.cw-lb{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cw-it:hover{background:#e7edf4}.cw-it.on{background:#fff;color:#0068ff;font-weight:600;border-color:rgba(0,0,0,.06);box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.cw-out{color:#94a3b8;display:grid}.cw-out svg{width:12px;height:12px}
+.cw-bd{background:#ef4444;color:#fff;font-size:11px;font-weight:700;border-radius:9px;min-width:18px;height:18px;line-height:18px;padding:0 5px;text-align:center}
+.cw-foot{display:flex;align-items:center;gap:10px;margin:0 8px;padding:12px 6px;border-top:1px solid #d9e0e9}
+.cw-me{position:relative;width:32px;height:32px;border-radius:50%;background:#e5efff;color:#0068ff;display:grid;place-items:center;font-weight:700;font-size:12.5px;flex-shrink:0}.cw-me img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.cw-me i{position:absolute;right:0;bottom:0;width:8px;height:8px;border-radius:50%;background:#22c55e;border:1.5px solid #f1f5f9}
+.cw-nav.mini{width:64px}.cw-nav.mini .cw-top{padding:10px 0;flex-direction:column;gap:6px}.cw-nav.mini .cw-top .cw-ic,.cw-nav.mini .cw-tt,.cw-nav.mini .cw-lb,.cw-nav.mini .cw-g,.cw-nav.mini .cw-out{display:none}
+.cw-nav.mini .cw-it{justify-content:center;padding:0}.cw-nav.mini .cw-bd{position:absolute;top:0;right:0;min-width:15px;height:15px;line-height:15px;font-size:9.5px;padding:0 3px}.cw-nav.mini .cw-foot{justify-content:center;margin:0 6px;padding:10px 0}
+.cw-main{flex:1;min-width:0;background:#fff;border-radius:14px 0 0 14px;margin:6px 0;overflow-y:auto}
+.cw-home{padding:24px;max-width:1720px}
+.cw-ban{display:flex;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px;margin-bottom:20px}
+.cw-ban>div{flex:1;min-width:0}.cw-ban b{display:block;font-size:14px;font-weight:600}.cw-ban small{font-size:13px;color:#475569}
+.cw-bi{width:36px;height:36px;border-radius:50%;background:#2563eb;color:#fff;display:grid;place-items:center;flex-shrink:0}.cw-bi svg{width:18px;height:18px}
+.cw-btn{background:#0068ff;color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer}.cw-btn:hover{background:#005ae0}
+.cw-x{width:30px;height:30px;border:0;background:none;color:#475569;border-radius:6px;display:grid;place-items:center;cursor:pointer}.cw-x svg{width:15px;height:15px}
+.cw-hero{display:flex;align-items:center;gap:16px;margin-bottom:24px}.cw-hi{width:64px;height:64px;border-radius:50%;background:#eef3fb;color:#2563eb;display:grid;place-items:center;flex-shrink:0}.cw-hi svg{width:28px;height:28px}
+.cw-home h1{font-size:20px;font-weight:600;margin:0}.cw-home h2{font-size:15px;font-weight:600;margin:0}
+.cw-hm{display:flex;gap:32px;margin-top:8px}.cw-hm small{display:block;font-size:12px;color:#475569;margin-bottom:3px}.cw-hm b{font-size:14px;font-weight:500}.cw-hm b.ok{color:#22c55e}
+.cw-sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.cw-sh b{font-size:14px;font-weight:600}.cw-sh b span{font-weight:400;color:#64748b;font-size:12px}
+.cw-sh button{display:flex;align-items:center;gap:7px;border:0;background:none;color:#334155;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer;padding:6px 8px;border-radius:6px}.cw-sh button:hover{background:#f1f5f9}.cw-sh svg{width:16px;height:16px}
+.cw-chg{display:flex;flex-wrap:wrap;gap:12px}
+.cw-ch{display:flex;align-items:center;gap:12px;width:262px;max-width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer}.cw-ch:hover{border-color:#93c5fd;background:#f8fbff}
+.cw-ch.add{border-style:dashed;border-color:#cbd5e1}.cw-ch>div{min-width:0}.cw-ch b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cw-ch small{display:flex;align-items:center;gap:5px;font-size:12px;color:#475569;margin-top:2px;white-space:nowrap}
+.cw-ch small i{width:7px;height:7px;border-radius:50%;flex-shrink:0}.cw-ch small i.ok{background:#22c55e}.cw-ch small i.bad{background:#ef4444}
+.cw-bc{width:36px;height:36px;border-radius:50%;background:#eef3fb;color:#2563eb;display:grid;place-items:center;flex-shrink:0}.cw-bc svg{width:18px;height:18px}
+.cw-hr{height:1px;background:#e2e8f0;margin:20px 0}
+.cw-sts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:28px}
+.cw-st{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid #e2e8f0;border-radius:12px}.cw-st.act{cursor:pointer}.cw-st.act:hover{border-color:#93c5fd}.cw-st b{display:block;font-size:20px;font-weight:600;line-height:1.1}.cw-st small{font-size:13px;color:#475569}
+.cw-sub{font-size:13.5px;color:#475569;margin:4px 0 14px}
+.cw-docs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.cw-docs section{border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px 12px}
+.cw-docs h4{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin:0 0 10px}.cw-docs h4 svg{width:16px;height:16px;color:#2563eb}
+.cw-doc{display:flex;align-items:center;gap:12px;padding:10px 4px;border-radius:8px;cursor:pointer}.cw-doc:hover{background:#f8fafc}.cw-doc>div{flex:1;min-width:0}.cw-doc b{display:block;font-size:14px;font-weight:600}.cw-doc small{font-size:13px;color:#475569}
+.cw-chev{width:20px;height:20px;border:1px solid #94a3b8;border-radius:50%;color:#475569;display:grid;place-items:center;flex-shrink:0}.cw-chev svg{width:12px;height:12px}
+.cw-emp{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:60px 20px}.cw-emp b{font-size:14px;font-weight:600;margin-top:6px}.cw-emp p{font-size:13px;color:#475569;margin:0 0 8px;max-width:360px}
+.cw-sr.wide{padding:0 0 12px;max-width:440px}.cw-fl{max-width:720px}
+.cw-fr{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #f1f5f9}.cw-fr b{flex:1;min-width:0;font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cw-fa{width:40px;height:40px;border-radius:50%;background:#64748b;color:#fff;display:grid;place-items:center;font-weight:700;font-size:14px;overflow:hidden;flex-shrink:0}.cw-fa img{width:100%;height:100%;object-fit:cover}
+.zw.cw .ib,.zw.cw .ib.side{flex:1;height:100%;min-height:0;grid-template-columns:360px minmax(0,1fr);background:#fff}
+.zw.cw .ib.side{grid-template-columns:360px minmax(0,1fr) 360px}
+.zw.cw .ib-list{position:relative;border-right:1px solid #e2e8f0}
+.cw-chs{display:flex;gap:14px;padding:12px 16px 4px;overflow-x:auto;scrollbar-width:none}.cw-chs::-webkit-scrollbar{display:none}
+.cw-bub{display:flex;flex-direction:column;align-items:center;gap:4px;border:0;background:none;padding:0;cursor:pointer;font-family:inherit;flex-shrink:0;color:#475569}
+.cw-bub small{font-size:11.5px;white-space:nowrap}.cw-bub.on small{color:#0068ff;font-weight:500}.cw-bub .cw-bc{box-shadow:0 0 0 2px #fff,0 0 0 2px transparent}.cw-bub.on .cw-bc{box-shadow:0 0 0 2px #fff,0 0 0 4px #0068ff}
+.cw-bub.add .cw-bc{background:#fff;border:1px dashed #94a3b8;color:#475569}
+.cw-ctx{display:flex;align-items:center;gap:8px;padding:10px 16px 8px}.cw-ctx b{flex:1;font-size:13px;font-weight:600;color:#081c36}.cw-ctx i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px #dcfce7}
+.cw-mi{width:22px;height:22px;border-radius:5px;background:#eef2f7;color:#334155;display:grid;place-items:center}.cw-mi svg{width:12px;height:12px}
+.cw-sr{display:flex;gap:8px;padding:0 16px 6px}.cw-sr .ib-search{flex:1;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:7px 12px}
+.cw-fb{width:36px;height:36px;border:1px solid #e2e8f0;background:#fff;border-radius:8px;color:#334155;display:grid;place-items:center;cursor:pointer;flex-shrink:0}.cw-fb:hover{background:#f1f5f9}.cw-fb.on{border-color:#0068ff;color:#0068ff;background:#eff6ff}.cw-fb svg{width:17px;height:17px}
+.cw-tabs{display:flex;gap:14px;padding:0 16px;border-bottom:1px solid #e2e8f0;overflow-x:auto;scrollbar-width:none}.cw-tabs::-webkit-scrollbar{display:none}
+.cw-tabs button{border:0;background:none;height:38px;padding:0;font-size:13.5px;font-weight:500;font-family:inherit;color:#334155;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}.cw-tabs button.on{color:#0068ff;font-weight:600;border-bottom-color:#0068ff}.cw-tabs .n{font-size:11px;color:#64748b}.cw-tabs .on .n{color:inherit}
+.cw-none{display:flex;flex-direction:column;align-items:center;gap:8px;padding:36px 16px;color:#64748b;font-size:13.5px}.cw-none svg{width:26px;height:26px;color:#64748b}
+.cw-ov{position:fixed;inset:0;z-index:29}
+.cw-pop{position:absolute;z-index:30;top:128px;left:12px;right:12px;max-height:calc(100% - 140px);display:flex;flex-direction:column;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 30px rgba(15,23,42,.16)}
+.cw-ph{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 6px}.cw-ph b{font-size:14px;font-weight:600}.cw-ph button{border:0;background:none;width:24px;height:24px;display:grid;place-items:center;cursor:pointer;color:#475569}.cw-ph svg{width:15px;height:15px}
+.cw-pb{padding:0 14px 8px;overflow-y:auto;min-height:0}.cw-pl{font-size:11px;font-weight:600;text-transform:uppercase;color:#64748b;margin:10px 0 6px}
+.cw-pg{display:grid;grid-template-columns:1fr 1fr;gap:6px}.cw-pg button{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#334155;font-size:13px;font-family:inherit;cursor:pointer}.cw-pg button svg{width:15px;height:15px}.cw-pg button.on{border-color:#60a5fa;background:#eff6ff;color:#0068ff;font-weight:500}
+.cw-sw{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 2px;cursor:pointer}.cw-sw b{display:block;font-size:13.5px;font-weight:500}.cw-sw small{font-size:12px;color:#64748b}
+.cw-sel{width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:7px 8px;background:#fff;font-size:13px;font-family:inherit;color:#334155}
+.cw-pf{border-top:1px solid #e2e8f0;padding:6px 14px 10px}.cw-pf button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:8px 0;font-size:13.5px;font-family:inherit;color:#334155;cursor:pointer}.cw-pf button svg{width:15px;height:15px}.cw-pf em{font-style:normal;color:#ef4444;font-size:12px}
+.cw-live{display:flex;align-items:center;gap:7px;font-size:12px;color:#475569;padding-top:2px}.cw-live i{width:7px;height:7px;border-radius:50%;background:#22c55e}
+.zw.cw .ib-chat.cw-nosel{background:#e9ebef;display:grid;place-items:center}
+.cw-wel{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px;color:#475569}.cw-wel>svg{width:44px;height:44px;color:#94a3b8;margin-bottom:10px}.cw-wel h3{font-size:18px;font-weight:600;color:#081c36;margin:0 0 8px}.cw-wel p{font-size:13.5px;margin:0;max-width:300px;line-height:1.5}
+.cw-wel.sm>svg{width:36px;height:36px}.cw-wel.sm b{font-size:13.5px;font-weight:500;color:#334155;margin-bottom:6px}
+.cw-noside{background:#fff;border-left:1px solid #e2e8f0;padding-top:27vh}
+.cw-tabr{display:flex;align-items:center;gap:6px;padding-right:10px;border-bottom:1px solid #e2e8f0}.cw-tabr .cw-tabs{flex:1;min-width:0;border-bottom:0}
+.cw-tagb{width:28px;height:28px;border:0;background:none;color:#475569;border-radius:6px;display:grid;place-items:center;cursor:pointer;flex-shrink:0}.cw-tagb:hover{background:#f1f5f9}.cw-tagb.on{color:#0068ff;background:#eff6ff}.cw-tagb svg{width:16px;height:16px}
+.cw-tagp{top:168px;left:auto;right:12px;width:210px;padding:8px;gap:1px;overflow-y:auto}.cw-tagp .cw-pl{margin:2px 6px 6px;text-transform:none}.cw-tagp button{display:flex;align-items:center;gap:9px;border:0;background:none;padding:7px 8px;border-radius:6px;font-size:13px;font-family:inherit;color:#334155;cursor:pointer;text-align:left}.cw-tagp button:hover{background:#f1f5f9}.cw-tagp button.on{background:#eff6ff;color:#0068ff}.cw-tagp i{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.cw-pd{display:flex;align-items:center;gap:6px}.cw-pd input{flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:8px;padding:5px 6px;font-size:12.5px;font-family:inherit;color:#334155}
+.cw-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}.cw-chip{font-size:10.5px;line-height:16px;font-weight:600;padding:0 7px;border-radius:9px;color:var(--c);background:color-mix(in srgb,var(--c) 13%,#fff)}
+.cw-tags{display:flex;flex-wrap:wrap;gap:6px}.cw-tag{border:1px solid color-mix(in srgb,var(--c) 40%,#fff);background:#fff;color:var(--c);border-radius:13px;padding:3px 10px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer}.cw-tag.on{background:var(--c);border-color:var(--c);color:#fff}
+.cw-slash{position:absolute;left:10px;right:10px;bottom:100%;margin-bottom:6px;z-index:20;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.16);padding:6px;max-height:280px;overflow-y:auto}.zw.cw .ib-comp{position:relative}
+.cw-slash button{display:flex;gap:12px;width:100%;border:0;background:none;padding:7px 8px;border-radius:6px;text-align:left;font-family:inherit;cursor:pointer}.cw-slash button.on,.cw-slash button:hover{background:#eff6ff}.cw-slash b{font-size:13px;color:#0068ff;min-width:52px}.cw-slash span{flex:1;min-width:0;font-size:12.5px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cw-slash em{font-style:normal;font-weight:600;color:#0f172a;margin-right:8px}
+.cw-cf{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9}.cw-cf input:not([type=color]){flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13.5px;font-family:inherit}.cw-cf b{flex:1;font-size:13.5px;font-weight:500}.cw-cf input[type=color]{width:34px;height:28px;padding:0;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer}.cw-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}.cw-sys{font-size:11px;color:#64748b;background:#f1f5f9;border-radius:9px;padding:1px 8px}.cw-del{width:42px;flex-shrink:0}.cw-cf.add{border-bottom:0;margin-top:8px}
+.cw-cv{display:grid;color:#94a3b8;transition:transform .15s}.cw-cv svg{width:14px;height:14px}.cw-cv.open{transform:rotate(90deg)}
+.cw-subs{display:flex;flex-direction:column;gap:2px;margin:-2px 0 6px 21px;padding-left:10px;border-left:1px solid #d9e0e9}.cw-subs button{border:0;background:none;text-align:left;padding:7px 10px;border-radius:7px;font-size:13.5px;font-family:inherit;color:#334155;cursor:pointer}.cw-subs button:hover{background:#e7edf4}.cw-subs button.on{background:#fff;color:#0068ff;font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.cw-auto{display:flex;min-height:100%;background:#f1f5f9;gap:6px}
+.cw-asub{width:190px;flex-shrink:0;background:#fff;border-radius:14px;padding:14px 10px}.cw-asub h3{font-size:15px;font-weight:600;margin:4px 6px 12px}
+.cw-as{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;padding:8px;border-radius:8px;font-size:13.5px;font-family:inherit;color:#334155;cursor:pointer;margin-bottom:2px}.cw-as svg{width:16px;height:16px}.cw-as span{flex:1;text-align:left}.cw-as b{font-size:11px;font-weight:600;background:#f1f5f9;color:#475569;border-radius:9px;padding:1px 7px}.cw-as:hover{background:#f8fafc}.cw-as.on{background:#eff6ff;color:#0068ff;font-weight:500}.cw-as.on b{background:#dbeafe;color:#0068ff}
+.cw-acon{flex:1;min-width:0;background:#fff;border-radius:14px 0 0 14px;padding:20px 24px 28px}
+.ca-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.ca-head h1{font-size:20px;font-weight:600;margin:0}.ca-head .cw-btn,.ca-card>.cw-btn,.ca-mf .cw-btn{display:inline-flex;align-items:center;gap:7px}.ca-head .cw-btn svg,.ca-card>.cw-btn svg{width:16px;height:16px}
+.ca-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:12px}.ca-card.edit{border-color:#93c5fd;box-shadow:0 0 0 3px #eff6ff}
+.ca-kwh{display:flex;align-items:center;gap:10px}.ca-kwin{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:36px;border:1px solid #e2e8f0;border-radius:8px;padding:4px 8px}.ca-kwin.ro{border-color:transparent;padding-left:0}.ca-kwin input{flex:1;min-width:140px;border:0;outline:0;font-size:13.5px;font-family:inherit;padding:4px 0}
+.ca-kw{display:inline-flex;align-items:center;gap:5px;background:#eff6ff;color:#1d4ed8;border-radius:6px;padding:3px 8px;font-size:13px;font-weight:500;margin:2px 4px 2px 0}.ca-kw button{border:0;background:none;color:#60a5fa;cursor:pointer;font-size:14px;line-height:1;padding:0}
+.ca-sel{border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;font-size:13.5px;font-family:inherit;color:#0f172a;background:#fff;min-width:150px}.ca-sel.full{width:100%}
+.ca-ib{width:32px;height:32px;border:0;background:none;color:#475569;border-radius:6px;display:grid;place-items:center;cursor:pointer;flex-shrink:0}.ca-ib:hover{background:#f1f5f9}.ca-ib svg{width:16px;height:16px}
+.ca-tagm{font-size:12px;color:#475569;background:#f1f5f9;border-radius:9px;padding:2px 9px;white-space:nowrap}
+.ca-lb{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}.ca-ta{width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box}
+.ca-reply{font-size:13.5px;color:#334155;white-space:pre-wrap;margin:10px 0 6px;padding-left:52px}.ca-reply i{color:#94a3b8}
+.ca-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;color:#64748b;padding-left:52px}.ca-meta svg{width:13px;height:13px}.ca-meta .sep{color:#cbd5e1}
+.ca-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.ca-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:12px}.ca-row .ca-box{margin:0}.ca-box.dash{border-style:dashed}.ca-box.blue{background:#f5f8ff;border-color:#c7d7fe}
+.ca-bh{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.ca-bh b{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600}.ca-bh b svg{width:15px;height:15px;color:#2563eb}
+.ca-all{display:inline-flex;align-items:center;gap:5px;border:1px solid #e2e8f0;background:#fff;border-radius:7px;padding:4px 9px;font-size:12.5px;font-family:inherit;color:#334155;cursor:pointer;white-space:nowrap}.ca-all svg{width:13px;height:13px}.ca-all.on{background:#f0fdf4;border-color:#86efac;color:#15803d}
+.ca-q{display:inline-flex;align-items:center;gap:5px;border:1px solid #93c5fd;background:#fff;border-radius:7px;padding:4px 9px;font-size:12.5px;font-family:inherit;color:#1d4ed8;cursor:pointer;white-space:nowrap}.ca-q svg{width:13px;height:13px}
+.ca-chl{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}.ca-chl label{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer}
+.ca-pi{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex-shrink:0}.ca-pi svg{width:11px;height:11px}
+.ca-note{font-size:12.5px;color:#64748b;margin-top:6px}.ca-note.ok{color:#15803d}.ca-note.ok svg{width:13px;height:13px;vertical-align:-2px;margin-right:5px}
+.ca-foot{font-size:12.5px;color:#64748b;margin-top:16px;line-height:1.5}
+.ca-tbl{border:1px solid #e2e8f0;border-radius:12px;overflow:auto;margin-top:4px}.ca-tbl table{width:100%;border-collapse:collapse;font-size:13.5px}.ca-tbl th{text-align:left;font-size:12px;font-weight:600;color:#475569;background:#f8fafc;padding:10px 12px;border-bottom:1px solid #e2e8f0;white-space:nowrap}.ca-tbl td{padding:12px;border-bottom:1px solid #f1f5f9;vertical-align:middle}.ca-tbl tr:last-child td{border-bottom:0}.ca-act{white-space:nowrap;text-align:right}.ca-act .btn{margin-left:4px}
+.ca-flow{font-size:12.5px;color:#64748b;margin-top:3px}.ca-flow i{font-style:normal;color:#334155}
+.ca-ov{position:fixed;inset:0;z-index:60;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:16px}
+.ca-modal{width:min(560px,100%);max-height:calc(100vh - 32px);background:#fff;border-radius:14px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(15,23,42,.3)}
+.ca-mh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0}.ca-mh b{font-size:15.5px}.ca-mh button{border:0;background:none;cursor:pointer;color:#475569;width:28px;height:28px;display:grid;place-items:center}.ca-mh svg{width:16px;height:16px}
+.ca-mb{padding:16px 20px;overflow-y:auto;min-height:0}.ca-mf{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid #e2e8f0}
+.ca-fr{display:flex;align-items:flex-end;gap:12px;margin-bottom:12px}.ca-fr .field{margin:0}.ca-on{display:flex;align-items:center;gap:8px;font-size:13.5px;white-space:nowrap;padding-bottom:8px}
+.ca-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ca-two>div{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:12.5px}.ca-two>div>b{display:flex;align-items:center;gap:5px;margin-bottom:6px;font-size:12.5px}.ca-two svg{width:13px;height:13px}
+.ca-sh{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 0 10px;padding-top:14px;border-top:1px solid #e2e8f0}.ca-sh>b{display:flex;align-items:center;gap:7px;font-size:13.5px}.ca-sh svg{width:15px;height:15px}.ca-sh .btn{display:inline-flex;align-items:center;gap:5px}
+.ca-step{border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:10px}.ca-sth{display:flex;align-items:center;gap:8px;margin-bottom:8px}.ca-sth b{flex:1;font-size:13.5px}.ca-n{width:22px;height:22px;border-radius:50%;background:#2563eb;color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center}
+.ca-delay{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:#475569;margin-bottom:8px}.ca-delay input{width:58px;border:1px solid #e2e8f0;border-radius:7px;padding:5px 7px;font-size:13px;font-family:inherit}
+.ca-add{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;border:1px dashed #93c5fd;background:#f8fbff;color:#1d4ed8;border-radius:10px;padding:10px;font-size:13.5px;font-family:inherit;cursor:pointer}.ca-add svg{width:15px;height:15px}
+.ca-care{display:flex;align-items:center;gap:8px;padding:6px 0}.ca-care>div{flex:1;min-width:0}.ca-care b{display:block;font-size:13px;font-weight:600}.ca-care small{font-size:12px;color:#64748b}
+@media(max-width:920px){.cw-auto{flex-direction:column}.cw-asub{width:auto;display:flex;gap:4px;overflow-x:auto;padding:8px;border-radius:0}.cw-asub h3{display:none}.cw-as{width:auto;white-space:nowrap}.cw-acon{border-radius:0;padding:16px}.ca-row{grid-template-columns:minmax(0,1fr)}.ca-reply,.ca-meta{padding-left:0}.ca-head{flex-direction:column}}
+.crm{padding:14px 18px 24px}
+.crm-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid #e2e8f0}
+.crm-tabs{display:flex;gap:4px;flex-wrap:wrap}.crm-tabs button{display:flex;align-items:center;gap:6px;border:0;background:none;padding:7px 11px;border-radius:8px;font-size:13.5px;font-family:inherit;color:#334155;cursor:pointer}.crm-tabs button svg{width:15px;height:15px}.crm-tabs button b{font-size:11px;background:#f1f5f9;border-radius:9px;padding:0 7px;font-weight:600}.crm-tabs button:hover{background:#f1f5f9}.crm-tabs button.on{background:#eff6ff;color:#0068ff;font-weight:600}
+.crm-acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.crm-acts .btn{display:inline-flex;align-items:center;gap:5px}.crm-acts svg{width:14px;height:14px}.crm-acts .cw-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px}
+.crm-views{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px}.crm-views button{display:flex;align-items:center;gap:6px;border:1px solid transparent;background:none;padding:6px 11px;border-radius:8px;font-size:13px;font-family:inherit;color:#334155;cursor:pointer}.crm-views button i{width:7px;height:7px;border-radius:50%}.crm-views button b{font-size:11px;background:#f1f5f9;border-radius:9px;padding:0 6px;font-weight:600}.crm-views button.on{background:#eff6ff;border-color:#bfdbfe;color:#0068ff;font-weight:600}
+.crm-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}.crm-bar .ib-search{flex:0 1 230px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px}
+.crm-f{border:1px solid #e2e8f0;background:#fff;border-radius:8px;padding:6px 8px;font-size:13px;font-family:inherit;color:#334155;cursor:pointer;max-width:190px}.crm-f.on{border-color:#60a5fa;background:#eff6ff;color:#0068ff}
+.crm-cp{position:relative}.crm-colp{position:absolute;z-index:30;top:36px;right:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 10px 30px rgba(15,23,42,.16);padding:8px 12px;display:flex;flex-direction:column;gap:6px;min-width:190px}.crm-colp label{display:flex;gap:8px;font-size:13px;cursor:pointer}
+.crm-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;padding:8px;border:1px solid #e2e8f0;border-radius:10px}.crm-chips button{display:flex;align-items:center;gap:5px;border:1px solid #e2e8f0;background:#fff;border-radius:7px;padding:3px 9px;font-size:12px;font-family:inherit;color:#334155;cursor:pointer}.crm-chips i{width:7px;height:7px;border-radius:50%}.crm-chips button.on{border-color:#3b82f6;background:#eff6ff;color:#1d4ed8;font-weight:600}
+.crm-tbl{border:1px solid #e2e8f0;border-radius:12px;overflow:auto;background:#fff}.crm-tbl table{width:100%;border-collapse:collapse;font-size:13px}.crm-tbl th{text-align:left;font-size:12px;font-weight:600;color:#475569;background:#f8fafc;padding:9px 10px;border-bottom:1px solid #e2e8f0;white-space:nowrap}.crm-tbl td{padding:8px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle;white-space:nowrap}.crm-tbl tbody tr{cursor:pointer}.crm-tbl tbody tr:hover{background:#f8fafc}
+.crm-nm{display:flex;align-items:center;gap:9px;min-width:170px}.crm-nm b{display:block;font-size:13.5px;font-weight:600}.crm-nm small,.crm-sub{display:block;font-size:12px;color:#64748b}.cw-fa.sm{width:32px;height:32px;font-size:12px}
+.crm-in{border:1px solid color-mix(in srgb,var(--c) 35%,#fff);background:color-mix(in srgb,var(--c) 9%,#fff);color:var(--c);border-radius:7px;padding:3px 6px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;max-width:150px}.crm-in.plain{--c:#334155;font-weight:500}
+.crm-src{font-size:12px;background:#f1f5f9;border-radius:6px;padding:2px 7px}.crm-note{max-width:240px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.crm-over{color:#dc2626;font-weight:600}
+.crm-pill{display:inline-block;font-size:12px;font-weight:600;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border-radius:9px;padding:1px 9px}
+.crm-pg{display:flex;justify-content:center;align-items:center;gap:10px;padding:12px;font-size:13px;color:#64748b}
+.crm-dov{position:fixed;inset:0;z-index:50;background:rgba(15,23,42,.25)}.crm-dr{position:fixed;z-index:51;top:0;right:0;bottom:0;width:min(520px,100%);background:#fff;box-shadow:-10px 0 40px rgba(15,23,42,.18);display:flex;flex-direction:column}
+.crm-dh{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #e2e8f0}.crm-dh>div{flex:1;min-width:0}.crm-dh b{display:block;font-size:16px}.crm-dh small{font-size:12.5px;color:#64748b}.crm-dh a{color:#0068ff}.crm-dh .btn{display:inline-flex;align-items:center;gap:5px}.crm-dh .btn svg{width:14px;height:14px}
+.crm-db{padding:14px 16px 30px;overflow-y:auto}.crm-db .cw-btn{display:inline-flex;align-items:center;gap:6px}.crm-db .cw-btn svg{width:15px;height:15px}
+.crm-g2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.crm-qn{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}.crm-qn button{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:2px 9px;font-size:12px;font-family:inherit;cursor:pointer}
+.crm-sec{margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f0}.crm-sh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.crm-sh b{font-size:13.5px}
+.crm-dl{border:1px solid #e2e8f0;border-radius:8px;padding:7px 10px;margin-bottom:6px;cursor:pointer}.crm-dl:hover{border-color:#93c5fd}.crm-dl b{display:block;font-size:13px}.crm-dl span{font-size:12px;color:#64748b}
+.crm-lg{display:flex;gap:9px;padding:6px 0}.crm-lg i{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}.crm-lg small{font-size:11.5px;color:#64748b}.crm-lg div div{font-size:13px}
+.crm-kb{display:grid;grid-template-columns:repeat(6,minmax(210px,1fr));gap:10px;overflow-x:auto;padding-bottom:10px}
+.crm-kc{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px;min-height:340px}.crm-kc.ov{border-color:#3b82f6;background:#eff6ff}.crm-kh{display:flex;justify-content:space-between;align-items:center}.crm-kh b{font-size:13px}.crm-kh span{font-size:11px;background:#e2e8f0;border-radius:9px;padding:0 7px}.crm-ks{font-size:12px;color:#64748b;margin:2px 0 8px}
+.crm-kd{background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:9px 10px;margin-bottom:8px;cursor:grab;box-shadow:0 1px 2px rgba(15,23,42,.04)}.crm-kd:hover{border-color:#93c5fd}.crm-kd b{display:block;font-size:13px}.crm-kd small{display:block;font-size:12px;color:#64748b;margin-top:2px}.crm-kv{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;color:#16a34a;margin-top:6px}.crm-kv span{color:#64748b;font-weight:400}
+.cw-sts.five{grid-template-columns:repeat(5,minmax(0,1fr))}.cw-st small{display:block;font-size:12.5px;color:#475569;margin-bottom:4px}
+.crm-br{display:grid;grid-template-columns:130px 1fr 40px;gap:8px;align-items:center;font-size:13px;margin-bottom:7px}.crm-br div{background:#f1f5f9;border-radius:5px;height:12px;overflow:hidden}.crm-br i{display:block;height:100%;border-radius:5px}.crm-br b{text-align:right}
+.crm-cf{border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:14px}.crm-cf h3{font-size:14.5px;margin:0 0 4px}.crm-cf .cw-btn{display:inline-flex;align-items:center;gap:6px;margin-top:6px}.crm-cf .cw-btn svg{width:15px;height:15px}
+.crm-bx{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-top:10px;background:#f8fafc}.crm-stf{display:flex;flex-wrap:wrap;gap:6px 14px}.crm-stf label{display:flex;gap:6px;font-size:13px;cursor:pointer}.crm-ba{display:flex;gap:6px;margin-top:10px}
+.crm-colr{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}.crm-colr input,.crm-colr select{border:1px solid #e2e8f0;border-radius:8px;padding:6px 9px;font-size:13px;font-family:inherit}.crm-colr input:first-child{width:200px}
+@media(max-width:920px){.crm{padding:12px}.crm-g2{grid-template-columns:1fr}.cw-sts.five{grid-template-columns:repeat(2,minmax(0,1fr))}.crm-kb{grid-template-columns:repeat(6,240px)}}
+/* 11/11/2026 rà giao diện: nút có biểu tượng, cột con Tự động hoá, hàng tab */
+.zw .cw-btn,.ca-modal .cw-btn,.crm-dr .cw-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;line-height:1.2}
+.zw .cw-btn svg,.ca-modal .cw-btn svg,.crm-dr .cw-btn svg{width:16px;height:16px;flex-shrink:0}
+.zw .btn,.ca-modal .btn,.crm-dr .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap}
+.zw .btn svg,.ca-modal .btn svg,.crm-dr .btn svg{width:14px;height:14px;flex-shrink:0}
+.cw-emp .cw-btn{padding:9px 16px}
+.cw-asub{width:216px}.cw-as span{white-space:nowrap}
+.zw.cw .cw-tabs{gap:13px}.zw.cw .cw-tabs button{font-size:13px}
+.ca-foot{max-width:900px}
+.ca-tbl td:not(:nth-child(2)){white-space:nowrap}.ca-tbl td:nth-child(2){min-width:220px}
+@media(max-width:1440px){.zw.cw .cw-tabs{gap:10px}.zw.cw .cw-tabs button{font-size:12.5px}.cw-asub{width:200px}}
+.cw-lbs{display:none}
+@media(max-width:920px){
+ .cw-nav .cw-lb{display:none!important}.cw-nav .cw-lbs{display:block;font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+ .cw-nav .cw-it{min-width:0;padding:0 2px}.cw-nav .cw-cv,.cw-nav .cw-subs{display:none!important}
+ .zw.cw .ib:not(.open) .ib-chat,.zw.cw .ib:not(.open) .cw-noside{display:none}
+ .ca-kwh{flex-wrap:wrap}.ca-kwh .ca-kwin{order:9;flex-basis:100%}
+ .cw-asub{padding:6px 8px;gap:2px}.cw-as{flex-shrink:0;padding:7px 10px}
+ .crm-top{flex-direction:column;align-items:stretch}.crm-acts{justify-content:flex-start}
+}
+.cw-qf{border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin-bottom:14px}.cw-qr{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f1f5f9}.cw-qr>b{min-width:60px;font-size:13px;color:#0068ff}.cw-qr>div{flex:1;min-width:0}.cw-qr span{display:block;font-size:13.5px;font-weight:500}.cw-qr small{display:block;font-size:12.5px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1280px){.zw.cw .ib,.zw.cw .ib.side{grid-template-columns:320px minmax(0,1fr)}.zw.cw .ib.side{grid-template-columns:320px minmax(0,1fr) 300px}.cw-sts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:920px){
+ .zw.cw{flex-direction:column-reverse}
+ .cw-nav,.cw-nav.mini{width:100%;height:58px;flex-direction:row;border-top:1px solid #e2e8f0;background:#fff;padding-bottom:env(safe-area-inset-bottom)}
+ .cw-top,.cw-foot,.cw-g,.cw-sep,.cw-it.hub{display:none!important}
+ .cw-scroll{flex:1;display:flex;padding:0;overflow:hidden}
+ .cw-it,.cw-nav.mini .cw-it{flex:1;flex-direction:column;justify-content:center;gap:2px;height:100%;padding:0;margin:0;font-size:10.5px;border:0;border-radius:0;background:none!important;box-shadow:none}
+ .cw-it .cw-lb,.cw-nav.mini .cw-lb{display:block;flex:none}.cw-it>svg{width:21px;height:21px}
+ .cw-bd,.cw-nav.mini .cw-bd{position:absolute;top:4px;left:calc(50% + 4px);min-width:15px;height:15px;line-height:15px;font-size:9.5px;padding:0 3px}
+ .cw-main{border-radius:0;margin:0;flex:1;min-height:0}.cw-home{padding:16px}
+ .zw.cw .ib,.zw.cw .ib.side{grid-template-columns:minmax(0,1fr);height:auto;min-height:0}
+ .cw-docs{grid-template-columns:minmax(0,1fr)}.cw-hm{gap:20px}}
 .za-st{font-size:11px;font-weight:700;border-radius:10px;padding:2px 8px;white-space:nowrap}.za-st.ok{background:#dcfce7;color:#166534}.za-st.no{background:#fee2e2;color:#b91c1c}.za-chip.bad{background:#fee2e2;color:#b91c1c}.za-chip.bad button{background:rgba(185,28,28,.12);color:#b91c1c}.btn.za-ex{color:#b91c1c;border-color:#fecaca}
 .ib-aip{border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;border-radius:14px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}.ib-aip.on{border-color:#bbf7d0;background:#f0fdf4;color:#166534}
 .zs-flow{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}.zs-flow>div{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid #e1e4ea;border-radius:8px;padding:10px 12px}.zs-flow b{width:24px;height:24px;border-radius:50%;background:#e5efff;color:#005ae0;display:grid;place-items:center;font-size:12px;flex-shrink:0}.zs-flow span{font-size:13px;font-weight:600;display:flex;flex-direction:column}.zs-flow small{font-weight:400;color:#7589a3;font-size:11.5px;margin-top:2px}
@@ -4708,7 +4898,7 @@ function ibDay(u){const d=new Date(u.replace(' ','T')+'Z');return d.toLocaleDate
 function ibProj(id){return (IB.projects||[]).find(p=>p.id===id)||(DB.projects||[]).find(p=>p.id===id)||{name:id,color:'#64748b'}}
 async function ibCounts(){try{const d=await apiGet('/api/inbox.php?action=counts');const n=d.unread||0;if(n!==IB.unread){IB.unread=n;renderNav()}}catch(e){}}
 async function ibLoad(keep){if(IB.busy)return;IB.busy=true;const f=IB.f;
- try{const q=new URLSearchParams({action:'threads',status:f.status,unread:f.unread?'1':'',mine:f.mine?'1':'',project:f.project,provider:f.provider,kind:f.kind||'',q:f.q});const d=await apiGet('/api/inbox.php?'+q);IB.threads=d.threads||[];IB.counts=d.counts||{};IB.sources=d.sources||[];IB.projects=d.projects||[];IB.appLive=d.meta_app_live!==false;IB.err='';IB.loaded=true;IB.unread=+(d.counts||{}).unread||0}
+ try{const q=new URLSearchParams({action:'threads',status:f.status,unread:f.unread?'1':'',mine:f.mine?'1':'',project:f.project,provider:f.provider,kind:f.kind||'',q:f.q,tag:f.tag||'',phone:f.phone||'',from:f.from||'',to:f.to||''});const d=await apiGet('/api/inbox.php?'+q);IB.threads=d.threads||[];IB.counts=d.counts||{};IB.sources=d.sources||[];IB.projects=d.projects||[];IB.tags=d.tags||[];IB.appLive=d.meta_app_live!==false;IB.err='';IB.loaded=true;IB.unread=+(d.counts||{}).unread||0}
  catch(e){IB.err=e.message;IB.loaded=true}
  finally{IB.busy=false;if(!keep)render();else renderNav()}}
 async function ibOpen(id){IB.cur=id;IB.thr=IB.threads.find(t=>t.id===id)||null;IB.msgs=[];render();
@@ -4717,7 +4907,7 @@ function ibBack(){IB.cur=null;IB.thr=null;IB.msgs=[];render()}
 function ibSet(k,v){IB.f[k]=v;ibLoad()}
 function ibBeep(){if(lsGet('ib.sound','1')!=='1')return;try{const a=new (window.AudioContext||window.webkitAudioContext)();const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(a.currentTime+.18)}catch(e){}}
 function ibTick(){if(S.page!=='inbox'){clearInterval(IB.timer);IB.timer=null;return}
- apiGet('/api/inbox.php?action=changes').then(d=>{const was=IB.changed;IB.changed=d.changed;if(d.unread!==IB.unread){IB.unread=d.unread;renderNav()}document.title=(d.unread&&lsGet('ib.title','1')==='1'?'('+d.unread+') ':'')+(CHAT_APP?'Chat':'Cửa sổ chat')+' · Marketing Hub';if(was===undefined||was===d.changed)return;if(d.unread>(IB._lastUnread||0))ibBeep();IB._lastUnread=d.unread;ibRefresh()}).catch(()=>{})}
+ apiGet('/api/inbox.php?action=changes').then(d=>{const was=IB.changed;IB.changed=d.changed;if(d.unread!==IB.unread){IB.unread=d.unread;renderNav()}document.title=(d.unread&&lsGet('ib.title','1')==='1'?'('+d.unread+') ':'')+(CHAT_APP?'Chat':'Cửa sổ chat')+' · Marketing Hub';if(was===undefined||was===d.changed)return;if(d.unread>(IB._lastUnread||0)){ibBeep();cwNotify(d.unread)}IB._lastUnread=d.unread;ibRefresh()}).catch(()=>{})}
 function ibRefresh(){ibLoad(true).then(()=>{const list=$('#ib-rows');if(list)list.innerHTML=ibRows();if(IB.cur){apiGet('/api/inbox.php?action=messages&id='+encodeURIComponent(IB.cur)).then(d=>{if((d.messages||[]).length!==IB.msgs.length){IB.msgs=d.messages;IB.info=d;const el=$('#ib-msgs');if(el){el.innerHTML=ibMsgs();el.scrollTop=el.scrollHeight}}}).catch(()=>{})}})}
 async function ibSend(){const ta=$('#ib-text');const text=(ta&&ta.value.trim())||'';if(!text||!IB.cur||IB.sending)return;IB.sending=true;const b=$('#ib-send');if(b)b.disabled=true;
  try{await apiPost('/api/inbox.php',{action:'send',id:IB.cur,text});ta.value='';IB.msgs.push({id:'tmp'+Date.now(),dir:'out',text,at:new Date().toISOString().slice(0,19).replace('T',' '),sender:'Tôi'});const el=$('#ib-msgs');if(el){el.innerHTML=ibMsgs();el.scrollTop=el.scrollHeight}const t=IB.threads.find(x=>x.id===IB.cur);if(t){t.last=text;t.last_dir='out';t.last_time=IB.msgs[IB.msgs.length-1].at}const list=$('#ib-rows');if(list)list.innerHTML=ibRows()}
@@ -4735,11 +4925,11 @@ function ibBadge(t){const x=ibIco(t.provider,t.kind);return `<span class="ib-bad
 function ibAva(t,cls){const col=['#2563eb','#7c3aed','#0d9488','#d97706','#dc2626','#0891b2'][(t.name||'').length%6];
  return `<div class="ib-ava ${cls||''}" style="background:${col}">${t.avatar?`<img src="${esc(t.avatar)}" alt="" onerror="this.remove()">`:esc(initials(t.name||'?')||'?')}${ibBadge(t)}</div>`}
 function ibChSet(v){const [p,k]=v.split(':');IB.f.provider=p||'';IB.f.kind=k||'';ibLoad()}
-function ibRows(){const rows=IB.threads;if(!rows.length)return `<div class="ib-empty"><div><div class="ib-empty-ic">${ic('send')}</div><b>Không có cuộc trò chuyện</b><div class="mini" style="margin-top:6px">${IB.f.status==='open'?'Hết tin cần xử lý 🎉':'Thử bộ lọc khác.'}</div></div></div>`;
+function ibRows(){const rows=IB.threads.filter(t=>!CW.noReply||t.last_dir==='in');if(!rows.length&&CHAT_APP)return `<div class="cw-none">${cwSvg('inbox')}<span>Không có hội thoại nào</span></div>`;if(!rows.length)return `<div class="ib-empty"><div><div class="ib-empty-ic">${ic('send')}</div><b>Không có cuộc trò chuyện</b><div class="mini" style="margin-top:6px">${IB.f.status==='open'?'Hết tin cần xử lý 🎉':'Thử bộ lọc khác.'}</div></div></div>`;
  return rows.map(t=>{const p=ibProj(t.project_id);const ch=t.kind==='comment'?'Bình luận':(IB_PROV[t.provider]||['?'])[0];
   return `<div class="ib-row ${t.unread?'un':''} ${IB.cur===t.id?'on':''}" onclick="ibOpen('${t.id}')">${ibAva(t)}<div class="ib-m"><div class="n"><span class="nm">${esc(t.name||'Khách')}</span><span class="t">${ibAgo(t.last_time)}</span></div>
    <div class="s">${t.last_dir==='out'?'<span class="you">Bạn:</span> ':''}${esc(t.last||'')}</div>
-   <div class="meta"><span class="pdot" style="background:${esc(p.color||'#64748b')}"></span>${esc(p.name)}<span class="sep">·</span>${ch}${t.needs_human?'<span class="flag">Cần người thật</span>':''}${t.assigned_to&&t.assigned_name?`<span class="sep">·</span>${esc(t.assigned_name)}`:''}</div></div>${t.unread?`<span class="ib-un">${t.unread}</span>`:''}</div>`}).join('')}
+   <div class="meta"><span class="pdot" style="background:${esc(p.color||'#64748b')}"></span>${esc(p.name)}<span class="sep">·</span>${ch}${t.needs_human?'<span class="flag">Cần người thật</span>':''}${t.assigned_to&&t.assigned_name?`<span class="sep">·</span>${esc(t.assigned_name)}`:''}</div>${CHAT_APP?cwTagRow(t.tags):''}</div>${t.unread?`<span class="ib-un">${t.unread}</span>`:''}</div>`}).join('')}
 function ibMsgs(){if(!IB.msgs.length)return `<div class="ib-empty"><div class="mini">Đang tải tin nhắn…</div></div>`;const t=IB.thr||{};let day='',prev='';return IB.msgs.map((m,i)=>{const d=ibDay(m.at);let h='';if(d!==day){day=d;h=`<div class="ib-day"><span>${esc(d)}</span></div>`;prev=''}const first=m.dir!==prev;prev=m.dir;const nx=IB.msgs[i+1];const last=!nx||nx.dir!==m.dir||ibDay(nx.at)!==d;
   const att=(m.attach||[]).map(a=>a.url?(a.type==='image'?`<img class="att" src="${esc(a.url)}" alt="" loading="lazy">`:`<a class="att" href="${esc(a.url)}" target="_blank" rel="noopener">📎 ${esc(a.name||a.type||'tệp')}</a>`):`<span class="mini">[${esc(a.name||a.type||'tệp')}]</span>`).join('');
   const txt=esc(m.text||'').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
@@ -4752,11 +4942,11 @@ function ibSide(t){const p=ibProj(t.project_id),info=IB.info||{},staff=DB.staff|
   <div class="ib-sec">${row('Trạng thái',t.status==='done'?'<span class="badge b-ok">Đã xong</span>':'<span class="badge b-warn">Cần trả lời</span>')}${row('Tin gần nhất',esc(fmtTs(t.last_time)))}${t.kind==='comment'&&t.permalink?row('Bài viết',`<a href="${esc(t.permalink)}" target="_blank" rel="noopener">Mở bài ↗</a>`):''}
    ${info.zu_ai?row('AI Chat trả lời người này',`<label class="sw"><input type="checkbox" ${info.zu_ai.allowed?'checked':''} onchange="zuAiPerson('${esc(t.customer_id)}','${esc((t.name||'').replace(/'/g,''))}',this.checked)"><span></span></label>`)+(info.zu_ai.enabled?'':`<div class="mini">AI Chat đang tắt — <a href="#" onclick="event.preventDefault();zsOpen('ai_who')">bật ở Cài đặt</a></div>`):''}
    ${info.ai_project_mode==='auto'&&!info.zu_ai?row('AI tự trả lời',`<label class="sw"><input type="checkbox" ${aiOn?'checked':''} onchange="ibAct('ai_mode',{mode:this.checked?'on':'off'})"><span></span></label>`):''}</div>
-  <div class="ib-sec"><label class="lb">Người phụ trách</label>${staff.length?`<select onchange="ibAct('assign',{user_id:this.value})"><option value="">— Chưa giao —</option>${staff.map(u=>`<option value="${u.id}" ${t.assigned_to===u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select>`:'<div class="mini">Chưa có nhân sự</div>'}</div>
+  ${CHAT_APP?cwCrmSec(t)+cwTagSec(t)+cwCareSec():''}<div class="ib-sec"><label class="lb">Người phụ trách</label>${staff.length?`<select onchange="ibAct('assign',{user_id:this.value})"><option value="">— Chưa giao —</option>${staff.map(u=>`<option value="${u.id}" ${t.assigned_to===u.id?'selected':''}>${esc(u.name)}</option>`).join('')}</select>`:'<div class="mini">Chưa có nhân sự</div>'}</div>
   <div class="ib-sec"><label class="lb">Đầu mối (lead)</label>${t.lead_id?`<div class="mini">Đã tạo đầu mối <b>${esc(t.lead_id)}</b> · <a href="#" onclick="event.preventDefault();go('leadsmenu','list')">xem</a></div>`:`<button class="btn sm" style="width:100%" onclick="ibAct('to_lead')">${ic('route')} Tạo đầu mối từ hội thoại</button>`}</div>
   <div class="ib-sec"><label class="lb">Ghi chú nội bộ <span class="mini">(khách không thấy)</span></label><textarea id="ib-note" rows="4" placeholder="VD: khách hỏi báo giá, hẹn gọi lại thứ Hai">${esc(t.note||'')}</textarea><button class="btn sm" style="margin-top:6px" onclick="ibAct('note',{note:$('#ib-note').value})">Lưu ghi chú</button></div>
   </div></aside>`}
-function ibChat(){const t=IB.thr;if(!t)return `<div class="ib-chat"><div class="ib-empty"><div><div class="ib-empty-ic">${ic('send')}</div><b>Chọn một cuộc trò chuyện</b><div class="mini" style="margin-top:6px;max-width:300px">Tin nhắn Messenger, bình luận Fanpage, Zalo cá nhân và Zalo OA của mọi dự án — trả lời ngay tại đây.</div></div></div></div>`;
+function ibChat(){const t=IB.thr;if(!t&&CHAT_APP)return cwNoChat();if(!t)return `<div class="ib-chat"><div class="ib-empty"><div><div class="ib-empty-ic">${ic('send')}</div><b>Chọn một cuộc trò chuyện</b><div class="mini" style="margin-top:6px;max-width:300px">Tin nhắn Messenger, bình luận Fanpage, Zalo cá nhân và Zalo OA của mọi dự án — trả lời ngay tại đây.</div></div></div></div>`;
  const p=ibProj(t.project_id),info=IB.info||{},cw=info.can_write!==false,left=info.hours_left,bl=t.kind==='comment',zu=t.provider==='zalo_user';
  const ch=bl?'Bình luận công khai':(IB_PROV[t.provider]||['?'])[0];
  const back=`<button class="ibtn ib-back" onclick="ibBack()" title="Quay lại"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>`;
@@ -4769,31 +4959,463 @@ function ibChat(){const t=IB.thr;if(!t)return `<div class="ib-chat"><div class="
   ${cw?`<div class="ib-comp"><div class="ib-box"><textarea id="ib-text" rows="1" placeholder="${bl?'Trả lời công khai dưới bình luận…':'Nhập tin nhắn cho '+esc((t.name||'khách').split(' ').pop())+'…'}" onkeydown="if(event.key==='Enter'&&!event.isComposing&&(lsGet('ib.enter','1')==='1'?!event.shiftKey:(event.ctrlKey||event.metaKey))){event.preventDefault();ibSend()}" oninput="this.style.height='auto';this.style.height=Math.min(160,this.scrollHeight)+'px'"></textarea>
    <div class="ib-tools"><button class="ibtn" title="Chèn biểu cảm" onclick="ibEmoji('😊')">😊</button><button class="ibtn" title="Cảm ơn" onclick="ibEmoji('🙏')">🙏</button><select onfocus="if(!IB.tpls)ibLoadTpls(this)" onchange="ibTpl(this)" title="Mẫu trả lời nhanh"><option value="">Mẫu trả lời…</option>${(IB.tpls||[]).map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join('')}</select>${info.ai_ok?`<button class="ib-ai" id="ib-ai" onclick="ibAiSuggest()" title="AI soạn câu trả lời, bạn sửa rồi gửi">🤖 Gợi ý</button>`:''}
     <span class="ib-hint">${hint}</span><button class="ib-send" id="ib-send" onclick="ibSend()" title="Gửi (Enter · Shift+Enter xuống dòng)">${ic('send')}<span>Gửi</span></button></div></div></div>`:`<div class="ib-note sys">Bạn chỉ có quyền xem ở dự án này.</div>`}</div>${IB.side?ibSide(t):''}`}
-/* ================= ỨNG DỤNG CHAT RIÊNG (tab ?chat=1) — giao diện kiểu Zalo Web ================= */
-function zwNav(){const v=tabOf('inbox','chat'),u=CURRENT_USER||{};
- const it=(view,title,svg,badge)=>`<button class="zw-it ${view==='chat'&&!ZS.open||view==='ai'&&ZS.open&&ZS.sec.startsWith('ai_')?'on':''}" title="${title}" onclick="${view==='ai'?"zsOpen('ai_who')":"ZS.open=false;render()"}">${svg}${badge?`<span class="zw-bd">${badge>99?'99+':badge}</span>`:''}</button>`;
- return `<nav class="zw-nav"><div class="zw-me" title="${esc(u.name||'')}">${ZU.d&&ZU.d.bridge&&ZU.d.bridge.avatar?`<img src="${esc(ZU.d.bridge.avatar)}" alt="">`:esc(initials(u.name||'?')||'?')}</div>
-  ${it('chat','Tin nhắn','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>',IB.unread)}
-  ${it('ai','AI tự trả lời','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M8.5 12.5h.01M15.5 12.5h.01M9 16h6"/></svg>')}
-  <div class="zw-sp"></div>
-  <button class="zw-it" title="Kết nối Zalo / Fanpage" onclick="window.open(location.pathname+'#settings/integ','_blank')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></button>
-  <button class="zw-it ${ZS.open&&!ZS.sec.startsWith('ai_')?'on':''}" title="Cài đặt" onclick="zsOpen()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
-  <button class="zw-it" title="Về Marketing Hub" onclick="window.open(location.pathname+'#overview','mkt_main')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button></nav>`}
+/* ================= ỨNG DỤNG CHAT RIÊNG (tab ?chat=1) — menu trái có chữ · Trang chủ · Hội thoại 3 cột · Danh bạ ================= */
+const CW={mini:lsGet('cw.mini','0')==='1',pop:false,noReply:false,q:null,friends:null,fBusy:false,fErr:'',fq:'',tplBusy:false,inited:false,tagPop:false,slash:null,tplEdit:null};
+const CW_IC={grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+ panel:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/>',
+ home:'<path d="M3 11l9-7.5L21 11"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5.5h4V20"/>',
+ chat:'<path d="M20 11a7 7 0 0 1-10.2 6.2L5 18.5l1.2-4.4A7 7 0 1 1 20 11z"/>',
+ book:'<rect x="5" y="3" width="15" height="18" rx="2"/><path d="M3 8h3M3 12h3M3 16h3"/><circle cx="12.5" cy="10" r="2.3"/><path d="M8.8 16.5a3.8 3.8 0 0 1 7.4 0"/>',
+ user:'<circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/>',
+ bolt:'<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>',
+ spark:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
+ chart:'<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+ link:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+ out:'<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ filter:'<path d="M3 6h18M7 12h10M10.5 18h3"/>',
+ bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/>',
+ check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ inbox:'<path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5.5 5h13L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5z"/>',
+ chev:'<path d="m9 6 6 6-6 6"/>',
+ tag:'<path d="M20.5 13.5l-7 7a2 2 0 0 1-2.8 0L3 12.8V4a1 1 0 0 1 1-1h8.8l7.7 7.7a2 2 0 0 1 0 2.8z"/><circle cx="8" cy="8" r="1.4"/>',
+ key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M14.5 8.5l2 2"/>',
+ cal:'<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>',
+ branch:'<circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="9" r="2.2"/><path d="M6 7.2v9.6M18 11.2c0 3-3 4-7 4.5l-3 .5"/>',
+ save:'<path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/>',
+ edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+ trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
+ refresh:'<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>'};
+function cwSvg(k){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${CW_IC[k]||''}</svg>`}
+function cwView(){const v=S.tab.inbox;return /^(home|contacts|chat|auto_kw|auto_seq|auto_rule|crm|crm_kanban|crm_tasks|crm_report|crm_config)$/.test(v||'')?v:(location.hash.slice(1)?'chat':'home')}
+function cwGo(v){ZS.open=false;CW.pop=false;S.tab.inbox=v;history.replaceState(null,'',location.pathname+location.search+'#inbox/'+v);render()}
+function cwHub(h){window.open(location.pathname+'#'+h,'mkt_main')}
+function cwMini(){CW.mini=!CW.mini;lsSet('cw.mini',CW.mini?'1':'0');render()}
+function cwF(status,unread,mine,tag){IB.f.status=status;IB.f.unread=!!unread;IB.f.mine=!!mine;IB.f.tag=tag||'';ibLoad()}
+function cwCh(p){cwGo('chat');ibChSet(p==='facebook_page'?'facebook_page:message':p+':')}
+function cwSrcOn(x){return x.status==='connected'&&!(x.sync&&x.sync.ok===false)}
+function cwNotify(n){if(!CHAT_APP||!document.hidden||!('Notification' in window)||Notification.permission!=='granted')return;try{new Notification('Tin nhắn mới',{body:n+' cuộc trò chuyện chưa đọc',tag:'mkt-chat'})}catch(e){}}
+function cwNtfOn(){if(!('Notification' in window))return;Notification.requestPermission().then(render)}
+function zwNav(){const v=cwView(),u=CURRENT_USER||{},src=IB.sources||[],ai=ZS.open&&ZS.sec.startsWith('ai_'),set=ZS.open&&!ai;
+ const SHORT={'Hội thoại':'Chat','Khách hàng (CRM)':'CRM','Tự động hoá':'Tự động','Trợ lý AI':'AI'};
+ const row=(on,label,icon,js,extra,cls)=>`<button class="cw-it ${on?'on':''} ${cls||''}" title="${label}" onclick="${js}">${cwSvg(icon)}<span class="cw-lb">${label}</span><span class="cw-lbs">${SHORT[label]||label}</span>${extra||''}</button>`;
+ const page=(id,label,icon,extra)=>row(!ZS.open&&v===id,label,icon,`cwGo('${id}')`,extra);
+ const hub=(label,icon,h)=>row(false,label,icon,`cwHub('${h}')`,`<span class="cw-out">${cwSvg('out')}</span>`,'hub');
+ const un=IB.unread?`<span class="cw-bd">${IB.unread>99?'99+':IB.unread}</span>`:'';
+ const ava=ZU.d&&ZU.d.bridge&&ZU.d.bridge.avatar?`<img src="${esc(ZU.d.bridge.avatar)}" alt="">`:esc(initials(u.name||'?')||'?');
+ return `<nav class="cw-nav ${CW.mini?'mini':''}"><div class="cw-top"><span class="cw-ic">${cwSvg('grid')}</span><div class="cw-tt"><b>Tất cả kênh</b><small>${src.length} kênh · xem gộp</small></div><button class="cw-tog" title="Thu gọn / mở rộng menu" onclick="cwMini()">${cwSvg('panel')}</button></div>
+  <div class="cw-scroll"><div class="cw-g">Cơ bản</div>${page('home','Trang chủ','home')}${page('chat','Hội thoại','chat',un)}${page('contacts','Danh bạ','book')}${row(v.startsWith('crm')&&!ZS.open,'Khách hàng (CRM)','user',"cwGo('crm')")}${row(v.startsWith('auto_')&&!ZS.open,'Tự động hoá','bolt',"CA.edit=null;cwGo(cwView().startsWith('auto_')?cwView():'auto_kw')",`<span class="cw-cv ${v.startsWith('auto_')?'open':''}">${cwSvg('chev')}</span>`)}${v.startsWith('auto_')&&!CW.mini?`<div class="cw-subs">${[['auto_kw','Từ khoá'],['auto_seq','Kịch bản chăm sóc'],['auto_rule','Quy luật']].map(([id,l])=>`<button class="${v===id&&!ZS.open?'on':''}" onclick="CA.edit=null;cwGo('${id}')">${l}</button>`).join('')}</div>`:''}
+  <div class="cw-sep"></div><div class="cw-g">Nâng cao</div>${row(ai,'Trợ lý AI','spark',"zsOpen('ai_who')")}${hub('Báo cáo','chart','reports')}${row(set,'Cài đặt','gear',"zsOpen(ZS.sec.startsWith('ai_')?'noti':ZS.sec)")}${hub('Kết nối kênh','link','settings/integ')}${hub('Về Marketing Hub','grid','overview')}</div>
+  <div class="cw-foot" title="${esc(u.name||'')}"><span class="cw-me">${ava}<i></i></span><div class="cw-tt"><b>${esc(u.name||'')}</b><small>${esc(u.title||u.email||'')}</small></div></div></nav>`}
+function cwPop(){if(!CW.pop)return '';const f=IB.f,prs=IB.projects||[],bad=(IB.sources||[]).filter(x=>x.sync&&x.sync.ok===false);
+ const st=(on,l,js,k)=>`<button class="${on?'on':''}" onclick="${js}">${cwSvg(k)}${l}</button>`;
+ const sw=(l,d,on,js)=>`<label class="cw-sw"><span><b>${l}</b><small>${d}</small></span><span class="sw"><input type="checkbox" ${on?'checked':''} onchange="${js}"><span></span></span></label>`;
+ return `<div class="cw-ov" onclick="CW.pop=false;render()"></div><div class="cw-pop"><div class="cw-ph"><b>Lọc hội thoại</b><button onclick="CW.pop=false;render()" title="Đóng">${ic('x')}</button></div>
+  <div class="cw-pb"><div class="cw-pl">Trạng thái</div><div class="cw-pg">${st(f.status==='all'&&!f.unread,'Tất cả',"cwF('all',0,IB.f.mine,IB.f.tag)",'chat')}${st(f.unread,'Chưa đọc',"cwF(IB.f.status,!IB.f.unread,IB.f.mine,IB.f.tag)",'mail')}${st(f.status==='open'&&!f.unread,'Cần trả lời',"cwF('open',0,IB.f.mine,IB.f.tag)",'clock')}${st(f.status==='done','Đã xong',"cwF('done',0,IB.f.mine,IB.f.tag)",'check')}</div>
+  <div class="cw-pl">Số điện thoại</div><div class="cw-pg">${st(f.phone==='yes','Có SĐT',"IB.f.phone=IB.f.phone==='yes'?'':'yes';ibLoad()",'user')}${st(f.phone==='no','Không có SĐT',"IB.f.phone=IB.f.phone==='no'?'':'no';ibLoad()",'user')}</div><div class="cw-pl">Lọc nâng cao</div>${sw('Chưa trả lời','Tin cuối cùng là của khách',CW.noReply,'CW.noReply=this.checked;render()')}${sw('Của tôi','Hội thoại được giao cho tôi',f.mine,'IB.f.mine=this.checked;ibLoad()')}
+  <div class="cw-pl">Khoảng thời gian (tin gần nhất)</div><div class="cw-pd"><input type="date" value="${esc(f.from||'')}" onchange="IB.f.from=this.value;ibLoad()"><span>–</span><input type="date" value="${esc(f.to||'')}" onchange="IB.f.to=this.value;ibLoad()"></div>
+  ${prs.length>1?`<div class="cw-pl">Dự án</div><select class="cw-sel" onchange="ibSet('project',this.value)"><option value="">Mọi dự án</option>${prs.map(p=>`<option value="${p.id}" ${f.project===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`:''}</div>
+  <div class="cw-pf"><button onclick="cwReadAll()">${cwSvg('check')}Đánh dấu đã đọc tất cả</button><button onclick="ibSync()">${cwSvg('refresh')}Kéo tin Facebook / Zalo OA${bad.length?` <em>${bad.length} kênh lỗi</em>`:''}</button><div class="cw-live"><i></i>Tự cập nhật: đang bật</div></div></div>`}
+function cwNoChat(){const wide=window.innerWidth>1100;return `<div class="ib-chat cw-nosel"><div class="cw-wel">${cwSvg('chat')}<h3>Chào mừng đến với Marketing Hub</h3><p>Chọn một hội thoại ở cột bên trái để bắt đầu tư vấn khách hàng</p></div></div>${wide?`<aside class="ib-side cw-noside"><div class="cw-wel sm">${cwSvg('user')}<b>Chưa chọn khách hàng</b><p>Chọn một hội thoại để xem thông tin</p></div></aside>`:''}`}
+function cwChat(){const c=IB.counts||{},f=IB.f,src=IB.sources||[],sideOn=IB.cur?IB.side:window.innerWidth>1100;
+ const chv=(f.provider||'')+':'+(f.kind||'');const chOn=v=>v===''?!f.provider:v===chv||(v.endsWith(':')&&v===f.provider+':'&&!f.kind);
+ const list=IB_CH.filter(([v])=>!v||chOn(v)||src.some(x=>x.provider===v.split(':')[0]));
+ const cur=list.find(([v])=>chOn(v))||IB_CH[0];
+ const bub=([v,l])=>{const x=v?ibIco(v.split(':')[0],v.split(':')[1]):null;return `<button class="cw-bub ${chOn(v)?'on':''}" title="${l}" onclick="ibChSet('${v}')"><span class="cw-bc" ${x?`style="background:${x.bg}"`:''}>${x?x.svg:cwSvg('grid')}</span><small>${l}</small></button>`};
+ const tab=(on,label,js,n)=>`<button class="${on?'on':''}" onclick="${js}">${label}${n?` <span class="n">${n}</span>`:''}</button>`;
+ return `<div class="ib ${IB.cur?'open':''} ${sideOn?'side':''}"><div class="ib-list">
+  <div class="cw-chs">${list.map(bub).join('')}<button class="cw-bub add" title="Thêm kênh" onclick="cwHub('settings/integ')"><span class="cw-bc">${cwSvg('plus')}</span></button></div>
+  <div class="cw-ctx"><span class="cw-mi">${cwSvg('grid')}</span><b>${cur[0]?esc(cur[1]):'Tất cả kênh'}</b><i title="Tự cập nhật: đang bật"></i></div>
+  <div class="cw-sr"><div class="ib-search">${ic('search')}<input placeholder="Tìm tên khách, nội dung..." value="${esc(CW.q===null?f.q:CW.q)}" oninput="CW.q=this.value" onkeydown="if(event.key==='Enter')ibSet('q',this.value.trim())"></div><button class="cw-fb ${CW.pop||CW.noReply||f.mine||f.project||f.phone||f.from||f.to||f.status==='done'?'on':''}" title="Lọc hội thoại" onclick="CW.pop=!CW.pop;render()">${cwSvg('filter')}</button></div>
+  <div class="cw-tabr"><div class="cw-tabs">${tab(f.status==='all'&&!f.unread&&!f.mine&&!f.tag,'Tất cả',"cwF('all',0,0)")}${tab(f.unread&&!f.mine&&!f.tag,'Chưa đọc',"cwF('all',1,0)",c.unread)}${tab(f.tag==='tag_closed','Đã chốt đơn',"cwF('all',0,0,'tag_closed')")}${tab(f.status==='open'&&!f.unread&&!f.mine&&!f.tag,'Cần trả lời',"cwF('open',0,0)",c.open)}</div><button class="cw-tagb ${f.tag&&f.tag!=='tag_closed'||CW.tagPop?'on':''}" title="Lọc theo thẻ khách hàng" onclick="CW.tagPop=!CW.tagPop;render()">${cwSvg('tag')}</button></div>
+  ${IB.appLive===false&&!f.provider.startsWith('zalo')?`<div class="zw-warn" title="Theo quy định Meta, tin gửi từ Hub khi app ở chế độ phát triển chỉ quản trị app thấy. Zalo cá nhân không bị ảnh hưởng.">⚠ App Facebook chưa Live — khách FB chưa thấy tin trả lời từ Hub</div>`:''}
+  <div class="ib-rows" id="ib-rows">${ibRows()}</div>${cwPop()}${cwTagPop()}</div>${ibChat()}</div>`}
+function cwHome(){const c=IB.counts||{},src=IB.sources||[],on=src.filter(cwSrcOn),h=lsGet('cw.ntfhide','0')==='1';
+ if(!IB.tpls&&!CW.tplBusy){CW.tplBusy=true;apiGet('/api/inbox.php?action=templates').then(d=>{IB.tpls=d.templates||[]}).catch(()=>{IB.tpls=[]}).finally(()=>{CW.tplBusy=false;if(cwView()==='home')render()})}
+ const ask='Notification' in window&&Notification.permission==='default'&&!h;
+ const stat=(k,n,l,js)=>`<div class="cw-st ${js?'act':''}" ${js?`onclick="${js}"`:''}><span class="cw-ic">${cwSvg(k)}</span><div><b>${n}</b><small>${l}</small></div></div>`;
+ const doc=(k,t,d,js)=>`<div class="cw-doc" onclick="${js}"><span class="cw-ic lg">${cwSvg(k)}</span><div><b>${t}</b><small>${d}</small></div><span class="cw-chev">${cwSvg('chev')}</span></div>`;
+ const card=x=>{const i=ibIco(x.provider,'message'),ok=cwSrcOn(x);return `<div class="cw-ch" onclick="cwCh('${x.provider}')"><span class="cw-bc" style="background:${i.bg}">${i.svg}</span><div><b>${esc(x.label||'')}</b><small><i class="${ok?'ok':'bad'}"></i>${esc((IB_PROV[x.provider]||['?'])[0])} · ${ok?'Đang hoạt động':'Cần kiểm tra'}</small></div></div>`};
+ return `<div class="cw-home">${ask?`<div class="cw-ban"><span class="cw-bi">${cwSvg('bell')}</span><div><b>Bật thông báo tin nhắn mới</b><small>Máy báo ngay khi khách nhắn, trong lúc tab Chat đang mở.</small></div><button class="cw-btn" onclick="cwNtfOn()">Bật</button><button class="cw-x" title="Ẩn" onclick="lsSet('cw.ntfhide','1');render()">${ic('x')}</button></div>`:''}
+  <div class="cw-hero"><span class="cw-hi">${cwSvg('grid')}</span><div><h1>Tất cả kênh</h1><div class="cw-hm"><div><small>Kênh kết nối</small><b>${on.length} / ${src.length} đang hoạt động</b></div><div><small>Tự cập nhật</small><b class="ok">Đang bật</b></div></div></div></div>
+  <div class="cw-sh"><b>Danh sách kênh <span>(${src.length})</span></b><button onclick="cwHub('settings/integ')">${cwSvg('gear')}Quản lý kênh</button></div>
+  <div class="cw-chg">${src.map(card).join('')}<div class="cw-ch add" onclick="cwHub('settings/integ')"><span class="cw-bc">${cwSvg('plus')}</span><div><b>Thêm kênh</b><small>Zalo cá nhân, Zalo OA, Facebook</small></div></div></div>
+  <div class="cw-hr"></div>
+  <div class="cw-sts">${stat('chat',num(c.total||0),'Hội thoại',"cwGo('chat');cwF('all',0,0)")}${stat('mail',num(c.unread||0),'Chưa đọc',"cwGo('chat');cwF('all',1,0)")}${stat('link',on.length+'/'+src.length,'Kênh đang kết nối',"cwHub('settings/integ')")}${stat('bolt',IB.tpls?num(IB.tpls.length):'…','Tin nhắn nhanh')}</div>
+  <h2>Bắt đầu</h2><p class="cw-sub">Các bước thiết lập để chăm sóc khách trên một màn hình</p>
+  <div class="cw-docs"><section><h4>${cwSvg('book')}Thiết lập</h4>${doc('link','Kết nối kênh','Đăng nhập Zalo cá nhân, thêm Zalo OA hoặc Fanpage',"cwHub('settings/integ')")}${doc('user','Tài khoản Zalo','Quét mã QR, xem trạng thái đăng nhập',"zsOpen('acc')")}${doc('bell','Thông báo','Âm báo và số tin chưa đọc trên tiêu đề tab',"zsOpen('noti')")}</section>
+  <section><h4>${cwSvg('spark')}Trợ lý AI</h4>${doc('spark','AI tự trả lời','Chọn người được AI trả lời và chủ đề được phép',"zsOpen('ai_who')")}${doc('chart','Kịch bản bán hàng','Cách AI hỏi nhu cầu, báo giá và xin số điện thoại',"zsOpen('ai_sales')")}</section></div></div>`}
+function cwFriendRows(){const q=zfold(CW.fq),th=IB.threads||[];const rows=(CW.friends||[]).filter(p=>!q||zfold(p.name).includes(q)).slice(0,300);
+ if(!rows.length)return `<div class="cw-none">${cwSvg('inbox')}<span>${CW.friends&&CW.friends.length?'Không thấy ai khớp':'Chưa có bạn bè nào'}</span></div>`;
+ return rows.map(p=>{const t=th.find(x=>x.provider==='zalo_user'&&String(x.customer_id)===String(p.uid));return `<div class="cw-fr"><span class="cw-fa">${p.avatar?`<img src="${esc(p.avatar)}" alt="" onerror="this.remove()">`:esc(initials(p.name||'?')||'?')}</span><b>${esc(p.name||p.uid)}</b>${t?`<button class="btn sm" onclick="cwGo('chat');ibOpen('${t.id}')">Mở hội thoại</button>`:''}</div>`}).join('')}
+async function cwFriends(){if(CW.fBusy)return;CW.fBusy=true;CW.fErr='';try{CW.friends=(await apiGet('/api/zalo_user.php?friends=1')).friends||[]}catch(e){CW.fErr=e.message;CW.friends=null}finally{CW.fBusy=false;if(cwView()==='contacts')render()}}
+function cwContacts(){const st=((ZU.d||{}).bridge||{}).state;const head=`<h1>Danh bạ</h1><p class="cw-sub">Bạn bè của tài khoản Zalo cá nhân đang kết nối</p>`;
+ if(!ZU.d)return `<div class="cw-home">${head}<div class="zw-load" style="min-height:240px">Đang tải…</div></div>`;
+ if(st!=='online')return `<div class="cw-home">${head}<div class="cw-emp"><span class="cw-hi">${cwSvg('book')}</span><b>Chưa có tài khoản Zalo cá nhân</b><p>Kết nối một tài khoản Zalo cá nhân để xem danh sách bạn bè.</p><button class="cw-btn" onclick="zsOpen('acc')">+ Kết nối Zalo</button></div></div>`;
+ if(CW.friends===null&&!CW.fBusy&&!CW.fErr)setTimeout(cwFriends,0);
+ if(CW.fErr)return `<div class="cw-home">${head}<div class="cw-emp"><b>Chưa tải được danh bạ</b><p>${esc(CW.fErr)}</p><button class="cw-btn" onclick="CW.fErr='';render()">Thử lại</button></div></div>`;
+ if(CW.friends===null)return `<div class="cw-home">${head}<div class="zw-load" style="min-height:240px">Đang tải danh bạ…</div></div>`;
+ return `<div class="cw-home">${head}<div class="cw-sr wide"><div class="ib-search">${ic('search')}<input placeholder="Tìm trong ${CW.friends.length} bạn bè..." value="${esc(CW.fq)}" oninput="CW.fq=this.value;$('#cw-fl').innerHTML=cwFriendRows()"></div></div><div id="cw-fl" class="cw-fl">${cwFriendRows()}</div></div>`}
+/* Thẻ khách hàng, lọc theo thẻ, tin nhắn nhanh (gõ / hoặc F1–F4) */
+function cwTagRow(ids){const m={};(IB.tags||[]).forEach(x=>m[x.id]=x);const h=(ids||[]).map(i=>m[i]).filter(Boolean).map(x=>`<span class="cw-chip" style="--c:${esc(x.color)}">${esc(x.name)}</span>`).join('');return h?`<div class="cw-chips">${h}</div>`:''}
+function cwTagSec(t){const cur=new Set(t.tags||[]);return `<div class="ib-sec"><label class="lb">Thẻ khách hàng</label><div class="cw-tags">${(IB.tags||[]).map(x=>`<button class="cw-tag ${cur.has(x.id)?'on':''}" style="--c:${esc(x.color)}" onclick="cwTagToggle('${x.id}')">${esc(x.name)}</button>`).join('')}</div></div>`}
+async function cwTagToggle(id){const t=IB.thr;if(!t)return;const had=(t.tags||[]).includes(id),next=had?t.tags.filter(x=>x!==id):[...(t.tags||[]),id];try{const d=await apiPost('/api/inbox.php',{action:'tags',id:t.id,tags:next});t.tags=d.tags;const r=IB.threads.find(x=>x.id===t.id);if(r)r.tags=d.tags;render()}catch(e){toast('Chưa gắn được thẻ',e.message)}}
+function cwTagPop(){if(!CW.tagPop)return '';return `<div class="cw-ov" onclick="CW.tagPop=false;render()"></div><div class="cw-pop cw-tagp"><div class="cw-pl">Lọc theo thẻ khách hàng</div><button class="${!IB.f.tag?'on':''}" onclick="CW.tagPop=false;cwF(IB.f.status,IB.f.unread,IB.f.mine,'')"><i style="background:#cbd5e1"></i>Tất cả thẻ</button>${(IB.tags||[]).map(x=>`<button class="${IB.f.tag===x.id?'on':''}" onclick="CW.tagPop=false;cwF('all',IB.f.unread,IB.f.mine,'${x.id}')"><i style="background:${esc(x.color)}"></i>${esc(x.name)}</button>`).join('')}</div>`}
+async function cwReadAll(){if(!confirm('Đánh dấu mọi hội thoại là đã đọc?'))return;try{await apiPost('/api/inbox.php',{action:'read_all'});IB.unread=0;CW.pop=false;toast('Đã đánh dấu đã đọc');await ibLoad()}catch(e){toast('Lỗi',e.message)}}
+async function cwTpls(){if(!IB.tpls){try{IB.tpls=(await apiGet('/api/inbox.php?action=templates')).templates||[]}catch(e){IB.tpls=[]}}return IB.tpls}
+function cwFill(body){const th=IB.thr||{};return body.replace(/\{ten\}/g,(th.name||'bạn').split(' ').pop()).replace(/\{sdt_hotline\}/g,((proj()||{}).settings||{}).hotline||'')}
+function cwSlashClose(){const el=$('#cw-slash');if(el)el.remove();CW.slash=null}
+function cwSlashPut(i){const s=CW.slash,ta=$('#ib-text');if(!s||!ta||!s.list[i])return;ta.value=cwFill(s.list[i].body);cwSlashClose();ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}))}
+function cwSlashDraw(){const s=CW.slash,comp=document.querySelector('.ib-comp');if(!s||!comp)return;let el=$('#cw-slash');if(!el){el=document.createElement('div');el.id='cw-slash';el.className='cw-slash';comp.appendChild(el)}
+ el.innerHTML=s.list.length?s.list.map((t,i)=>`<button class="${i===s.i?'on':''}" onmousedown="event.preventDefault();cwSlashPut(${i})"><b>${t.shortcut?'/'+esc(t.shortcut):'/'}</b><span><em>${esc(t.title)}</em>${esc(t.body)}</span></button>`).join(''):`<div class="cw-none">Chưa có tin nhắn nhanh khớp. Thêm ở Cài đặt → Tin nhắn nhanh.</div>`}
+async function cwSlash(ta){const m=ta.value.match(/^\/(\S*)$/);if(!m){cwSlashClose();return}const all=await cwTpls(),q=zfold(m[1]);if(!$('#ib-text')||!/^\/\S*$/.test($('#ib-text').value))return;
+ CW.slash={i:0,list:all.filter(t=>!q||zfold(t.shortcut||'').startsWith(q)||zfold(t.title).includes(q)).slice(0,8)};cwSlashDraw()}
+if(CHAT_APP){document.addEventListener('input',e=>{if(e.target&&e.target.id==='ib-text')cwSlash(e.target)});
+ document.addEventListener('keydown',async e=>{
+  if(CW.slash&&e.target&&e.target.id==='ib-text'){const s=CW.slash,n=s.list.length;
+   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();cwSlashClose();return}
+   if(n&&(e.key==='ArrowDown'||e.key==='ArrowUp')){e.preventDefault();e.stopPropagation();s.i=(s.i+(e.key==='ArrowDown'?1:n-1))%n;cwSlashDraw();return}
+   if(n&&(e.key==='Enter'||e.key==='Tab')&&!e.isComposing){e.preventDefault();e.stopPropagation();cwSlashPut(s.i);return}}
+  if(/^F[1-4]$/.test(e.key)&&S.page==='inbox'&&IB.cur&&$('#ib-text')){e.preventDefault();const k=e.key.toLowerCase(),t=(await cwTpls()).find(x=>(x.shortcut||'').toLowerCase()===k);if(!t){toast('Chưa có mẫu cho '+e.key,'Thêm ký tự tắt '+k+' ở Cài đặt → Tin nhắn nhanh');return}const ta=$('#ib-text');if(ta){ta.value=cwFill(t.body);ta.focus();ta.dispatchEvent(new Event('input',{bubbles:true}))}}
+ },true)}
+async function cwTagReq(p){try{const d=await apiPost('/api/inbox.php',p);IB.tags=d.tags||IB.tags;render()}catch(e){toast('Chưa lưu được thẻ',e.message);render()}}
+function cwTagAdd(){const n=$('#cw-tn'),c=$('#cw-tc');const name=(n&&n.value||'').trim();if(!name){toast('Nhập tên thẻ');return}cwTagReq({action:'tag_save',name,color:c.value})}
+function cwTagSave(id,name,color){const x=(IB.tags||[]).find(t=>t.id===id);if(!x)return;cwTagReq({action:'tag_save',id,name:name===null?x.name:name,color:color===null?x.color:color})}
+function cwTagDel(id,name){if(!confirm('Xoá thẻ "'+name+'"? Thẻ sẽ được gỡ khỏi mọi hội thoại.'))return;if(IB.f.tag===id)IB.f.tag='';cwTagReq({action:'tag_del',tag_id:id}).then(()=>ibLoad())}
+function cwTagsCfg(){const rows=(IB.tags||[]).map(x=>`<div class="cw-cf"><span class="cw-dot" style="background:${esc(x.color)}"></span>${+x.is_system?`<b>${esc(x.name)}</b><span class="cw-sys">Thẻ hệ thống</span>`:`<input value="${esc(x.name)}" maxlength="40" onchange="cwTagSave('${x.id}',this.value,null)">`}<input type="color" value="${esc(x.color)}" title="Đổi màu" onchange="cwTagSave('${x.id}',null,this.value)">${+x.is_system?'<span class="cw-del"></span>':`<button class="btn xs" onclick="cwTagDel('${x.id}','${esc(x.name.replace(/'/g,''))}')">Xoá</button>`}</div>`).join('');
+ return `<h3 class="zs-t">Thẻ khách hàng</h3><div class="mini" style="margin-bottom:12px">Dùng thẻ để phân loại và lọc khách. Gắn thẻ ở cột Thông tin khách. Tab "Đã chốt đơn" lấy theo thẻ cùng tên.</div>${rows}<div class="cw-cf add"><input id="cw-tn" maxlength="40" placeholder="Tên thẻ mới" onkeydown="if(event.key==='Enter')cwTagAdd()"><input id="cw-tc" type="color" value="#3b82f6" title="Màu thẻ"><button class="btn sm primary" onclick="cwTagAdd()">+ Thêm thẻ</button></div>`}
+function cwTplEdit(id){const t=id?(IB.tpls||[]).find(x=>x.id===id):{id:'',shortcut:'',title:'',body:''};CW.tplEdit=t?Object.assign({},t):null;render()}
+async function cwTplSave(){const p={action:'tpl_save',tpl_id:CW.tplEdit.id||'',shortcut:$('#cw-qs').value.trim().replace(/^\//,''),title:$('#cw-qt').value.trim(),body:$('#cw-qb').value.trim()};if(!p.title||!p.body){toast('Nhập tên và nội dung');return}try{const d=await apiPost('/api/inbox.php',p);IB.tpls=d.templates;CW.tplEdit=null;toast('Đã lưu tin nhắn nhanh');render()}catch(e){toast('Chưa lưu được',e.message)}}
+async function cwTplDel(id){if(!confirm('Xoá tin nhắn nhanh này?'))return;try{const d=await apiPost('/api/inbox.php',{action:'tpl_del',tpl_id:id});IB.tpls=d.templates;render()}catch(e){toast('Lỗi',e.message)}}
+function cwTplCfg(){if(!IB.tpls){cwTpls().then(()=>{if(ZS.open&&ZS.sec==='quick')render()});return '<div class="zw-load" style="min-height:240px">Đang tải…</div>'}const e=CW.tplEdit;
+ const form=e?`<div class="cw-qf"><div class="field"><label>Ký tự tắt <span class="mini">(f1–f4 dùng được với phím F1–F4)</span></label><input id="cw-qs" maxlength="20" value="${esc(e.shortcut||'')}" placeholder="VD: f1 hoặc baogia"></div><div class="field"><label>Tên mẫu</label><input id="cw-qt" maxlength="80" value="${esc(e.title||'')}" placeholder="VD: Chào khách hàng"></div><div class="field"><label>Nội dung <span class="mini">({ten} = tên khách, {sdt_hotline} = hotline dự án)</span></label><textarea id="cw-qb" rows="4">${esc(e.body||'')}</textarea></div><button class="btn primary" onclick="cwTplSave()">Lưu</button> <button class="btn" onclick="CW.tplEdit=null;render()">Huỷ</button></div>`:`<button class="btn sm primary" style="margin-bottom:12px" onclick="cwTplEdit('')">+ Thêm tin nhắn nhanh</button>`;
+ const rows=IB.tpls.map(t=>`<div class="cw-qr"><b>${t.shortcut?'/'+esc(t.shortcut):'—'}</b><div><span>${esc(t.title)}</span><small>${esc(t.body)}</small></div><button class="btn xs" onclick="cwTplEdit('${t.id}')">Sửa</button><button class="btn xs" onclick="cwTplDel('${t.id}')">Xoá</button></div>`).join('')||'<div class="mini" style="padding:10px 0">Chưa có tin nhắn nhanh nào.</div>';
+ return `<h3 class="zs-t">Tin nhắn nhanh</h3><div class="mini" style="margin-bottom:12px">Gõ / trong ô chat hoặc bấm F1–F4 để chèn nhanh.</div>${form}${rows}`}
+/* Tự động hoá: Từ khoá · Kịch bản chăm sóc · Quy luật */
+const CA={d:null,busy:false,err:'',q:'',edit:null,modal:null};
+async function caLoad(){if(CA.busy)return;CA.busy=true;try{CA.d=await apiGet('/api/chat_auto.php');CA.err=''}catch(e){CA.err=e.message}finally{CA.busy=false;render()}}
+async function caPost(p,msg){try{const d=await apiPost('/api/chat_auto.php',p);if(d&&d.keywords)CA.d=d;if(msg)toast(msg);return true}catch(e){toast('Chưa lưu được',e.message);return false}}
+function caSeqName(id){const s=(CA.d.sequences||[]).find(x=>x.id===id);return s?s.name:'(kịch bản đã xoá)'}
+function caChLabel(ch){if(!ch||!ch.length)return 'Tất cả các kênh';const m={};(IB.sources||[]).forEach(x=>m[x.id]=x.label);return ch.map(i=>m[i]||'kênh đã gỡ').join(', ')}
+function caChT(o,id){const c=o.channels;const i=c.indexOf(id);if(i>=0)c.splice(i,1);else c.push(id);render()}
+function caChBox(o,ref,what){const src=IB.sources||[],sel=o.channels,all=!sel.length;
+ return `<div class="ca-box"><div class="ca-bh"><b>${cwSvg('link')}Kênh áp dụng ${what}</b><button class="ca-all ${all?'on':''}" onclick="${ref}.channels=[];render()">${cwSvg('check')}Áp dụng tất cả các kênh</button></div>
+  ${src.length?`<div class="ca-chl">${src.map(x=>{const i=ibIco(x.provider,'message');return `<label><input type="checkbox" ${sel.includes(x.id)?'checked':''} onchange="caChT(${ref},'${x.id}')"><span class="ca-pi" style="background:${i.bg}">${i.svg}</span>${esc(x.label)}</label>`}).join('')}</div>`:'<div class="ca-note">Chưa có kênh kết nối nào. Mặc định sẽ áp dụng cho tất cả các kênh khi kết nối.</div>'}
+  <div class="ca-note ok">${cwSvg('check')}Đang chọn: <b>${all?'Tất cả các kênh':sel.length+' kênh'}</b>.${all?' Tick các kênh bên trên để giới hạn riêng.':''}</div></div>`}
+function caSeqOpts(cur,none){return `<option value="">${none||'-- Không gán kịch bản --'}</option>${(CA.d.sequences||[]).map(s=>`<option value="${s.id}" ${cur===s.id?'selected':''}>${esc(s.name)}${s.enabled?'':' (đang tắt)'}</option>`).join('')}`}
+async function caToggle(kind,id,on){await caPost({action:'toggle',kind,id,enabled:on?1:0},on?'Đã bật':'Đã tắt');render()}
+async function caDel(kind,id,label){if(!confirm('Xoá '+label+'?'+(kind==='seq'?' Khách đang ở trong kịch bản sẽ dừng nhận tin.':'')))return;if(await caPost({action:'del',kind,id},'Đã xoá'))render()}
+function cwAuto(v){
+ if(!CA.d){if(!CA.busy&&!CA.err)setTimeout(caLoad,0);return CA.err?`<div class="cw-home"><div class="cw-emp"><b>Chưa tải được cấu hình tự động hoá</b><p>${esc(CA.err)}</p><button class="cw-btn" onclick="CA.err='';render()">Thử lại</button></div></div>`:'<div class="zw-load" style="min-height:300px">Đang tải…</div>'}
+ const d=CA.d,sub=(id,l,k,n)=>`<button class="cw-as ${v===id?'on':''}" onclick="CA.edit=null;cwGo('${id}')">${cwSvg(k)}<span>${l}</span><b>${n}</b></button>`;
+ const body=v==='auto_kw'?caKw():v==='auto_seq'?caSeq():caRules();
+ return `<div class="cw-auto"><aside class="cw-asub"><h3>Tự động hoá</h3>${sub('auto_kw','Từ khoá','key',d.keywords.length)}${sub('auto_seq','Kịch bản chăm sóc','cal',d.sequences.length)}${sub('auto_rule','Quy luật','branch',d.rules.length)}</aside><section class="cw-acon">${body}</section></div>${caModal()}`}
+function caHead(t,s,btn){return `<div class="ca-head"><div><h1>${t}</h1><p class="cw-sub">${s}</p></div>${btn&&CA.d.can_edit?`<button class="cw-btn" onclick="${btn[1]}">${cwSvg('plus')}${btn[0]}</button>`:''}</div>`}
+function caSearch(ph){return `<div class="cw-sr wide"><div class="ib-search">${ic('search')}<input placeholder="${ph}" value="${esc(CA.q)}" oninput="CA.q=this.value;clearTimeout(CA._t);CA._t=setTimeout(()=>{render();const i=document.querySelector('.cw-acon .ib-search input');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},250)"></div></div>`}
+/* ---- Từ khoá ---- */
+function caKwEdit(id){const k=id?CA.d.keywords.find(x=>x.id===id):null;CA.edit=Object.assign({kind:'kw',id:'',enabled:1,keywords:[],match:'contains',reply:'',channels:[],sequence_id:''},k?JSON.parse(JSON.stringify(k)):{});CA.edit.kind='kw';render();setTimeout(()=>{const i=$('#ca-kwi');if(i)i.focus()},0)}
+function caKwAdd(el){const v=el.value.trim().replace(/,$/,'');if(v&&!CA.edit.keywords.includes(v))CA.edit.keywords.push(v);el.value='';render();setTimeout(()=>{const i=$('#ca-kwi');if(i)i.focus()},0)}
+async function caKwSave(){const e=CA.edit,i=$('#ca-kwi');if(i&&i.value.trim()&&!e.keywords.includes(i.value.trim()))e.keywords.push(i.value.trim());
+ if(!e.keywords.length){toast('Nhập ít nhất một từ khoá','Gõ từ khoá rồi bấm Enter');return}
+ if(await caPost({action:'kw_save',id:e.id,enabled:e.enabled,keywords:e.keywords,match:e.match,reply:e.reply,channels:e.channels,sequence_id:e.sequence_id||''},'Đã lưu từ khoá')){CA.edit=null;render()}}
+function caKwForm(e){return `<div class="ca-card edit"><div class="ca-kwh"><label class="sw" title="Bật / tắt"><input type="checkbox" ${e.enabled?'checked':''} onchange="CA.edit.enabled=this.checked?1:0"><span></span></label>
+  <div class="ca-kwin">${e.keywords.map((w,i)=>`<span class="ca-kw">${esc(w)}<button onclick="CA.edit.keywords.splice(${i},1);render()">×</button></span>`).join('')}<input id="ca-kwi" placeholder="${e.keywords.length?'Thêm từ khoá…':'Nhập từ khoá rồi Enter'}" onkeydown="if(event.key==='Enter'||event.key===','){event.preventDefault();caKwAdd(this)}else if(event.key==='Backspace'&&!this.value&&CA.edit.keywords.length){CA.edit.keywords.pop();render();setTimeout(()=>$('#ca-kwi').focus(),0)}"></div>
+  <select class="ca-sel" onchange="CA.edit.match=this.value"><option value="contains" ${e.match!=='exact'?'selected':''}>Chứa từ khoá</option><option value="exact" ${e.match==='exact'?'selected':''}>Khớp chính xác</option></select>
+  <button class="ca-ib" title="Lưu" onclick="caKwSave()">${cwSvg('save')}</button><button class="ca-ib" title="Huỷ" onclick="CA.edit=null;render()">${ic('x')}</button></div>
+  <label class="ca-lb">Nội dung tin nhắn trả lời tự động</label><textarea class="ca-ta" rows="3" placeholder="Tin nhắn gửi cho khách ngay khi khớp từ khoá… ({ten} = tên khách, {sdt_hotline} = hotline)" oninput="CA.edit.reply=this.value">${esc(e.reply||'')}</textarea>
+  <div class="ca-row">${caChBox(e,'CA.edit','từ khoá này')}
+  <div class="ca-box dash"><div class="ca-bh"><b>${cwSvg('cal')}Gán kịch bản chăm sóc tiếp nối</b><button class="ca-q" onclick="caSeqEdit('')">${cwSvg('plus')}Tạo nhanh kịch bản</button></div><select class="ca-sel full" onchange="CA.edit.sequence_id=this.value">${caSeqOpts(e.sequence_id)}</select><div class="ca-note">Khi khách nhắn khớp từ khoá trên kênh đã chọn, hệ thống trả lời ngay và tự động đưa khách vào kịch bản chăm sóc này.</div></div></div>
+  <button class="cw-btn" onclick="caKwSave()">${cwSvg('save')}Lưu cài đặt từ khoá</button></div>`}
+function caKwCard(k){const ed=CA.d.can_edit;return `<div class="ca-card"><div class="ca-kwh"><label class="sw"><input type="checkbox" ${k.enabled?'checked':''} ${ed?'':'disabled'} onchange="caToggle('kw','${k.id}',this.checked)"><span></span></label>
+  <div class="ca-kwin ro">${k.keywords.map(w=>`<span class="ca-kw">${esc(w)}</span>`).join('')}</div><span class="ca-tagm">${k.match==='exact'?'Khớp chính xác':'Chứa từ khoá'}</span>
+  ${ed?`<button class="ca-ib" title="Sửa" onclick="caKwEdit('${k.id}')">${cwSvg('edit')}</button><button class="ca-ib" title="Xoá" onclick="caDel('kw','${k.id}','từ khoá này')">${cwSvg('trash')}</button>`:''}</div>
+  <div class="ca-reply">${k.reply?esc(k.reply):'<i>Không gửi tin trả lời</i>'}</div>
+  <div class="ca-meta">${cwSvg('link')}${esc(caChLabel(k.channels))}${k.sequence_id?`<span class="sep">·</span>${cwSvg('cal')}Vào kịch bản: <b>${esc(caSeqName(k.sequence_id))}</b>`:''}</div></div>`}
+function caKw(){const d=CA.d,e=CA.edit&&CA.edit.kind==='kw'?CA.edit:null,q=zfold(CA.q);
+ const list=d.keywords.filter(k=>!q||zfold(k.keywords.join(' ')+' '+(k.reply||'')).includes(q));
+ return `${caHead('Từ khoá','Tự động trả lời và đưa khách vào Kịch bản chăm sóc khi tin nhắn khớp từ khoá, theo đúng kênh đã chọn',['Thêm từ khoá',"caKwEdit('')"])}${caSearch('Tìm từ khoá')}
+  ${e&&!e.id?caKwForm(e):''}${list.map(k=>e&&e.id===k.id?caKwForm(e):caKwCard(k)).join('')}
+  ${!list.length&&!(e&&!e.id)?`<div class="cw-emp"><span class="cw-hi">${cwSvg('key')}</span><b>${d.keywords.length?'Không thấy từ khoá khớp':'Chưa có từ khoá nào'}</b><p>Ví dụ: khách nhắn “giá”, “menu”, “báo giá” → tự động trả lời và đưa khách vào Kịch bản chăm sóc.</p>${CA.d.can_edit&&!d.keywords.length?`<button class="cw-btn" onclick="caKwEdit('')">${cwSvg('plus')}Thêm từ khoá đầu tiên</button>`:''}</div>`:''}
+  <div class="ca-foot">Không phân biệt hoa thường. Từ khoá gõ không dấu khớp cả có dấu (“gia” khớp “Giá”), gõ có dấu thì chỉ khớp đúng dấu (“giá” không khớp “gia đình”). “Chứa từ khoá” khớp theo từ, “Khớp chính xác” cần cả tin nhắn trùng từ khoá. Cùng một từ khoá không trả lời lại một khách trong ${10} phút. Không áp dụng cho bình luận công khai.</div>`}
+/* ---- Kịch bản chăm sóc ---- */
+function caSplit(min){min=+min||0;return {d:Math.floor(min/1440),h:Math.floor(min%1440/60),m:min%60}}
+function caSeqEdit(id){const s=id?CA.d.sequences.find(x=>x.id===id):null;CA.modal={kind:'seq',id:s?s.id:'',name:s?s.name:'',enabled:s?s.enabled:1,channels:s?[...s.channels]:[],steps:s?s.steps.map(x=>Object.assign(caSplit(x.delay_min),{text:x.text})):[{d:0,h:0,m:0,text:''}],back:CA.edit?1:0};render()}
+async function caSeqSave(){const m=CA.modal;if(!m.name.trim()){toast('Nhập tên kịch bản');return}const steps=m.steps.map(s=>({delay_min:(+s.d||0)*1440+(+s.h||0)*60+(+s.m||0),text:s.text}));
+ const before=(CA.d.sequences||[]).map(s=>s.id);
+ if(await caPost({action:'seq_save',id:m.id,name:m.name,enabled:m.enabled,channels:m.channels,steps},'Đã lưu kịch bản')){if(!m.id&&CA.edit&&CA.edit.kind==='kw'){const n=CA.d.sequences.find(s=>!before.includes(s.id));if(n)CA.edit.sequence_id=n.id}if(!m.id&&CA.modal2){const n=CA.d.sequences.find(s=>!before.includes(s.id));if(n){CA.modal2.actions[CA.modal2._ai].sequence_id=n.id}}CA.modal=CA.modal2||null;CA.modal2=null;render()}}
+function caSeqForm(m){const kws=m.id?CA.d.keywords.filter(k=>k.sequence_id===m.id):[],rls=m.id?CA.d.rules.filter(r=>r.actions.some(a=>a.type==='enroll'&&a.sequence_id===m.id)):[];
+ return `<div class="ca-fr"><div class="field" style="flex:1"><label>* Tên kịch bản</label><input value="${esc(m.name)}" placeholder="VD: Chăm sóc khách mới nhắn Zalo / Fanpage" oninput="CA.modal.name=this.value"></div><label class="ca-on"><span class="sw"><input type="checkbox" ${m.enabled?'checked':''} onchange="CA.modal.enabled=this.checked?1:0"><span></span></span>Đang kích hoạt</label></div>
+  ${caChBox(m,'CA.modal','kịch bản này')}
+  <div class="ca-box blue"><div class="ca-bh"><b>${cwSvg('link')}Từ khoá & Quy luật đưa khách vào kịch bản này</b></div><div class="ca-two"><div><b>${cwSvg('key')}Từ khoá</b>${kws.length?kws.map(k=>`<span class="ca-kw">${esc(k.keywords.join(', '))}</span>`).join(''):'<span class="ca-note">Chưa có từ khoá nào.</span>'}</div><div><b>${cwSvg('branch')}Quy luật</b>${rls.length?rls.map(r=>`<span class="ca-kw">${esc(r.name)}</span>`).join(''):'<span class="ca-note">Chưa có quy luật nào.</span>'}</div></div><div class="ca-note">Gán ở màn hình Từ khoá hoặc Quy luật.</div></div>
+  <div class="ca-sh"><div><b>Chuỗi các bước gửi tin tự động</b><div class="ca-note">Hệ thống tự gửi từng tin theo khoảng thời gian tính từ lúc khách vào kịch bản.</div></div><button class="btn sm" onclick="CA.modal.steps.push({d:0,h:1,m:0,text:''});render()">${cwSvg('plus')}Thêm bước</button></div>
+  ${m.steps.map((s,i)=>`<div class="ca-step"><div class="ca-sth"><span class="ca-n">${i+1}</span><b>Bước ${i+1}</b>${m.steps.length>1?`<button class="ca-ib" title="Xoá bước" onclick="CA.modal.steps.splice(${i},1);render()">${cwSvg('trash')}</button>`:''}</div>
+   <div class="ca-delay">Gửi sau khi vào kịch bản:${['d','h','m'].map(k=>`<input type="number" min="0" value="${+s[k]||0}" oninput="CA.modal.steps[${i}].${k}=this.value"><span>${{d:'ngày',h:'giờ',m:'phút'}[k]}</span>`).join('')}</div>
+   <textarea class="ca-ta" rows="3" placeholder="Nội dung tin nhắn bước ${i+1} ({ten} = tên khách)" oninput="CA.modal.steps[${i}].text=this.value">${esc(s.text||'')}</textarea></div>`).join('')}
+  <button class="ca-add" onclick="CA.modal.steps.push({d:0,h:1,m:0,text:''});render()">${cwSvg('plus')}Thêm bước gửi tin tiếp theo</button>`}
+function caSeq(){const d=CA.d,q=zfold(CA.q),ed=d.can_edit;const list=d.sequences.filter(s=>!q||zfold(s.name).includes(q));
+ return `${caHead('Kịch bản chăm sóc','Chuỗi tin nhắn tự động theo lịch, kích hoạt bởi Từ khoá và Quy luật',['Tạo kịch bản',"caSeqEdit('')"])}${caSearch('Tìm kịch bản')}
+  <div class="ca-tbl"><table><thead><tr><th>Kích hoạt</th><th>Tên kịch bản</th><th>Kênh áp dụng</th><th>Liên kết Từ khoá & Quy luật</th><th>Số bước</th><th>Đang chăm sóc</th><th></th></tr></thead><tbody>
+  ${list.map(s=>{const kn=d.keywords.filter(k=>k.sequence_id===s.id).length,rn=d.rules.filter(r=>r.actions.some(a=>a.type==='enroll'&&a.sequence_id===s.id)).length;
+   return `<tr><td><label class="sw"><input type="checkbox" ${s.enabled?'checked':''} ${ed?'':'disabled'} onchange="caToggle('seq','${s.id}',this.checked)"><span></span></label></td><td><b>${esc(s.name)}</b></td><td>${esc(caChLabel(s.channels))}</td><td>${kn} từ khoá · ${rn} quy luật</td><td>${s.steps.length}</td><td>${s.active} khách</td><td class="ca-act">${ed?`<button class="btn xs" onclick="caSeqEdit('${s.id}')">Sửa</button><button class="btn xs" onclick="caDel('seq','${s.id}','kịch bản “${esc(s.name.replace(/'/g,''))}”')">Xoá</button>`:''}</td></tr>`}).join('')}
+  </tbody></table>${!list.length?`<div class="cw-emp"><span class="cw-hi">${cwSvg('cal')}</span><b>${d.sequences.length?'Không thấy kịch bản khớp':'Chưa có kịch bản nào'}</b><p>Tạo kịch bản chăm sóc rồi gắn với Từ khoá hoặc Quy luật để tự gửi chuỗi tin cho khách.</p></div>`:''}</div>`}
+/* ---- Quy luật ---- */
+function caRuleEdit(id){const r=id?CA.d.rules.find(x=>x.id===id):null;CA.modal={kind:'rule',id:r?r.id:'',name:r?r.name:'',enabled:r?r.enabled:1,channels:r?[...r.channels]:[],trigger:r?r.trigger:'first_message',trigger_tag:r?(r.trigger_tag||''):'',actions:r?JSON.parse(JSON.stringify(r.actions)):[{type:'enroll',sequence_id:''}]};render()}
+async function caRuleSave(){const m=CA.modal;if(!m.name.trim()){toast('Nhập tên quy luật');return}if(await caPost({action:'rule_save',id:m.id,name:m.name,enabled:m.enabled,channels:m.channels,trigger:m.trigger,trigger_tag:m.trigger_tag,actions:m.actions},'Đã lưu quy luật')){CA.modal=null;render()}}
+function caQuickSeq(i){CA.modal._ai=i;CA.modal2=CA.modal;caSeqEdit('')}
+function caRuleForm(m){const d=CA.d,ready=d.ready_triggers||[];
+ return `<div class="ca-fr"><div class="field" style="flex:1"><label>* Tên quy luật</label><input value="${esc(m.name)}" placeholder="VD: Khách mới → Tự động vào Kịch bản chào mừng" oninput="CA.modal.name=this.value"></div><label class="ca-on"><span class="sw"><input type="checkbox" ${m.enabled?'checked':''} onchange="CA.modal.enabled=this.checked?1:0"><span></span></span>Đang kích hoạt</label></div>
+  ${caChBox(m,'CA.modal','quy luật này')}
+  <div class="ca-box"><div class="ca-bh"><b>${cwSvg('bolt')}Khi xảy ra sự kiện (Trigger):</b></div><select class="ca-sel full" onchange="CA.modal.trigger=this.value;render()">${Object.entries(d.triggers).map(([k,l])=>`<option value="${k}" ${m.trigger===k?'selected':''} ${ready.includes(k)?'':'disabled'}>${esc(l)}${ready.includes(k)?'':' — cần mô-đun Đơn hàng'}</option>`).join('')}</select>
+   ${m.trigger==='tag_added'?`<select class="ca-sel full" style="margin-top:8px" onchange="CA.modal.trigger_tag=this.value"><option value="">Thẻ bất kỳ</option>${(IB.tags||[]).map(t=>`<option value="${t.id}" ${m.trigger_tag===t.id?'selected':''}>${esc(t.name)}</option>`).join('')}</select>`:''}</div>
+  <div class="ca-sh"><b>${cwSvg('gear')}Tự động thực hiện các hành động:</b><button class="btn sm" onclick="CA.modal.actions.push({type:'send',text:''});render()">${cwSvg('plus')}Thêm hành động</button></div>
+  ${m.actions.map((a,i)=>`<div class="ca-step"><div class="ca-sth"><b>Hành động ${i+1}</b>${m.actions.length>1?`<button class="ca-ib" title="Xoá" onclick="CA.modal.actions.splice(${i},1);render()">${cwSvg('trash')}</button>`:''}</div>
+   <label class="ca-lb">Loại hành động</label><select class="ca-sel full" onchange="CA.modal.actions[${i}]={type:this.value};render()">${Object.entries(d.actions).map(([k,l])=>`<option value="${k}" ${a.type===k?'selected':''}>${esc(l)}</option>`).join('')}</select>
+   ${a.type==='send'?`<label class="ca-lb">Nội dung tin nhắn</label><textarea class="ca-ta" rows="3" placeholder="Tin nhắn gửi cho khách ({ten} = tên khách)" oninput="CA.modal.actions[${i}].text=this.value">${esc(a.text||'')}</textarea>`
+    :`<div class="ca-fr"><label class="ca-lb" style="flex:1">${a.type==='enroll'?'Chọn kịch bản chăm sóc':'Rời khỏi kịch bản'}</label>${a.type==='enroll'?`<button class="ca-q" onclick="caQuickSeq(${i})">${cwSvg('plus')}Tạo nhanh kịch bản</button>`:''}</div><select class="ca-sel full" onchange="CA.modal.actions[${i}].sequence_id=this.value">${caSeqOpts(a.sequence_id||'',a.type==='enroll'?'-- Chọn kịch bản --':'Tất cả kịch bản đang chạy')}</select>`}</div>`).join('')}
+  <button class="ca-add" onclick="CA.modal.actions.push({type:'send',text:''});render()">${cwSvg('plus')}Thêm hành động tiếp theo</button>`}
+function caFlow(r){const d=CA.d,tg=r.trigger==='tag_added'?(r.trigger_tag?' “'+(((IB.tags||[]).find(t=>t.id===r.trigger_tag)||{}).name||'thẻ đã xoá')+'”':' (bất kỳ)'):'';
+ return `<b>${esc(r.name)}</b><div class="ca-flow">Khi <i>${esc(d.triggers[r.trigger]||r.trigger)}${esc(tg)}</i> → ${r.actions.map(a=>a.type==='send'?'gửi tin':a.type==='enroll'?'vào “'+esc(caSeqName(a.sequence_id))+'”':'rời '+(a.sequence_id?'“'+esc(caSeqName(a.sequence_id))+'”':'mọi kịch bản')).join(', ')}</div>`}
+function caRules(){const d=CA.d,q=zfold(CA.q),ed=d.can_edit;const list=d.rules.filter(r=>!q||zfold(r.name).includes(q));
+ return `${caHead('Quy luật','Tự động đưa khách vào Kịch bản chăm sóc hoặc gửi tin khi có sự kiện, theo đúng kênh đã chọn',['Tạo quy luật',"caRuleEdit('')"])}${caSearch('Tìm quy luật')}
+  <div class="ca-tbl"><table><thead><tr><th>Kích hoạt</th><th>Tên quy luật & Luồng tự động</th><th>Kênh áp dụng</th><th>Lần cuối cập nhật</th><th></th></tr></thead><tbody>
+  ${list.map(r=>`<tr><td><label class="sw"><input type="checkbox" ${r.enabled?'checked':''} ${ed?'':'disabled'} onchange="caToggle('rule','${r.id}',this.checked)"><span></span></label></td><td>${caFlow(r)}</td><td>${esc(caChLabel(r.channels))}</td><td>${esc(fmtTs(r.updated_at))}</td><td class="ca-act">${ed?`<button class="btn xs" onclick="caRuleEdit('${r.id}')">Sửa</button><button class="btn xs" onclick="caDel('rule','${r.id}','quy luật “${esc(r.name.replace(/'/g,''))}”')">Xoá</button>`:''}</td></tr>`).join('')}
+  </tbody></table>${!list.length?`<div class="cw-emp"><span class="cw-hi">${cwSvg('branch')}</span><b>${d.rules.length?'Không thấy quy luật khớp':'Chưa có quy luật nào'}</b><p>Ví dụ: khi có khách mới nhắn tin → tự động đưa vào Kịch bản chào đón.</p></div>`:''}</div>`}
+function caModal(){const m=CA.modal;if(!m)return '';const seq=m.kind==='seq';
+ return `<div class="ca-ov"><div class="ca-modal"><div class="ca-mh"><b>${seq?(m.id?'Sửa kịch bản chăm sóc':'Tạo kịch bản chăm sóc mới'):(m.id?'Sửa quy luật':'Tạo quy luật tự động mới')}</b><button onclick="CA.modal=CA.modal2||null;CA.modal2=null;render()" title="Đóng">${ic('x')}</button></div>
+  <div class="ca-mb">${seq?caSeqForm(m):caRuleForm(m)}</div>
+  <div class="ca-mf"><button class="btn" onclick="CA.modal=CA.modal2||null;CA.modal2=null;render()">Hủy</button><button class="cw-btn" onclick="${seq?'caSeqSave()':'caRuleSave()'}">${m.id?'Lưu':(seq?'Tạo kịch bản':'Tạo quy luật')}</button></div></div></div>`}
+function cwCareSec(){const c=(IB.info&&IB.info.care)||[];if(!c.length)return '';return `<div class="ib-sec"><label class="lb">Kịch bản đang chăm sóc</label>${c.map(x=>`<div class="ca-care"><div><b>${esc(x.name)}</b><small>Bước ${Math.min(+x.step_idx+1,+x.total)}/${x.total} · gửi lúc ${esc(fmtTs(x.next_at))}</small></div><button class="btn xs" onclick="caUnenroll('${x.sequence_id}')">Dừng</button></div>`).join('')}</div>`}
+async function caUnenroll(seq){if(!IB.cur)return;try{await apiPost('/api/chat_auto.php',{action:'unenroll',thread_id:IB.cur,sequence_id:seq});IB.info.care=(IB.info.care||[]).filter(x=>x.sequence_id!==seq);toast('Đã cho khách rời kịch bản');render()}catch(e){toast('Lỗi',e.message)}}
+/* ===== CRM khách hàng (api/chat_crm.php, bảng care_records dùng chung với CSKH) ===== */
+const CX={pid:'',f:{view:'all',q:'',care:'',branch:'',assignee:'',src:'',need:'',phone:0,channel:'',sort:'new'},page:1,d:null,busy:false,err:'',rec:null,recId:'',deals:null,tasks:'all',td:null,rep:null,cfg:null,modal:null,colPop:false,hide:(()=>{try{return JSON.parse(lsGet('crm.hide','[]'))}catch(e){return[]}})(),cust:null,imp:null};
+const CRM_TABS=[['crm','Khách hàng','user'],['crm_kanban','Kanban','grid'],['crm_tasks','Lịch hẹn','cal'],['crm_report','Báo cáo','chart'],['crm_config','Cấu hình','gear']];
+const CRM_STC={new:'#3b82f6',contacting:'#6366f1',consulted:'#0ea5e9',potential:'#f59e0b',callback:'#8b5cf6',interested:'#0284c7',won:'#16a34a',lost:'#64748b',transferred:'#0891b2',invalid:'#94a3b8'};
+const CRM_NEEDC={hot:'#dc2626',learning:'#f59e0b',none:'#94a3b8'};
+function crmH(pid,h){return Object.assign({'X-Project':pid||CX.pid||S.project||''},h||{})}
+async function crmGet(qs,pid){const r=await fetch('/api/chat_crm.php?'+qs,{credentials:'same-origin',headers:crmH(pid)});if(r.status===401){renderLogin();throw new Error('unauth')}const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('Lỗi máy chủ ('+r.status+')'));return d}
+async function crmPost(body,pid){const r=await fetch('/api/chat_crm.php',{method:'POST',credentials:'same-origin',headers:crmH(pid,{'Content-Type':'application/json'}),body:JSON.stringify(body||{})});const d=await r.json().catch(()=>({}));if(r.status===401){renderLogin();throw new Error('unauth')}if(!r.ok)throw new Error(d.error||('Lỗi máy chủ ('+r.status+')'));return d}
+function crmQS(extra){const f=CX.f,o={view:f.view,q:f.q,care:f.care,branch:f.branch,assignee:f.assignee,src:f.src,need:f.need,phone:f.phone?'1':'',channel:f.channel,sort:f.sort,page:CX.page};return new URLSearchParams(Object.assign(o,extra||{})).toString()}
+async function crmLoad(){CX.busy=true;try{CX.d=await crmGet(crmQS());CX.err=''}catch(e){CX.err=e.message}finally{CX.busy=false;render()}}
+function crmSet(k,v){CX.f[k]=v;CX.page=1;crmLoad()}
+function crmReload(){const v=cwView();if(v==='crm')crmLoad();else if(v==='crm_kanban'){CX.deals=null;render()}else if(v==='crm_tasks'){CX.td=null;render()}else if(v==='crm_report'){CX.rep=null;render()}else render()}
+function crmStaffName(id){const s=((CX.d||CX.cfg||CX.rec||{}).staff||[]).find(x=>x.id===id);return s?s.name:''}
+function crmOpts(obj,cur,first){return (first!==undefined?`<option value="">${first}</option>`:'')+Object.entries(obj).map(([k,l])=>`<option value="${k}" ${cur===k?'selected':''}>${esc(l)}</option>`).join('')}
+function crmPill(st,lab){return `<span class="crm-pill" style="--c:${CRM_STC[st]||'#64748b'}">${esc(lab||st)}</span>`}
+function crmMeta(){return CX.d||CX.cfg||CX.rep||CX.td||(CX.deals&&CX.deals.meta)||null}
+function crmTop(v){const m=crmMeta()||{},vc=(CX.d&&CX.d.view_counts)||{},prs=IB.projects||[];
+ return `<div class="crm-top"><div class="crm-tabs">${CRM_TABS.map(([id,l,k])=>`<button class="${v===id?'on':''}" onclick="cwGo('${id}')">${cwSvg(k)}${l}${id==='crm'&&vc.all!=null?` <b>${vc.all}</b>`:''}</button>`).join('')}</div>
+  <div class="crm-acts">${prs.length>1?`<select class="ca-sel" title="Dự án" onchange="CX.pid=this.value;CX.d=null;CX.deals=null;CX.td=null;CX.rep=null;CX.cfg=null;crmReload()">${prs.map(p=>`<option value="${p.id}" ${(CX.pid||S.project)===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>`:''}
+  <button class="btn sm" onclick="crmSyncChat()">${cwSvg('refresh')}Đồng bộ Chat</button><button class="btn sm" onclick="crmImportPick()">${cwSvg('out')}Nhập Excel</button><button class="btn sm" onclick="crmExport()">${cwSvg('save')}Xuất CSV</button><button class="cw-btn" onclick="crmNew()">${cwSvg('plus')}Thêm bản ghi</button></div></div>`}
+function cwCrm(v){
+ let body='';
+ if(v==='crm')body=crmList();else if(v==='crm_kanban')body=crmKanban();else if(v==='crm_tasks')body=crmTasks();else if(v==='crm_report')body=crmReport();else body=crmConfig();
+ return `<div class="crm">${crmTop(v)}${body}</div>${crmDrawer()}<input type="file" id="crm-file" accept=".xlsx,.csv" style="display:none" onchange="crmImportFile(this)">`}
+/* ---- danh sách ---- */
+const CRM_COLS=[['status','Trạng thái'],['need','Nhu cầu'],['src','Nguồn & kênh'],['assignee','Phụ trách'],['branch','Cơ sở'],['follow','Hẹn gọi lại'],['note','Ghi chú gần nhất'],['created','Ngày tạo']];
+function crmColOn(k){return !CX.hide.includes(k)}
+function crmColT(k){const i=CX.hide.indexOf(k);if(i>=0)CX.hide.splice(i,1);else CX.hide.push(k);lsSet('crm.hide',JSON.stringify(CX.hide));render()}
+function crmList(){
+ if(!CX.d){if(!CX.busy&&!CX.err)setTimeout(crmLoad,0);return CX.err?`<div class="cw-emp"><b>Chưa tải được danh sách</b><p>${esc(CX.err)}</p><button class="cw-btn" onclick="CX.err='';render()">Thử lại</button></div>`:'<div class="zw-load" style="min-height:300px">Đang tải…</div>'}
+ const d=CX.d,f=CX.f,vc=d.view_counts||{},sc=d.status_counts||{},cols=d.cols||[];
+ const vt=(id,l,dot)=>`<button class="${f.view===id?'on':''}" onclick="crmSet('view','${id}')">${dot?`<i style="background:${dot}"></i>`:''}${l} <b>${vc[id]||0}</b></button>`;
+ const sel=(k,label,opts)=>`<select class="crm-f ${f[k]?'on':''}" onchange="crmSet('${k}',this.value)"><option value="">${label}: Tất cả</option>${opts}</select>`;
+ const allSt=Object.values(sc).reduce((a,b)=>a+ +b,0);
+ const th=(k,l)=>crmColOn(k)?`<th>${l}</th>`:'';
+ const rows=d.rows.map(r=>{const log=r.care_log||[],last=log.length?log[log.length-1]:null,over=r.next_follow_at&&r.next_follow_at<new Date(Date.now()+7*3600e3).toISOString().slice(0,16).replace('T',' ')&&!['won','lost','invalid'].includes(r.care_status);
+  return `<tr onclick="if(!event.target.closest('select,a,button'))crmOpen('${r.id}')">
+  <td><div class="crm-nm"><span class="cw-fa sm">${esc(initials(r.name||'?')||'?')}</span><div><b>${esc(r.name||'(chưa có tên)')}</b><small>${esc(r.phone||'')}${r.company?' · '+esc(r.company):''}</small></div></div></td>
+  ${crmColOn('status')?`<td><select class="crm-in" style="--c:${CRM_STC[r.care_status]||'#64748b'}" onchange="crmQuick('${r.id}',{care_status:this.value})">${crmOpts(d.statuses,r.care_status)}</select></td>`:''}
+  ${crmColOn('need')?`<td><select class="crm-in" style="--c:${CRM_NEEDC[r.need_level]||'#94a3b8'}" onchange="crmQuick('${r.id}',{need_level:this.value})">${crmOpts(d.needs,r.need_level||'','—')}</select></td>`:''}
+  ${crmColOn('src')?`<td><span class="crm-src">${esc(d.sources[r.src]||r.src)}</span>${r.channel_label?`<small class="crm-sub">${esc(r.channel_label)}</small>`:''}</td>`:''}
+  ${crmColOn('assignee')?`<td><select class="crm-in plain" onchange="crmQuick('${r.id}',{assignee_id:this.value})"><option value="">— Chưa giao —</option>${d.staff.map(s=>`<option value="${s.id}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></td>`:''}
+  ${crmColOn('branch')?`<td>${esc((d.branches.find(b=>b.id===r.branch_id)||{}).name||'—')}</td>`:''}
+  ${crmColOn('follow')?`<td>${r.next_follow_at?`<span class="${over?'crm-over':''}">${esc(r.next_follow_at)}</span>`:'—'}</td>`:''}
+  ${crmColOn('note')?`<td class="crm-note">${last?esc(last.text):''}</td>`:''}
+  ${crmColOn('created')?`<td class="crm-sub">${esc((r.ext_created_at||'').slice(0,16))}</td>`:''}
+  ${cols.map(c=>crmColOn(c.key)?`<td>${esc((r.custom||{})[c.key]||'')}</td>`:'').join('')}</tr>`}).join('');
+ const pages=Math.max(1,Math.ceil(d.total/d.per));
+ return `<div class="crm-views">${vt('all','Tất cả')}${vt('new','Data mới','#3b82f6')}${vt('caring','Đang chăm','#f59e0b')}${vt('won','Đã chốt','#16a34a')}${vt('recycled','Kho thu hồi','#64748b')}</div>
+ <div class="crm-bar"><div class="ib-search">${ic('search')}<input placeholder="Tìm tên, SĐT, ghi chú..." value="${esc(f.q)}" onkeydown="if(event.key==='Enter')crmSet('q',this.value.trim())"></div>
+  ${sel('branch','Cơ sở',`<option value="_none" ${f.branch==='_none'?'selected':''}>Chưa có cơ sở</option>`+d.branches.map(b=>`<option value="${b.id}" ${f.branch===b.id?'selected':''}>${esc(b.name)}</option>`).join(''))}
+  ${sel('care','Trạng thái',crmOpts(d.statuses,f.care))}
+  ${sel('channel','Kênh',(d.channels||[]).map(c=>`<option value="${c.id}" ${f.channel===c.id?'selected':''}>${esc(c.label)} (${c.n})</option>`).join(''))}
+  ${sel('assignee','Phụ trách',`<option value="_none" ${f.assignee==='_none'?'selected':''}>Chưa giao</option><option value="_me" ${f.assignee==='_me'?'selected':''}>Khách của tôi</option>`+d.staff.map(s=>`<option value="${s.id}" ${f.assignee===s.id?'selected':''}>${esc(s.name)}</option>`).join(''))}
+  ${sel('src','Nguồn',crmOpts(d.sources,f.src))}${sel('need','Nhu cầu',crmOpts(d.needs,f.need))}
+  <button class="crm-f ${f.phone?'on':''}" onclick="crmSet('phone',CX.f.phone?0:1)">Có SĐT</button>
+  <div class="crm-cp"><button class="crm-f" onclick="CX.colPop=!CX.colPop;render()">Tuỳ chỉnh cột</button>${CX.colPop?`<div class="cw-ov" onclick="CX.colPop=false;render()"></div><div class="crm-colp">${[...CRM_COLS,...cols.map(c=>[c.key,c.label])].map(([k,l])=>`<label><input type="checkbox" ${crmColOn(k)?'checked':''} onchange="crmColT('${k}')">${esc(l)}</label>`).join('')}</div>`:''}</div></div>
+ <div class="crm-chips"><button class="${!f.care?'on':''}" onclick="crmSet('care','')">Tất cả trạng thái <b>${allSt}</b></button>${Object.entries(d.statuses).map(([k,l])=>`<button class="${f.care===k?'on':''}" onclick="crmSet('care','${k}')"><i style="background:${CRM_STC[k]}"></i>${esc(l)} <b>${sc[k]||0}</b></button>`).join('')}</div>
+ <div class="crm-tbl">${d.rows.length?`<table><thead><tr><th>Khách hàng</th>${CRM_COLS.map(([k,l])=>th(k,l)).join('')}${cols.map(c=>th(c.key,esc(c.label))).join('')}</tr></thead><tbody>${rows}</tbody></table>`
+  :`<div class="cw-emp"><b>Không có bản ghi nào khớp với bộ lọc hiện tại</b><p>Thử chế độ xem "Tất cả" hoặc bấm Đồng bộ Chat để lấy khách có số điện thoại từ hội thoại.</p><div style="display:flex;gap:8px"><button class="btn" onclick="CX.f={view:'all',q:'',care:'',branch:'',assignee:'',src:'',need:'',phone:0,channel:'',sort:'new'};crmLoad()">Đặt lại bộ lọc</button><button class="cw-btn" onclick="crmNew()">${cwSvg('plus')}Thêm bản ghi</button></div></div>`}</div>
+ ${pages>1?`<div class="crm-pg"><button class="btn sm" ${CX.page<=1?'disabled':''} onclick="CX.page--;crmLoad()">‹ Trước</button><span>Trang ${CX.page}/${pages} · ${d.total} khách</span><button class="btn sm" ${CX.page>=pages?'disabled':''} onclick="CX.page++;crmLoad()">Sau ›</button></div>`:`<div class="crm-pg"><span>${d.total} khách</span></div>`}`}
+async function crmQuick(id,patch){try{await crmPost(Object.assign({action:'update',id},patch));toast('Đã cập nhật');crmLoad();if(CX.recId===id)crmOpen(id)}catch(e){toast('Chưa cập nhật được',e.message);crmLoad()}}
+/* ---- hồ sơ khách (ngăn kéo) ---- */
+async function crmOpen(id,pid){CX.recId=id;CX.rec=null;if(pid)CX.pid=pid;render();try{CX.rec=await crmGet('id='+encodeURIComponent(id));render()}catch(e){toast('Lỗi',e.message);CX.recId='';render()}}
+function crmDrawer(){if(!CX.recId)return '';const R=CX.rec;if(!R)return `<div class="crm-dov" onclick="CX.recId='';render()"></div><aside class="crm-dr"><div class="zw-load">Đang tải…</div></aside>`;
+ const r=R.record,cols=R.cols||[],log=(r.care_log||[]).slice().reverse();
+ const inp=(k,l,t)=>`<div class="field"><label>${l}</label><input id="crm-e-${k}" type="${t||'text'}" value="${esc(r[k]||'')}"></div>`;
+ return `<div class="crm-dov" onclick="CX.recId='';render()"></div><aside class="crm-dr"><div class="crm-dh"><span class="cw-fa">${esc(initials(r.name||'?')||'?')}</span><div><b>${esc(r.name||'(chưa có tên)')}</b><small>${r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:''} · ${esc(R.sources[r.src]||r.src)}${r.channel_label?' · '+esc(r.channel_label):''}</small></div>
+  ${r.thread_id?`<button class="btn sm" onclick="CX.recId='';cwGo('chat');cwF('all',0,0);setTimeout(()=>ibOpen('${r.thread_id}'),300)">${cwSvg('chat')}Mở hội thoại</button>`:''}<button class="ca-ib" onclick="CX.recId='';render()">${ic('x')}</button></div>
+ <div class="crm-db">
+  <div class="crm-g2"><div class="field"><label>Trạng thái</label><select id="crm-e-care_status">${crmOpts(R.statuses,r.care_status)}</select></div><div class="field"><label>Mức độ tiềm năng</label><select id="crm-e-need_level">${crmOpts(R.needs,r.need_level||'','—')}</select></div>
+  <div class="field"><label>Phụ trách</label><select id="crm-e-assignee_id"><option value="">— Chưa giao —</option>${R.staff.map(s=>`<option value="${s.id}" ${r.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+  <div class="field"><label>Cơ sở</label><select id="crm-e-branch_id"><option value="">— Chưa có —</option>${R.branches.map(b=>`<option value="${b.id}" ${r.branch_id===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
+  ${inp('name','Họ và tên')}${inp('phone','Số điện thoại','tel')}${inp('email','Email','email')}${inp('company','Công ty / Cơ quan')}</div>
+  <div class="field"><label>Địa chỉ</label><input id="crm-e-address" value="${esc(r.address||'')}"></div>
+  <div class="field"><label>Hẹn gọi lại</label><input id="crm-e-next_follow_at" type="datetime-local" value="${esc((r.next_follow_at||'').replace(' ','T'))}"></div>
+  ${cols.length?`<div class="crm-g2">${cols.map(c=>`<div class="field"><label>${esc(c.label)}</label>${c.type==='select'?`<select data-ck="${c.key}"><option value=""></option>${(c.options||[]).map(o=>`<option ${(r.custom||{})[c.key]===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`:`<input data-ck="${c.key}" type="${c.type==='number'?'number':c.type==='date'?'date':'text'}" value="${esc((r.custom||{})[c.key]||'')}">`}</div>`).join('')}</div>`:''}
+  <div class="field"><label>Ghi chú cuộc gọi / chăm sóc</label><div class="crm-qn">${['Không nghe máy','Thuê bao','Hẹn gọi lại','Đã tư vấn','Đã báo giá','Khách suy nghĩ thêm'].map(t=>`<button onclick="const n=$('#crm-e-note');n.value=(n.value?n.value+'. ':'')+'${t}';n.focus()">${t}</button>`).join('')}</div><textarea id="crm-e-note" rows="3" placeholder="Nội dung trao đổi với khách…"></textarea></div>
+  <button class="cw-btn" onclick="crmSaveRec()">${cwSvg('save')}Lưu thay đổi</button>
+  <div class="crm-sec"><div class="crm-sh"><b>Cơ hội bán hàng (${R.deals.length})</b><button class="btn xs" onclick="crmDealEdit('',{care_id:'${r.id}',title:'${esc((r.name||'').replace(/'/g,''))}'})">+ Thêm</button></div>${R.deals.map(dl=>`<div class="crm-dl" onclick="crmDealEdit('${dl.id}')"><b>${esc(dl.title)}</b><span>${esc((R.stages||{})[dl.stage]||dl.stage)} · ${num(+dl.value||0)}₫</span></div>`).join('')||'<div class="mini">Chưa có cơ hội nào.</div>'}</div>
+  <div class="crm-sec"><div class="crm-sh"><b>Nhật ký chăm sóc</b></div>${log.map(l=>`<div class="crm-lg"><i style="background:${CRM_STC[l.status]||'#94a3b8'}"></i><div><small>${esc(l.at||'')} · ${esc(l.name||'')}</small><div>${esc(l.text||'')}</div></div></div>`).join('')||'<div class="mini">Chưa có.</div>'}</div>
+  ${R.history.length?`<div class="crm-sec"><div class="crm-sh"><b>Cùng số điện thoại (${R.history.length})</b></div>${R.history.map(h=>`<div class="crm-dl" onclick="crmOpen('${h.id}')"><b>${esc(h.name||'')}</b><span>${esc(R.sources[h.src]||h.src)} · ${esc((h.ext_created_at||'').slice(0,10))} · ${esc(R.statuses[h.care_status]||h.care_status)}</span></div>`).join('')}</div>`:''}
+ </div></aside>`}
+async function crmSaveRec(){const r=CX.rec.record,p={action:'update',id:r.id};
+ ['care_status','need_level','assignee_id','branch_id','name','phone','email','company','address'].forEach(k=>{const el=$('#crm-e-'+k);if(el&&el.value!==(r[k]||''))p[k]=el.value});
+ const nf=($('#crm-e-next_follow_at').value||'').replace('T',' ');if(nf!==(r.next_follow_at||''))p.next_follow_at=nf;
+ const cu={};let ch=false;document.querySelectorAll('.crm-dr [data-ck]').forEach(el=>{cu[el.dataset.ck]=el.value;if(el.value!==((r.custom||{})[el.dataset.ck]||''))ch=true});if(ch)p.custom=cu;
+ const note=$('#crm-e-note').value.trim();if(note)p.note=note;
+ if(Object.keys(p).length<=2){toast('Không có gì thay đổi');return}
+ try{await crmPost(p);toast('Đã lưu');await crmOpen(r.id);if(CX.d)crmLoad();CX.td=null;CX.rep=null}catch(e){toast('Chưa lưu được',e.message)}}
+/* ---- thêm khách ---- */
+function crmNew(prefill,pid){if(pid&&pid!==(CX.pid||S.project))crmGet('config=1',pid).then(d=>{if(CX.modal&&CX.modal.kind==='new'){CX.modal.meta=d;render()}}).catch(()=>{});CX.modal=Object.assign({kind:'new',pid:pid||'',name:'',phone:'',email:'',company:'',address:'',need_level:'hot',assignee_id:'',branch_id:'',note:'',thread_id:''},prefill||{});if(!CX.cfg&&!CX.d)crmGet('config=1',pid).then(d=>{CX.cfg=d;render()}).catch(()=>{});render()}
+async function crmNewSave(){const m=CX.modal;document.querySelectorAll('.ca-modal [data-k]').forEach(el=>m[el.dataset.k]=el.value);delete m.meta;
+ if(!m.name.trim()||!m.phone.trim()){toast('Nhập họ tên và số điện thoại');return}
+ try{const d=await crmPost(Object.assign({action:'create'},m),m.pid);CX.modal=null;toast(d.existed?'Khách đã có trong CRM':'Đã thêm khách',d.existed?'Trùng số điện thoại với '+(d.name||d.id)+' — đã liên kết':'');
+  if(IB.cur&&m.thread_id){const dd=await apiGet('/api/inbox.php?action=messages&id='+encodeURIComponent(IB.cur));IB.info=dd}
+  CX.d=null;CX.rep=null;render()}catch(e){toast('Chưa thêm được',e.message)}}
+function crmNewForm(m){const meta=m.meta||crmMeta()||CX.cfg||{},staff=meta.staff||[],brs=meta.branches||[],needs=meta.needs||{hot:'Rất tiềm năng',learning:'Đang tìm hiểu',none:'Chưa có nhu cầu'};
+ const f=(k,l,ph,t)=>`<div class="field"><label>${l}</label><input data-k="${k}" type="${t||'text'}" value="${esc(m[k]||'')}" placeholder="${ph}"></div>`;
+ return `<div class="crm-g2">${f('name','Họ và tên (*)','Nguyễn Văn A')}${f('phone','Số điện thoại (*)','0912345678','tel')}${f('email','Email','example@email.com','email')}${f('company','Công ty / Cơ quan','Công ty TNHH...')}</div>
+  <div class="field"><label>Địa chỉ liên hệ</label><input data-k="address" value="${esc(m.address||'')}" placeholder="Số nhà, đường phố, tỉnh/thành..."></div>
+  <div class="crm-g2"><div class="field"><label>Mức độ tiềm năng</label><select data-k="need_level">${crmOpts(needs,m.need_level)}</select></div><div class="field"><label>Gán cho nhân viên</label><select data-k="assignee_id"><option value="">-- Chưa phân công --</option>${staff.map(s=>`<option value="${s.id}" ${m.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+  ${brs.length?`<div class="field"><label>Cơ sở phụ trách</label><select data-k="branch_id"><option value="">-- Tự định tuyến / chưa có --</option>${brs.map(b=>`<option value="${b.id}" ${m.branch_id===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>`:''}</div>
+  <div class="field"><label>Ghi chú ban đầu</label><textarea data-k="note" rows="3" placeholder="Nhu cầu sản phẩm, lưu ý...">${esc(m.note||'')}</textarea></div>`}
+/* ---- nhập Excel / CSV, xuất CSV, đồng bộ chat ---- */
+function crmImportPick(){const i=$('#crm-file');if(i){i.value='';i.click()}}
+async function crmUnzip(buf){const dv=new DataView(buf);let e=-1;for(let i=buf.byteLength-22;i>=Math.max(0,buf.byteLength-66000);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}if(e<0)throw new Error('File không đúng định dạng .xlsx');
+ const n=dv.getUint16(e+10,true);let off=dv.getUint32(e+16,true);const files={},td=new TextDecoder();
+ for(let k=0;k<n;k++){const m=dv.getUint16(off+10,true),cs=dv.getUint32(off+20,true),nl=dv.getUint16(off+28,true),el=dv.getUint16(off+30,true),cl=dv.getUint16(off+32,true),lo=dv.getUint32(off+42,true);files[td.decode(new Uint8Array(buf,off+46,nl))]={m,cs,lo};off+=46+nl+el+cl}
+ return async name=>{const f=files[name];if(!f)return null;const a=dv.getUint16(f.lo+26,true),b=dv.getUint16(f.lo+28,true),data=new Uint8Array(buf,f.lo+30+a+b,f.cs);if(f.m===0)return td.decode(data);
+  return td.decode(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())}}
+async function crmXlsx(buf){const read=await crmUnzip(buf),P=s=>new DOMParser().parseFromString(s,'application/xml');
+ const ss=await read('xl/sharedStrings.xml'),strs=ss?[...P(ss).getElementsByTagName('si')].map(si=>[...si.getElementsByTagName('t')].map(t=>t.textContent).join('')):[];
+ let sheet='xl/worksheets/sheet1.xml';const wb=await read('xl/workbook.xml'),rel=await read('xl/_rels/workbook.xml.rels');
+ if(wb&&rel){const s0=P(wb).getElementsByTagName('sheet')[0],rid=s0&&(s0.getAttribute('r:id')||s0.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id'));const r=[...P(rel).getElementsByTagName('Relationship')].find(x=>x.getAttribute('Id')===rid);if(r){const t=r.getAttribute('Target');sheet=t.startsWith('/')?t.slice(1):'xl/'+t.replace(/^\.\//,'')}}
+ const xml=await read(sheet);if(!xml)throw new Error('Không đọc được trang tính đầu tiên');
+ const col=ref=>{let n=0;for(const ch of ref.replace(/\d+/g,''))n=n*26+ch.charCodeAt(0)-64;return n-1};
+ return [...P(xml).getElementsByTagName('row')].map(row=>{const out=[];[...row.getElementsByTagName('c')].forEach(c=>{const t=c.getAttribute('t'),v=c.getElementsByTagName('v')[0];let x=t==='s'?strs[+(v&&v.textContent)]:t==='inlineStr'?[...c.getElementsByTagName('t')].map(z=>z.textContent).join(''):(v?v.textContent:'');out[col(c.getAttribute('r')||'A1')]=x==null?'':String(x)});return out})}
+function crmCsv(text){const rows=[];let row=[],cur='',q=false;text=text.replace(/^﻿/,'');const sep=(text.split('\n')[0].match(/;/g)||[]).length>(text.split('\n')[0].match(/,/g)||[]).length?';':',';
+ for(let i=0;i<text.length;i++){const ch=text[i];if(q){if(ch==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=ch}else if(ch==='"')q=true;else if(ch===sep){row.push(cur);cur=''}else if(ch==='\n'){row.push(cur.replace(/\r$/,''));rows.push(row);row=[];cur=''}else cur+=ch}
+ if(cur||row.length){row.push(cur);rows.push(row)}return rows}
+async function crmImportFile(inp){const file=inp.files&&inp.files[0];if(!file)return;
+ try{if(/\.xls$/i.test(file.name))throw new Error('File .xls (Excel 97–2003) chưa hỗ trợ — mở bằng Excel rồi Lưu thành .xlsx hoặc .csv');
+  const grid=/\.csv$/i.test(file.name)?crmCsv(await file.text()):await crmXlsx(await file.arrayBuffer());
+  const hi=grid.findIndex(r=>r&&r.filter(x=>String(x||'').trim()).length>=2);if(hi<0)throw new Error('File trống');
+  const head=grid[hi].map(h=>zfold(String(h||''))),cols=(crmMeta()||{}).cols||[];
+  const find=(...keys)=>head.findIndex(h=>keys.some(k=>h.includes(k)));
+  const map={name:find('ho ten','ho va ten','ten khach','khach hang','name','ten'),phone:find('so dien thoai','dien thoai','sdt','phone','mobile'),email:find('email','mail'),company:find('cong ty','co quan','company'),address:find('dia chi','address','tinh','thanh pho'),need:find('tiem nang','muc do'),note:find('ghi chu','note','noi dung','nhu cau san pham','quan tam')};
+  if(map.name<0&&map.phone<0)throw new Error('Không thấy cột Họ tên hoặc Số điện thoại ở dòng tiêu đề');
+  const ck=cols.map(c=>[c.key,head.indexOf(zfold(c.label))]).filter(x=>x[1]>=0);
+  const rows=grid.slice(hi+1).map(r=>{const g=i=>i>=0?String(r[i]||'').trim():'';let ph=g(map.phone).replace(/\.0$/,'');if(/^\d{9}$/.test(ph))ph='0'+ph;const o={name:g(map.name),phone:ph,email:g(map.email),company:g(map.company),address:g(map.address),need:g(map.need),note:g(map.note),custom:{}};ck.forEach(([k,i])=>o.custom[k]=g(i));return o}).filter(o=>o.name||o.phone);
+  if(!rows.length)throw new Error('Không có dòng dữ liệu nào');
+  CX.imp={file:file.name,rows,map:Object.entries(map).filter(([,i])=>i>=0).map(([k,i])=>k+' ← "'+grid[hi][i]+'"')};CX.modal={kind:'import'};render()}
+ catch(e){toast('Không đọc được file',e.message)}}
+async function crmImportGo(){const rows=CX.imp.rows;let tot={new:0,dup:0,skip:0};try{for(let i=0;i<rows.length;i+=500){const d=await crmPost({action:'import',rows:rows.slice(i,i+500)});tot.new+=d.new;tot.dup+=d.dup;tot.skip+=d.skip}
+ CX.modal=null;CX.imp=null;toast('Đã nhập '+tot.new+' khách',(tot.dup?tot.dup+' trùng số điện thoại (bỏ qua)':'')+(tot.skip?' · '+tot.skip+' dòng trống':''));CX.d=null;CX.rep=null;render()}catch(e){toast('Nhập lỗi',e.message)}}
+async function crmExport(){try{const r=await fetch('/api/chat_crm.php?'+crmQS({export:1}),{credentials:'same-origin',headers:crmH()});if(!r.ok){const d=await r.json().catch(()=>({}));throw new Error(d.error||('Lỗi '+r.status))}
+ const b=await r.blob(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='khach-hang_'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}catch(e){toast('Chưa xuất được',e.message)}}
+async function crmSyncChat(){try{const d=await crmPost({action:'sync_chat'});toast('Đồng bộ Chat xong',d.new+' khách mới · '+d.linked+' khách được liên kết hội thoại');CX.d=null;CX.rep=null;render()}catch(e){toast('Lỗi',e.message)}}
+/* ---- Kanban cơ hội ---- */
+async function crmDealsLoad(){CX.busy=true;try{const d=await crmGet('deals=1');CX.deals={list:d.deals,meta:d}}catch(e){CX.err=e.message}finally{CX.busy=false;render()}}
+function crmKanban(){if(!CX.deals){if(!CX.busy)setTimeout(crmDealsLoad,0);return '<div class="zw-load" style="min-height:300px">Đang tải…</div>'}
+ const {list,meta}=CX.deals,st=meta.stages,total=list.reduce((a,x)=>a+(+x.value||0),0);
+ return `<div class="ca-head"><div><h1>Phễu cơ hội bán hàng theo giai đoạn</h1><p class="cw-sub">Theo dõi từ khi tiếp cận đến khi chốt đơn. Kéo thả thẻ để chuyển giai đoạn · Tổng giá trị ${num(total)}₫</p></div><button class="cw-btn" onclick="crmDealEdit('')">${cwSvg('plus')}Thêm cơ hội bán hàng</button></div>
+ <div class="crm-kb">${Object.entries(st).map(([k,l],i)=>{const its=list.filter(x=>x.stage===k),sum=its.reduce((a,x)=>a+(+x.value||0),0);
+  return `<div class="crm-kc" ondragover="event.preventDefault();this.classList.add('ov')" ondragleave="this.classList.remove('ov')" ondrop="this.classList.remove('ov');crmDealDrop(event,'${k}')"><div class="crm-kh"><b>${i+1}. ${esc(l)}</b><span>${its.length}</span></div><div class="crm-ks">${num(sum)}₫</div>
+  ${its.map(x=>`<div class="crm-kd" draggable="true" ondragstart="event.dataTransfer.setData('text/plain','${x.id}')" onclick="crmDealEdit('${x.id}')"><b>${esc(x.title)}</b>${x.customer_name?`<small>${esc(x.customer_name)}${x.customer_phone?' · '+esc(x.customer_phone):''}</small>`:''}<div class="crm-kv">${num(+x.value||0)}₫${x.assignee_id?`<span>${esc((meta.staff.find(s=>s.id===x.assignee_id)||{}).name||'')}</span>`:''}</div></div>`).join('')}</div>`}).join('')}</div>`}
+async function crmDealDrop(ev,stage){const id=ev.dataTransfer.getData('text/plain');const x=CX.deals&&CX.deals.list.find(d=>d.id===id);if(!x||x.stage===stage)return;x.stage=stage;render();try{await crmPost({action:'deal_move',id,stage});CX.rep=null}catch(e){toast('Lỗi',e.message);CX.deals=null;render()}}
+async function crmCustOpts(){if(CX.cust)return;try{CX.cust=(await crmGet('view=all&per=200&sort=updated')).rows.map(r=>({id:r.id,label:(r.name||'?')+(r.phone?' · '+r.phone:'')}))}catch(e){CX.cust=[]}render()}
+function crmDealEdit(id,pre){const x=id&&CX.deals?CX.deals.list.find(d=>d.id===id):null;const R=CX.rec&&CX.rec.deals?CX.rec.deals.find(d=>d.id===id):null;
+ CX.modal=Object.assign({kind:'deal',id:'',title:'',care_id:'',value:0,stage:'new',assignee_id:'',note:''},x||R||{},pre||{});crmCustOpts();render()}
+async function crmDealSave(){const m=CX.modal;document.querySelectorAll('.ca-modal [data-k]').forEach(el=>m[el.dataset.k]=el.value);if(!m.title.trim()){toast('Nhập tên cơ hội');return}
+ try{await crmPost({action:'deal_save',id:m.id,title:m.title,care_id:m.care_id,value:+m.value||0,stage:m.stage,assignee_id:m.assignee_id,note:m.note});CX.modal=null;CX.deals=null;CX.rep=null;toast('Đã lưu cơ hội');if(CX.recId)crmOpen(CX.recId);else render()}catch(e){toast('Lỗi',e.message)}}
+async function crmDealDel(){if(!confirm('Xoá cơ hội này?'))return;try{await crmPost({action:'deal_del',id:CX.modal.id});CX.modal=null;CX.deals=null;if(CX.recId)crmOpen(CX.recId);else render()}catch(e){toast('Lỗi',e.message)}}
+function crmDealForm(m){const meta=crmMeta()||{},st=meta.stages||{new:'Mới tiếp nhận'},staff=meta.staff||[];
+ return `<div class="field"><label>Tên cơ hội (*)</label><input data-k="title" value="${esc(m.title||'')}" placeholder="VD: Lắp màn hình Android cho xe Vios"></div>
+  <div class="field"><label>Khách hàng</label><select data-k="care_id"><option value="">— Không gắn khách —</option>${(CX.cust||[]).map(c=>`<option value="${c.id}" ${m.care_id===c.id?'selected':''}>${esc(c.label)}</option>`).join('')}${m.care_id&&CX.cust&&!CX.cust.find(c=>c.id===m.care_id)?`<option value="${m.care_id}" selected>${esc(m.customer_name||m.care_id)}</option>`:''}</select></div>
+  <div class="crm-g2"><div class="field"><label>Giá trị dự kiến (₫)</label><input data-k="value" type="number" min="0" value="${+m.value||0}"></div><div class="field"><label>Giai đoạn</label><select data-k="stage">${crmOpts(st,m.stage)}</select></div>
+  <div class="field"><label>Phụ trách</label><select data-k="assignee_id"><option value="">—</option>${staff.map(s=>`<option value="${s.id}" ${m.assignee_id===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div></div>
+  <div class="field"><label>Ghi chú</label><textarea data-k="note" rows="2">${esc(m.note||'')}</textarea></div>`}
+/* ---- Lịch hẹn ---- */
+async function crmTasksLoad(){CX.busy=true;try{CX.td=await crmGet('tasks='+CX.tasks)}catch(e){CX.err=e.message}finally{CX.busy=false;render()}}
+function crmTasks(){if(!CX.td){if(!CX.busy)setTimeout(crmTasksLoad,0);return '<div class="zw-load" style="min-height:300px">Đang tải…</div>'}
+ const d=CX.td,c=d.counts||{},now=new Date(Date.now()+7*3600e3).toISOString().slice(0,16).replace('T',' ');
+ const t=(id,l,n)=>`<button class="${CX.tasks===id?'on':''}" onclick="CX.tasks='${id}';CX.td=null;render()">${l}${n!=null?` <b>${n||0}</b>`:''}</button>`;
+ return `<div class="ca-head"><div><h1>Công việc & Lịch hẹn chăm sóc khách</h1><p class="cw-sub">Cuộc gọi lại, lịch hẹn tư vấn và việc cần xử lý. Đến hẹn, người phụ trách nhận thông báo.</p></div><button class="cw-btn" onclick="CX.modal={kind:'task',care_id:'',at:'',note:''};crmCustOpts();render()">${cwSvg('plus')}Tạo lịch hẹn gọi lại</button></div>
+ <div class="crm-views">${t('all','Tất cả',c.total)}${t('today','Hôm nay',c.today)}${t('overdue','Quá hạn',c.overdue)}${t('upcoming','Sắp tới',c.upcoming)}</div>
+ <div class="crm-tbl">${d.rows.length?`<table><thead><tr><th>Hẹn lúc</th><th>Khách hàng</th><th>Trạng thái</th><th>Phụ trách</th><th>Ghi chú gần nhất</th><th></th></tr></thead><tbody>${d.rows.map(r=>{const log=r.care_log||[],over=r.next_follow_at<now;
+  return `<tr><td><span class="${over?'crm-over':''}">${esc(r.next_follow_at)}</span>${over?'<small class="crm-sub">Quá hạn</small>':''}</td><td><b>${esc(r.name||'')}</b><small class="crm-sub">${esc(r.phone||'')}</small></td><td>${crmPill(r.care_status,d.statuses[r.care_status])}</td><td>${esc((d.staff.find(s=>s.id===r.assignee_id)||{}).name||'—')}</td><td class="crm-note">${log.length?esc(log[log.length-1].text):''}</td><td class="ca-act"><button class="btn xs" onclick="crmOpen('${r.id}')">Xử lý</button></td></tr>`}).join('')}</tbody></table>`:'<div class="cw-emp"><b>Không có công việc nào trong danh mục này.</b></div>'}</div>`}
+async function crmTaskSave(){const m=CX.modal;document.querySelectorAll('.ca-modal [data-k]').forEach(el=>m[el.dataset.k]=el.value);if(!m.care_id||!m.at){toast('Chọn khách và thời gian hẹn');return}
+ try{await crmPost({action:'update',id:m.care_id,next_follow_at:m.at.replace('T',' '),care_status:'callback',note:m.note||''});CX.modal=null;CX.td=null;CX.d=null;toast('Đã tạo lịch hẹn');render()}catch(e){toast('Lỗi',e.message)}}
+/* ---- Báo cáo ---- */
+async function crmRepLoad(){CX.busy=true;try{CX.rep=await crmGet('report=1')}catch(e){CX.err=e.message}finally{CX.busy=false;render()}}
+function crmBars(rows,lab,col){const max=Math.max(1,...rows.map(r=>+r.n));return rows.length?rows.map(r=>`<div class="crm-br"><span>${esc(lab(r.k))}</span><div><i style="width:${Math.max(2,Math.round(+r.n/max*100))}%;background:${col(r.k)}"></i></div><b>${r.n}</b></div>`).join(''):'<div class="mini">Chưa có dữ liệu.</div>'}
+function crmReport(){if(!CX.rep){if(!CX.busy)setTimeout(crmRepLoad,0);return '<div class="zw-load" style="min-height:300px">Đang tải…</div>'}
+ const d=CX.rep,k=d.kpi||{},card=(l,v,js)=>`<div class="cw-st ${js?'act':''}" ${js?`onclick="${js}"`:''}><div><small>${l}</small><b>${v}</b></div></div>`;
+ const order=Object.keys(d.statuses),fun=order.map(s=>({k:s,n:(d.funnel.find(x=>x.k===s)||{}).n||0})).filter(x=>x.n);
+ return `<div class="ca-head"><div><h1>Báo cáo CRM</h1><p class="cw-sub">${esc(d.project.name||'')}</p></div></div>
+ <div class="cw-sts five">${card('Tổng số khách hàng',num(k.total||0),"CX.f.view='all';cwGo('crm');crmLoad()")}${card('Khách mới hôm nay',num(k.today||0))}${card('Khách rất tiềm năng',num(k.hot||0),"CX.f.need='hot';cwGo('crm');crmLoad()")}${card('Giá trị phễu cơ hội',num(k.pipeline||0)+'₫',"cwGo('crm_kanban')")}${card('Quá hạn chăm sóc',num(k.overdue||0),"CX.tasks='overdue';CX.td=null;cwGo('crm_tasks')")}</div>
+ <div class="cw-docs"><section><h4>Phân bổ theo nguồn khách hàng</h4>${crmBars(d.by_source,s=>d.sources[s]||s,()=>'#3b82f6')}</section><section><h4>Phễu trạng thái chăm sóc</h4>${crmBars(fun,s=>d.statuses[s]||s,s=>CRM_STC[s]||'#64748b')}</section></div>
+ <div class="cw-docs" style="margin-top:16px"><section><h4>Cơ hội theo giai đoạn</h4>${crmBars((d.deal_stages||[]).map(x=>({k:x.k,n:x.n})),s=>d.stages[s]||s,()=>'#8b5cf6')}</section>
+ <section><h4>Thao tác nhanh</h4><div class="cw-doc" onclick="crmImportPick()"><span class="cw-ic lg">${cwSvg('out')}</span><div><b>Tải danh sách khách từ Excel</b><small>Nhập hàng loạt từ .xlsx, .csv</small></div></div><div class="cw-doc" onclick="cwGo('crm_kanban')"><span class="cw-ic lg">${cwSvg('grid')}</span><div><b>Xem phễu cơ hội bán hàng</b><small>Theo dõi và thúc đẩy các cơ hội chốt đơn</small></div></div><div class="cw-doc" onclick="CX.tasks='today';CX.td=null;cwGo('crm_tasks')"><span class="cw-ic lg">${cwSvg('cal')}</span><div><b>Lịch hẹn và việc hôm nay</b><small>Xử lý cuộc gọi và việc quá hạn</small></div></div></section></div>${crmFileInput()}`}
+function crmFileInput(){return ''}
+/* ---- Cấu hình ---- */
+async function crmCfgLoad(){CX.busy=true;try{const d=await crmGet('config=1');CX.cfg=d;CX.cfgEdit={sla_min:d.sla_min,staff_export:d.staff_export,cols:JSON.parse(JSON.stringify(d.cols||[]))}}catch(e){CX.err=e.message}finally{CX.busy=false;render()}}
+function crmConfig(){if(!CX.cfg||!CX.cfgEdit){if(!CX.busy)setTimeout(crmCfgLoad,0);return '<div class="zw-load" style="min-height:300px">Đang tải…</div>'}
+ const d=CX.cfg,e=CX.cfgEdit,adm=d.can_admin,dis=adm?'':' disabled';
+ return `<div class="ca-head"><div><h1>Cấu hình CRM</h1><p class="cw-sub">${adm?'Áp dụng cho dự án '+esc(d.project.name||''):'Chỉ chủ / quản lý dự án được thay đổi cấu hình.'}</p></div></div>
+ <div class="crm-cf"><h3>1. Cơ sở phụ trách & chia khách xoay vòng</h3><p class="cw-sub">Khách mới được gán cơ sở (chọn tay hoặc khớp từ khoá định tuyến) sẽ tự chia lần lượt cho các nhân viên đã tích của cơ sở đó.</p>
+  ${d.branches.map(b=>`<div class="crm-bx" data-b="${b.id}"><div class="crm-g2"><div class="field"><label>Tên cơ sở</label><input class="bn" value="${esc(b.name)}"${dis}></div><div class="field"><label>Từ khoá định tuyến (chiến dịch / tỉnh thành, cách nhau dấu phẩy)</label><input class="bk" value="${esc(b.keywords||'')}" placeholder="VD: hà nội, hn, hanoi"${dis}></div></div>
+   <label class="ca-lb">Nhân viên nhận khách (chia vòng tròn)</label><div class="crm-stf">${d.staff.map(s=>`<label><input type="checkbox" value="${s.id}" ${b.staff.includes(s.id)?'checked':''}${dis}>${esc(s.name)}</label>`).join('')}</div>
+   ${adm?`<div class="crm-ba"><button class="btn sm primary" onclick="crmBranchSave('${b.id}')">Lưu cơ sở</button><button class="btn sm" onclick="crmBranchDel('${b.id}','${esc(b.name.replace(/'/g,''))}')">Xoá</button></div>`:''}</div>`).join('')}
+  ${adm?`<div class="crm-bx" data-b=""><div class="crm-g2"><div class="field"><label>Thêm cơ sở mới</label><input class="bn" placeholder="VD: Cơ sở Hà Nội"></div><div class="field"><label>Từ khoá định tuyến</label><input class="bk" placeholder="VD: hà nội, hn"></div></div><label class="ca-lb">Nhân viên nhận khách</label><div class="crm-stf">${d.staff.map(s=>`<label><input type="checkbox" value="${s.id}">${esc(s.name)}</label>`).join('')}</div><div class="crm-ba"><button class="btn sm primary" onclick="crmBranchSave('')">+ Thêm cơ sở</button></div></div>`:''}</div>
+ <div class="crm-cf"><h3>2. Trường dữ liệu tuỳ chỉnh</h3><p class="cw-sub">Thêm cột riêng (VD: Dòng xe, Biển số, Ngân sách, Dịch vụ quan tâm) hiển thị trên bảng và hồ sơ khách.</p>
+  ${e.cols.map((c,i)=>`<div class="crm-colr"><input value="${esc(c.label)}" oninput="CX.cfgEdit.cols[${i}].label=this.value" placeholder="Tên cột"${dis}><select onchange="CX.cfgEdit.cols[${i}].type=this.value;render()"${dis}>${crmOpts({text:'Văn bản',select:'Danh sách chọn',number:'Con số',date:'Ngày tháng'},c.type)}</select>${c.type==='select'?`<input value="${esc((c.options||[]).join(', '))}" oninput="CX.cfgEdit.cols[${i}].options=this.value.split(',').map(s=>s.trim()).filter(Boolean)" placeholder="Các lựa chọn, cách nhau dấu phẩy"${dis}>`:''}${adm?`<button class="btn xs" onclick="CX.cfgEdit.cols.splice(${i},1);render()">Xoá</button>`:''}</div>`).join('')||'<div class="mini">Chưa có cột tuỳ chỉnh nào.</div>'}
+  ${adm?`<button class="btn sm" style="margin-top:8px" onclick="CX.cfgEdit.cols.push({key:'',label:'',type:'text',options:[]});render()">+ Thêm cột</button>`:''}</div>
+ <div class="crm-cf"><h3>3. Phân quyền dữ liệu & kỷ luật telesale</h3>
+  <label class="cw-sw"><span><b>Cho phép nhân viên xuất file CSV danh sách khách</b><small>Chủ / quản lý dự án luôn xuất được</small></span><span class="sw"><input type="checkbox" ${e.staff_export?'checked':''} onchange="CX.cfgEdit.staff_export=this.checked"${dis}><span></span></span></label>
+  <div class="field" style="max-width:420px"><label>Tự thu hồi khách mới về Kho thu hồi nếu nhân viên chưa gọi lần 1 sau (phút, 0 = tắt)</label><input type="number" min="0" value="${+e.sla_min||0}" oninput="CX.cfgEdit.sla_min=+this.value||0"${dis}></div>
+  ${adm?`<button class="cw-btn" onclick="crmCfgSave()">${cwSvg('save')}Lưu cấu hình</button>`:''}</div>`}
+async function crmCfgSave(){const e=CX.cfgEdit;try{await crmPost({action:'config_save',sla_min:e.sla_min,staff_export:e.staff_export,cols:e.cols.filter(c=>(c.label||'').trim())});toast('Đã lưu cấu hình');CX.cfg=null;CX.cfgEdit=null;CX.d=null;render()}catch(x){toast('Chưa lưu được',x.message)}}
+async function crmBranchSave(id){const box=document.querySelector(`.crm-bx[data-b="${id}"]`);const name=box.querySelector('.bn').value.trim();if(!name){toast('Nhập tên cơ sở');return}
+ try{await crmPost({action:'branch_save',id,name,keywords:box.querySelector('.bk').value,staff:[...box.querySelectorAll('.crm-stf input:checked')].map(i=>i.value)});toast('Đã lưu cơ sở');CX.cfg=null;CX.d=null;render()}catch(e){toast('Chưa lưu được',e.message)}}
+async function crmBranchDel(id,name){if(!confirm('Xoá cơ sở "'+name+'"? Khách thuộc cơ sở này sẽ về "chưa có cơ sở".'))return;try{await crmPost({action:'branch_del',id});CX.cfg=null;CX.d=null;render()}catch(e){toast('Lỗi',e.message)}}
+/* ---- hộp thoại ---- */
+function crmModal(){const m=CX.modal;if(!m)return '';
+ const T={new:'Thêm khách hàng mới',deal:m.id?'Sửa cơ hội bán hàng':'Thêm cơ hội bán hàng',task:'Tạo lịch hẹn gọi lại',import:'Nhập khách từ file'}[m.kind];
+ let body='',foot='';
+ if(m.kind==='new'){body=crmNewForm(m);foot=`<button class="cw-btn" onclick="crmNewSave()">Thêm khách hàng</button>`}
+ if(m.kind==='deal'){body=crmDealForm(m);foot=`${m.id?'<button class="btn" style="margin-right:auto" onclick="crmDealDel()">Xoá</button>':''}<button class="cw-btn" onclick="crmDealSave()">Lưu</button>`}
+ if(m.kind==='task'){body=`<div class="field"><label>Khách hàng</label><select data-k="care_id"><option value="">— Chọn khách —</option>${(CX.cust||[]).map(c=>`<option value="${c.id}" ${m.care_id===c.id?'selected':''}>${esc(c.label)}</option>`).join('')}</select></div><div class="field"><label>Thời gian hẹn</label><input data-k="at" type="datetime-local" value="${esc(m.at)}"></div><div class="field"><label>Nội dung</label><textarea data-k="note" rows="2" placeholder="VD: Gọi lại báo giá lắp đặt">${esc(m.note)}</textarea></div>`;foot=`<button class="cw-btn" onclick="crmTaskSave()">Tạo lịch hẹn</button>`}
+ if(m.kind==='import'){const I=CX.imp;body=`<p><b>${esc(I.file)}</b> — ${I.rows.length} dòng khách.</p><p class="cw-sub">Cột nhận diện: ${esc(I.map.join(' · '))}</p><div class="crm-tbl"><table><thead><tr><th>Họ tên</th><th>SĐT</th><th>Email</th><th>Địa chỉ</th><th>Ghi chú</th></tr></thead><tbody>${I.rows.slice(0,6).map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.phone)}</td><td>${esc(r.email)}</td><td>${esc(r.address)}</td><td>${esc(r.note)}</td></tr>`).join('')}</tbody></table></div><p class="cw-sub">Khách trùng số điện thoại đã có sẽ được bỏ qua. Khách mới vào "Data mới", tự chia theo cơ sở nếu khớp từ khoá định tuyến.</p>`;foot=`<button class="cw-btn" onclick="crmImportGo()">Nhập ${I.rows.length} khách</button>`}
+ return `<div class="ca-ov"><div class="ca-modal"><div class="ca-mh"><b>${T}</b><button onclick="CX.modal=null;render()">${ic('x')}</button></div><div class="ca-mb">${body}</div><div class="ca-mf"><button class="btn" onclick="CX.modal=null;render()">Huỷ</button>${foot}</div></div></div>`}
+/* ---- trong hội thoại ---- */
+function cwCrmSec(t){const c=IB.info&&IB.info.crm;
+ if(c)return `<div class="ib-sec"><label class="lb">Khách hàng (CRM)</label><div class="ca-care"><div><b>${esc(c.name||'')}</b><small>${esc(c.phone||'')}${c.next_follow_at?' · hẹn '+esc(c.next_follow_at):''}</small></div><button class="btn xs" onclick="CX.pid='${t.project_id}';cwGo('crm');crmOpen('${c.id}','${t.project_id}')">Mở hồ sơ</button></div>
+  <select class="ca-sel full" style="margin-top:6px" onchange="crmPost({action:'update',id:'${c.id}',care_status:this.value},'${t.project_id}').then(()=>{IB.info.crm.care_status=this.value;toast('Đã cập nhật')}).catch(e=>toast('Lỗi',e.message))">${crmOpts({new:'Mới',contacting:'Đang liên hệ',consulted:'Tham khảo',potential:'Tiềm năng',callback:'Hẹn gọi lại',interested:'Quan tâm',won:'Đã chốt',lost:'Dừng chăm',transferred:'Chuyển cơ sở',invalid:'Sai số / trùng'},c.care_status)}</select></div>`;
+ const ph=((IB.msgs||[]).filter(m=>m.dir==='in').map(m=>(m.text||'').match(/(?<!\d)(?:\+?84|0)(?:[\s.\-]?\d){9}(?!\d)/)).find(Boolean)||[''])[0];
+ return `<div class="ib-sec"><label class="lb">Khách hàng (CRM)</label><button class="btn sm" style="width:100%" onclick="crmNew({name:${esc(JSON.stringify(t.name||''))},phone:'${esc(ph)}',thread_id:'${t.id}',need_level:'learning'},'${t.project_id}')">${cwSvg('plus')} Thêm vào CRM</button></div>`}
 function pgChatApp(){
  if(tabOf('inbox','chat')==='ai'){S.tab.inbox='chat';ZS.open=true;if(!ZS.sec.startsWith('ai_'))ZS.sec='ai_who';history.replaceState(null,'',location.pathname+location.search+'#inbox')}
- if(!IB.loaded){ibLoad();return `<div class="zw">${zwNav()}<div class="zw-load">Đang tải…</div>${ZS.open?zsModal():''}</div>`}
+ if(!CW.inited){CW.inited=true;IB.f.status='all'}
+ if(!IB.loaded){ibLoad();return `<div class="zw cw">${zwNav()}<div class="zw-load">Đang tải…</div>${ZS.open?zsModal():''}</div>`}
  if(!IB.timer){IB.timer=setInterval(ibTick,4000);ibTick()}
  if(!ZU.d&&!ZU.busy)zuLoad();
- const c=IB.counts||{},f=IB.f,prs=IB.projects||[],src=IB.sources||[];const bad=src.filter(x=>x.sync&&x.sync.ok===false);
- const chv=(f.provider||'')+':'+(f.kind||'');const chOn=v=>v===''?!f.provider:v===chv||(v.endsWith(':')&&v===f.provider+':'&&!f.kind);
- const tab=(on,label,js,n)=>`<button class="${on?'on':''}" onclick="${js}">${label}${n?` <span class="n">${n}</span>`:''}</button>`;
- return `<div class="zw">${zwNav()}<div class="ib ${IB.cur?'open':''} ${IB.cur&&IB.side?'side':''}"><div class="ib-list">
-  <div class="zw-lh"><div class="ib-search">${ic('search')}<input placeholder="Tìm kiếm" value="${esc(f.q)}" onkeydown="if(event.key==='Enter')ibSet('q',this.value.trim())"></div><button class="zw-ib" title="Kéo tin Facebook / Zalo OA${bad.length?' — '+bad.length+' kênh lỗi':''}" onclick="ibSync()">${ic('trend')}${bad.length?'<i></i>':''}</button></div>
-  <div class="zw-tabs">${tab(f.status==='open'&&!f.unread&&!f.mine,'Cần trả lời',"IB.f.status='open';IB.f.unread=false;IB.f.mine=false;ibLoad()",c.open)}${tab(f.unread,'Chưa đọc',"IB.f.status='open';IB.f.unread=!IB.f.unread;IB.f.mine=false;ibLoad()",c.unread)}${tab(f.status==='all'&&!f.unread,'Tất cả',"IB.f.status='all';IB.f.unread=false;IB.f.mine=false;ibLoad()")}
-   <select class="zw-more" onchange="const v=this.value;this.value='';if(v==='mine'){IB.f.mine=!IB.f.mine}else if(v==='done'){IB.f.status='done';IB.f.unread=false}else if(v.startsWith('p:')){IB.f.project=v.slice(2)}ibLoad()"><option value="">Phân loại ▾</option><option value="mine">${f.mine?'✓ ':''}Của tôi</option><option value="done">Đã xong</option>${prs.length>1?`<option value="p:">Mọi dự án</option>${prs.map(p=>`<option value="p:${p.id}">${f.project===p.id?'✓ ':''}${esc(p.name)}</option>`).join('')}`:''}</select></div>
-  <div class="ib-chips">${IB_CH.map(([v,l,col])=>`<button class="${chOn(v)?'on':''}" onclick="ibChSet('${v}')">${v?`<span class="ib-pico" style="background:${ibIco(v.split(':')[0],v.split(':')[1]).bg}">${ibIco(v.split(':')[0],v.split(':')[1]).svg}</span>`:''}${l}</button>`).join('')}</div>
-  ${IB.appLive===false&&!f.provider.startsWith('zalo')?`<div class="zw-warn" title="Theo quy định Meta, tin gửi từ Hub khi app ở chế độ phát triển chỉ quản trị app thấy. Zalo cá nhân không bị ảnh hưởng.">⚠ App Facebook chưa Live — khách FB chưa thấy tin trả lời từ Hub</div>`:''}
-  <div class="ib-rows" id="ib-rows">${ibRows()}</div></div>${ibChat()}</div>${ZS.open?zsModal():''}</div>`;
+ const v=cwView(),body=v.startsWith('crm')?`<main class="cw-main">${cwCrm(v)}</main>`:v.startsWith('auto_')?`<main class="cw-main">${cwAuto(v)}</main>`:v==='home'?`<main class="cw-main">${cwHome()}</main>`:v==='contacts'?`<main class="cw-main">${cwContacts()}</main>`:cwChat();
+ return `<div class="zw cw">${zwNav()}${body}${ZS.open?zsModal():''}${crmModal()}</div>`;
 }
 
 /* ---- Trang cấu hình AI Chat (Zalo cá nhân) ---- */
@@ -4814,13 +5436,15 @@ async function zaTest(){const uid=$('#za-tu').value,text=$('#za-tt').value.trim(
 /* ---- Cài đặt (hộp thoại kiểu Zalo Web): AI tự trả lời · Tài khoản Zalo · Thông báo · Giao diện ---- */
 const ZS={open:false,sec:'ai_who'};
 const ZS_MENU=[['g','AI tự trả lời'],['ai_who','Ai được trả lời','<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>'],['ai_topic','Được trả lời gì','<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8 11h8M8 14h5"/>'],['ai_sales','Kịch bản bán hàng','<path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/><path d="M15 8h5v5"/>'],['ai_talk','Cách nói chuyện','<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'],['ai_limit','Giới hạn an toàn','<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'],['ai_test','Kiểm tra AI','<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'],
- ['g','Chung'],['acc','Tài khoản Zalo','<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>'],['noti','Thông báo','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'],['ui','Giao diện','<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>']];
+ ['g','Chung'],['acc','Tài khoản Zalo','<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>'],['noti','Thông báo','<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'],['tags','Thẻ khách hàng','<path d="M20.5 13.5l-7 7a2 2 0 0 1-2.8 0L3 12.8V4a1 1 0 0 1 1-1h8.8l7.7 7.7a2 2 0 0 1 0 2.8z"/><circle cx="8" cy="8" r="1.4"/>'],['quick','Tin nhắn nhanh','<path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z"/>'],['ui','Giao diện','<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/>']];
 function zsOpen(sec){ZS.open=true;ZS.sec=sec||ZS.sec||'ai_who';render()}
 function zsClose(){if(ZA.dirty&&!confirm('Có thay đổi chưa lưu — đóng không lưu?'))return;if(ZA.dirty&&ZA.d&&ZA.d.ai){ZA.cfg=JSON.parse(JSON.stringify(ZA.d.ai));ZA.dirty=false}ZS.open=false;render()}
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function zsBody(){
  const sec=ZS.sec;
+ if(sec==='tags')return cwTagsCfg();
+ if(sec==='quick')return cwTplCfg();
  if(sec==='acc'){if(!ZU.d)zuLoad();return `<h3 class="zs-t">Tài khoản Zalo</h3>${zaloUserCard()}`}
  if(sec==='noti')return `<h3 class="zs-t">Thông báo</h3>
   <label class="zs-row"><div><b>Âm báo khi có tin mới</b><div class="mini">Phát tiếng "ting" khi có tin chưa đọc mới</div></div><span class="sw"><input type="checkbox" ${lsGet('ib.sound','1')==='1'?'checked':''} onchange="lsSet('ib.sound',this.checked?'1':'0')"><span></span></span></label>
@@ -4929,7 +5553,7 @@ function pgAutomationMenu(){
 const PIPE=[['CREATED','Mới'],['VALIDATING','Đang kiểm tra'],['ROUTED','Đã định tuyến'],['DELIVERED','Bàn giao CRM'],['ACCEPTED','CRM đã nhận'],['REJECTED','CRM từ chối']];
 /* ---- CSKH: khách từ website chungauto.vn (liên hệ + đơn hàng) — api/care.php 16/10/2026 ---- */
 const CK={f:{q:'',kind:'',care:'',web:'',assignee:'',branch:'',due:'',from:'',to:'',sort:'new'},page:1,per:50,d:null,busy:false,err:'',key:'',_pid:null};
-const CK_C={new:'mut',contacting:'info',callback:'warn',consulted:'vio',transferred:'info',won:'ok',lost:'bad',invalid:'mut'};
+const CK_C={new:'mut',contacting:'info',callback:'warn',consulted:'vio',potential:'warn',interested:'info',transferred:'info',won:'ok',lost:'bad',invalid:'mut'};
 function ckMap(){const st=(CK.d&&CK.d.care_statuses)||{};const m={};Object.keys(st).forEach(k=>m[k]={t:st[k],c:CK_C[k]||'mut'});return m}
 function ckQS(extra){const q=Object.assign({},CK.f,{page:CK.page,per:CK.per},extra||{});Object.keys(q).forEach(k=>{if(q[k]===''||q[k]==null)delete q[k]});return new URLSearchParams(q).toString()}
 async function ckLoad(){
@@ -4957,7 +5581,7 @@ async function ckSync(full){
  try{const d=await apiPost('/api/care.php',{action:'sync',full:!!full});toast('Đã đồng bộ',`${d.contacts.new} liên hệ mới · ${d.orders.new} đơn mới · ${d.orders.upd+d.contacts.upd} cập nhật${d.complete?'':' · còn tiếp, bấm lại để chạy nốt'}`)}
  catch(e){toast('Đồng bộ lỗi',e.message)}finally{CK.syncing=false;ckLoad()}
 }
-const CK_COL={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',transferred:'#0891b2',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
+const CK_COL={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',potential:'#ea580c',interested:'#0284c7',transferred:'#0891b2',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
 function ckCss(){if(document.getElementById('ck-css'))return;const s=document.createElement('style');s.id='ck-css';s.textContent=`
 .ck-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .ck-stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow);cursor:pointer;transition:border-color .12s,box-shadow .12s;display:flex;gap:12px;align-items:center}
@@ -5177,7 +5801,7 @@ function pgCareReport(){
  const CM=[['new','Khách mới',x=>x.contacts+x.orders,'#2563eb'],['transfers','Chuyển chi nhánh',x=>x.transfers,'#d97706'],['actions','Lượt chăm sóc',x=>x.actions,'#0d9488'],['won','Chốt',x=>x.won,'#16a34a']];
  const cm=CM.find(x=>x[0]===CR.m)||CM[0];const G=crGroup(D.series),S2=G.rows;
  const chart=S2.length>1?`<div class="card"><div class="card-h"><h3>Diễn biến theo ${G.by}</h3><div class="segbar" style="margin:0">${CM.map(x=>`<button class="seg ${x[0]===cm[0]?'on':''}" onclick="CR.m='${x[0]}';render()">${x[1]}</button>`).join('')}</div></div><div class="card-b">${chLine(G.by==='ngày'?stThin(S2.map(x=>x.lb)):S2.map(x=>x.lb),cm[0]==='new'?[{name:'Liên hệ',color:'#2563eb',values:S2.map(x=>x.contacts)},{name:'Đơn hàng',color:'#7c3aed',values:S2.map(x=>x.orders)}]:[{name:cm[1],color:cm[3],values:S2.map(cm[2])}])}</div></div>`:'';
- const sk=Object.keys(st),SC={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',transferred:'#0891b2',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
+ const sk=Object.keys(st),SC={new:'#64748b',contacting:'#2563eb',callback:'#d97706',consulted:'#7c3aed',potential:'#ea580c',interested:'#0284c7',transferred:'#0891b2',won:'#0d9488',lost:'#dc2626',invalid:'#94a3b8'};
  const B=D.branches,tot=k=>B.reduce((s,b)=>s+(typeof k==='function'?k(b):b[k]),0);
  const brTbl=`<div class="card"><div class="card-h">${ic('building')}<h3>Phân bố theo chi nhánh</h3><span class="sub">khách mới trong kỳ (theo ngày tạo) · lượt chuyển theo thời điểm chuyển</span><div class="hact"><button class="btn sm" onclick="crExport('branches')">${ic('download')} Excel</button></div></div>
   <div class="tbl-wrap" style="border:0;box-shadow:none;border-radius:0"><table class="tbl" style="white-space:nowrap"><thead><tr><th>Chi nhánh</th><th class="tar">Khách mới</th><th class="tar">Liên hệ</th><th class="tar">Đơn</th><th class="tar">% tổng</th><th class="tar">Chuyển trong kỳ</th>${sk.map(k=>`<th class="tar" title="${esc(st[k])}" style="color:${SC[k]}">${esc(st[k].split(' /')[0])}</th>`).join('')}<th class="tar">Tỉ lệ chốt</th><th class="tar">Doanh thu chốt</th><th class="tar">Quá hẹn</th><th class="tar">Tổng đang giữ</th></tr></thead><tbody>

@@ -34,6 +34,23 @@ function ib_can_write(string $pid, array $roleOf, array $me): bool {
     if (str_starts_with($r, 'cr_')) return role_level(custom_role_get($r, $pid)['perms'], ['inbox']) >= 2;
     return $me['role'] === 'admin' || in_array($r, PROJECT_WRITE_ROLES, true);
 }
+function ib_tags(): array {
+    global $pdo;
+    $rows = $pdo->query('SELECT id,name,color,is_system FROM inbox_tags ORDER BY sort,name')->fetchAll();
+    if ($rows) return $rows;
+    $ins = $pdo->prepare('INSERT OR IGNORE INTO inbox_tags(id,name,color,is_system,sort) VALUES(?,?,?,?,?)');
+    foreach ([['tag_job', 'Công việc', '#0ea5e9', 0], ['tag_new', 'Khách mới', '#3b82f6', 1], ['tag_consult', 'Đang tư vấn', '#f59e0b', 0], ['tag_closed', 'Đã chốt đơn', '#f59e0b', 1], ['tag_cancel', 'Khách hủy đơn', '#ef4444', 1], ['tag_callback', 'Hẹn gọi lại', '#8b5cf6', 0], ['tag_complain', 'Khiếu nại', '#ef4444', 0]] as $i => $t) $ins->execute([$t[0], $t[1], $t[2], $t[3], ($i + 1) * 10]);
+    return $pdo->query('SELECT id,name,color,is_system FROM inbox_tags ORDER BY sort,name')->fetchAll();
+}
+function ib_thread_tags(string $id): array {
+    global $pdo;
+    $st = $pdo->prepare('SELECT tag_id FROM inbox_thread_tags WHERE thread_id=?'); $st->execute([$id]);
+    return $st->fetchAll(PDO::FETCH_COLUMN);
+}
+function ib_templates(): array {
+    global $pdo;
+    return $pdo->query("SELECT id,title,body,intent,shortcut FROM reply_templates ORDER BY (shortcut IS NULL OR shortcut=''), shortcut, title")->fetchAll();
+}
 function ib_public(array $t): array {
     return ['id' => $t['id'], 'project_id' => $t['project_id'], 'connection_id' => $t['connection_id'], 'provider' => $t['provider'], 'customer_id' => $t['customer_id'],
         'name' => $t['customer_name'], 'avatar' => $t['customer_avatar'], 'last' => $t['last_message'], 'last_dir' => $t['last_direction'], 'last_time' => $t['last_time'],
@@ -49,19 +66,22 @@ if ($method === 'GET') {
     }
     if ($a === 'changes') { // thăm dò 4 giây/lần từ màn hình chat: chỉ đọc 1 setting + 1 đếm
         $st = $pdo->prepare("SELECT COALESCE(SUM(unread>0),0) FROM inbox_threads WHERE project_id IN ($in)"); $st->execute($pids);
+        chauto_tick_maybe($CFG); // gửi bước kịch bản chăm sóc đến hạn (dự phòng khi máy chủ không có cron)
         respond(['changed' => (string)setting_get('inbox.changed', ''), 'unread' => (int)$st->fetchColumn(), 'webhook' => (string)setting_get('meta.webhook_status', '')]);
     }
-    if ($a === 'templates') respond(['templates' => $pdo->query('SELECT id,title,body,intent FROM reply_templates ORDER BY title')->fetchAll()]);
+    if ($a === 'templates') respond(['templates' => ib_templates()]);
     if ($a === 'messages') {
         $t = ib_thread((string)($_GET['id'] ?? ''), $pids);
-        $st = $pdo->prepare('SELECT id,direction,text,attachments,sent_at,sender_name,sent_by FROM inbox_messages WHERE thread_id=? ORDER BY sent_at, id LIMIT 300'); $st->execute([$t['id']]);
+        $st = $pdo->prepare('SELECT id,direction,text,attachments,sent_at,sender_name,sent_by FROM inbox_messages WHERE thread_id=? ORDER BY sent_at, CASE direction WHEN \'in\' THEN 0 ELSE 1 END, id LIMIT 300'); $st->execute([$t['id']]);
         $msgs = array_map(fn($m) => ['id' => $m['id'], 'dir' => $m['direction'], 'text' => $m['text'], 'attach' => jdecode($m['attachments'], []), 'at' => $m['sent_at'], 'sender' => $m['sender_name'], 'ai' => ($m['sent_by'] ?? '') === 'ai'], $st->fetchAll());
         $aiCfg = ib_ai_cfg($t['project_id']);
         if ((int)$t['unread'] > 0 || !$t['read_at']) { $pdo->prepare("UPDATE inbox_threads SET unread=0, read_at=? WHERE id=?")->execute([gmdate('Y-m-d H:i:s'), $t['id']]); $t['unread'] = 0; }
         $conn = get_connection($t['connection_id'], true);
         $lastIn = null; foreach (array_reverse($msgs) as $m) if ($m['dir'] === 'in') { $lastIn = $m['at']; break; }
         $win = $t['provider'] === 'facebook_page' ? ((($t['kind'] ?? 'message') === 'comment') ? 168 : 24) : ($t['provider'] === 'zalo_user' ? null : 48); $hoursLeft = $lastIn && $win ? round($win - (time() - strtotime($lastIn . ' UTC')) / 3600, 1) : null;
-        respond(['thread' => ib_public($t), 'messages' => $msgs, 'channel' => $conn ? ['label' => $conn['label'], 'status' => $conn['status']] : null,
+        $care = $pdo->prepare("SELECT e.sequence_id, s.name, e.step_idx, e.next_at, json_array_length(s.steps) total FROM ca_enrollments e JOIN ca_sequences s ON s.id=e.sequence_id WHERE e.thread_id=? AND e.status='active'"); $care->execute([$t['id']]);
+        $crm = $pdo->prepare('SELECT id, name, phone, care_status, need_level, next_follow_at, assignee_id FROM care_records WHERE thread_id=? LIMIT 1'); $crm->execute([$t['id']]);
+        respond(['thread' => ib_public($t) + ['tags' => ib_thread_tags($t['id'])], 'care' => $care->fetchAll(), 'crm' => $crm->fetch() ?: null, 'messages' => $msgs, 'channel' => $conn ? ['label' => $conn['label'], 'status' => $conn['status']] : null,
             'can_write' => ib_can_write($t['project_id'], $roleOf, $me), 'reply_window_hours' => $win, 'hours_left' => $hoursLeft, 'ai_project_mode' => $aiCfg['mode'], 'zu_ai' => $t['provider'] === 'zalo_user' ? (function ($uid) { require_once __DIR__ . '/_zalo_ai_lib.php'; $c = zu_ai_cfg(); return ['enabled' => $c['enabled'], 'scope' => $c['scope'], 'allowed' => zu_ai_person_allowed($uid, $c) || (!$c['enabled'] && in_array($uid, array_column($c['people'], 'uid'), true))]; })((string)$t['customer_id']) : null, 'ai_ok' => ai_available()['ok'] || ib_hl_alive(), 'ai_via' => ai_available()['ok'] ? 'api' : (ib_hl_alive() ? 'hl' : 'none')]);
     }
     // threads
@@ -73,13 +93,18 @@ if ($method === 'GET') {
     if (!empty($_GET['provider'])) { $w[] = 't.provider=?'; $v[] = (string)$_GET['provider']; }
     if (in_array($_GET['kind'] ?? '', ['message', 'comment'], true)) { $w[] = "COALESCE(t.kind,'message')=?"; $v[] = $_GET['kind']; }
     if (trim((string)($_GET['q'] ?? '')) !== '') { $q = '%' . trim((string)$_GET['q']) . '%'; $w[] = '(t.customer_name LIKE ? OR t.last_message LIKE ? OR EXISTS (SELECT 1 FROM inbox_messages m WHERE m.thread_id=t.id AND m.text LIKE ?))'; array_push($v, $q, $q, $q); }
+    if (($_GET['tag'] ?? '') !== '') { $w[] = 'EXISTS (SELECT 1 FROM inbox_thread_tags x WHERE x.thread_id=t.id AND x.tag_id=?)'; $v[] = (string)$_GET['tag']; }
+    $hasPhone = "(EXISTS (SELECT 1 FROM leads l WHERE l.id=t.lead_id AND COALESCE(l.phone,'')<>'') OR EXISTS (SELECT 1 FROM inbox_messages m2 WHERE m2.thread_id=t.id AND m2.direction='in' AND m2.text GLOB '*0[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]*'))";
+    if (($_GET['phone'] ?? '') === 'yes') $w[] = $hasPhone; elseif (($_GET['phone'] ?? '') === 'no') $w[] = "NOT $hasPhone";
+    foreach (['from' => ['>=', '00:00:00'], 'to' => ['<=', '23:59:59']] as $k => [$op, $tm]) if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_GET[$k] ?? ''))) { $w[] = "t.last_time $op ?"; $v[] = gmdate('Y-m-d H:i:s', strtotime($_GET[$k] . " $tm +07:00")); }
     $lim = max(10, min(300, (int)($_GET['limit'] ?? 120)));
     $st = $pdo->prepare('SELECT t.*, c.label conn_label FROM inbox_threads t LEFT JOIN connections c ON c.id=t.connection_id WHERE ' . implode(' AND ', $w) . " ORDER BY (t.unread>0) DESC, t.last_time DESC LIMIT $lim"); $st->execute($v);
     $threads = array_map(fn($t) => ib_public($t) + ['conn_label' => $t['conn_label']], $st->fetchAll());
+    if ($threads) { $ids = array_column($threads, 'id'); $ph = str_repeat('?,', count($ids) - 1) . '?'; $tt = $pdo->prepare("SELECT thread_id,tag_id FROM inbox_thread_tags WHERE thread_id IN ($ph)"); $tt->execute($ids); $map = []; foreach ($tt->fetchAll() as $r) $map[$r['thread_id']][] = $r['tag_id']; foreach ($threads as &$th) $th['tags'] = $map[$th['id']] ?? []; unset($th); }
     $cs = $pdo->prepare("SELECT COALESCE(SUM(unread>0),0) unread, COALESCE(SUM(status='open'),0) open, COALESCE(SUM(status='done'),0) done, COUNT(*) total FROM inbox_threads WHERE project_id IN ($in)"); $cs->execute($pids);
     $conns = $pdo->prepare("SELECT id,project_id,provider,label,status,external_account_id,last_error FROM connections WHERE project_id IN ($in) AND provider IN ('facebook_page','zalo_oa','zalo_user') ORDER BY project_id,label"); $conns->execute($pids);
     $sources = array_map(fn($c) => $c + ['sync' => jdecode(setting_get('inbox.sync.' . $c['id']) ?: null, [])], $conns->fetchAll());
-    respond(['threads' => $threads, 'counts' => $cs->fetch(), 'sources' => $sources, 'meta_app_live' => setting_get('meta.app_live', '1') !== '0', 'projects' => array_map(fn($p) => ['id' => $p['id'], 'name' => $p['name'], 'color' => $p['color'] ?? null, 'role' => $roleOf[$p['id']]], $myProjects),
+    respond(['threads' => $threads, 'tags' => ib_tags(), 'counts' => $cs->fetch(), 'sources' => $sources, 'meta_app_live' => setting_get('meta.app_live', '1') !== '0', 'projects' => array_map(fn($p) => ['id' => $p['id'], 'name' => $p['name'], 'color' => $p['color'] ?? null, 'role' => $roleOf[$p['id']]], $myProjects),
         'last_cron' => setting_get('cron.last_run')]);
 }
 
@@ -89,16 +114,60 @@ $b = json_input(); $action = (string)($b['action'] ?? '');
 if ($action === 'sync') {
     $cid = (string)($b['connection_id'] ?? '');
     if ($cid !== '') { $c = get_connection($cid, true); if (!$c || !in_array($c['project_id'], $pids, true) || !in_array($c['provider'], INBOX_PROVIDERS, true)) fail('Kênh không hợp lệ');
-        try { respond(['ok' => true] + inbox_sync_connection($CFG, $c)); } catch (Throwable $e) { setting_set('inbox.sync.' . $c['id'], json_encode(['ok' => false, 'at' => date('Y-m-d H:i:s'), 'error' => mb_substr($e->getMessage(), 0, 300)]), ['id' => null]); fail($e->getMessage(), 502); } }
+        try { $rr = inbox_sync_connection($CFG, $c); ib_ai_run_pending($CFG); respond(['ok' => true] + $rr); } catch (Throwable $e) { setting_set('inbox.sync.' . $c['id'], json_encode(['ok' => false, 'at' => date('Y-m-d H:i:s'), 'error' => mb_substr($e->getMessage(), 0, 300)]), ['id' => null]); fail($e->getMessage(), 502); } }
     $st = $pdo->prepare("SELECT * FROM connections WHERE status='connected' AND external_account_id IS NOT NULL AND provider IN ('facebook_page','zalo_oa') AND project_id IN ($in)"); $st->execute($pids);
     $new = 0; $errs = [];
     foreach ($st->fetchAll() as $c) { try { $new += inbox_sync_connection($CFG, $c)['new']; } catch (Throwable $e) { setting_set('inbox.sync.' . $c['id'], json_encode(['ok' => false, 'at' => date('Y-m-d H:i:s'), 'error' => mb_substr($e->getMessage(), 0, 300)]), ['id' => null]); $errs[] = $c['label'] . ': ' . $e->getMessage(); } }
+    ib_ai_run_pending($CFG);
     respond(['ok' => true, 'new' => $new, 'errors' => $errs]);
+}
+
+if ($action === 'read_all') {
+    $st = $pdo->prepare("UPDATE inbox_threads SET unread=0, read_at=? WHERE unread>0 AND project_id IN ($in)"); $st->execute(array_merge([gmdate('Y-m-d H:i:s')], $pids));
+    respond(['ok' => true, 'updated' => $st->rowCount()]);
+}
+if (in_array($action, ['tag_save', 'tag_del', 'tpl_save', 'tpl_del'], true)) {
+    if ($me['role'] !== 'admin' && !array_filter($pids, fn($p) => ib_can_write((string)$p, $roleOf, $me))) fail('Bạn chỉ có quyền xem', 403);
+    if ($action === 'tag_save') {
+        $id = (string)($b['id'] ?? ''); $name = mb_substr(trim((string)($b['name'] ?? '')), 0, 40); $color = (string)($b['color'] ?? '#3b82f6');
+        if ($name === '') fail('Thiếu tên thẻ');
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $color)) fail('Màu không hợp lệ');
+        $dup = $pdo->prepare('SELECT id FROM inbox_tags WHERE name=? AND id<>?'); $dup->execute([$name, $id]); if ($dup->fetch()) fail('Đã có thẻ cùng tên');
+        if ($id !== '') { $st = $pdo->prepare('SELECT * FROM inbox_tags WHERE id=?'); $st->execute([$id]); $cur = $st->fetch(); if (!$cur) fail('Không tìm thấy thẻ', 404);
+            $pdo->prepare('UPDATE inbox_tags SET name=?, color=? WHERE id=?')->execute([(int)$cur['is_system'] ? $cur['name'] : $name, $color, $id]); }
+        else $pdo->prepare('INSERT INTO inbox_tags(id,name,color) VALUES(?,?,?)')->execute(['tag_' . bin2hex(random_bytes(6)), $name, $color]);
+        respond(['ok' => true, 'tags' => ib_tags()]);
+    }
+    if ($action === 'tag_del') {
+        $id = (string)($b['tag_id'] ?? ''); $st = $pdo->prepare('SELECT is_system FROM inbox_tags WHERE id=?'); $st->execute([$id]); $cur = $st->fetch();
+        if (!$cur) fail('Không tìm thấy thẻ', 404); if ((int)$cur['is_system']) fail('Không xoá được thẻ hệ thống');
+        $pdo->prepare('DELETE FROM inbox_thread_tags WHERE tag_id=?')->execute([$id]); $pdo->prepare('DELETE FROM inbox_tags WHERE id=?')->execute([$id]);
+        respond(['ok' => true, 'tags' => ib_tags()]);
+    }
+    if ($action === 'tpl_save') {
+        $id = (string)($b['tpl_id'] ?? ''); $title = mb_substr(trim((string)($b['title'] ?? '')), 0, 80); $body = mb_substr(trim((string)($b['body'] ?? '')), 0, 2000); $sc = strtolower(trim((string)($b['shortcut'] ?? '')));
+        if ($title === '' || $body === '') fail('Thiếu tên hoặc nội dung');
+        if ($sc !== '' && !preg_match('/^[a-z0-9_-]{1,20}$/', $sc)) fail('Ký tự tắt chỉ gồm chữ không dấu, số, _ hoặc -');
+        if ($sc !== '') { $dup = $pdo->prepare('SELECT id FROM reply_templates WHERE shortcut=? AND id<>?'); $dup->execute([$sc, $id]); if ($dup->fetch()) fail('Ký tự tắt này đã được dùng'); }
+        if ($id !== '') $pdo->prepare('UPDATE reply_templates SET title=?, body=?, shortcut=? WHERE id=?')->execute([$title, $body, $sc ?: null, $id]);
+        else $pdo->prepare('INSERT INTO reply_templates(id,title,body,shortcut) VALUES(?,?,?,?)')->execute(['tpl_' . bin2hex(random_bytes(6)), $title, $body, $sc ?: null]);
+        respond(['ok' => true, 'templates' => ib_templates()]);
+    }
+    $pdo->prepare('DELETE FROM reply_templates WHERE id=?')->execute([(string)($b['tpl_id'] ?? '')]);
+    respond(['ok' => true, 'templates' => ib_templates()]);
 }
 
 $t = ib_thread((string)($b['id'] ?? ''), $pids);
 if (!ib_can_write($t['project_id'], $roleOf, $me) && $action !== 'read') fail('Bạn chỉ có quyền xem ở dự án này', 403);
 
+if ($action === 'tags') {
+    $want = array_values(array_unique(array_map('strval', (array)($b['tags'] ?? [])))); $valid = array_column(ib_tags(), 'id'); $want = array_values(array_intersect($want, $valid));
+    $old = ib_thread_tags($t['id']);
+    $pdo->beginTransaction(); $pdo->prepare('DELETE FROM inbox_thread_tags WHERE thread_id=?')->execute([$t['id']]);
+    $ins = $pdo->prepare('INSERT INTO inbox_thread_tags(thread_id,tag_id) VALUES(?,?)'); foreach ($want as $g) $ins->execute([$t['id'], $g]); $pdo->commit();
+    if ($added = array_values(array_diff($want, $old))) chauto_on_tag_added($CFG, $t, $added); // quy luật "khách được gắn thẻ"
+    respond(['ok' => true, 'tags' => $want]);
+}
 if ($action === 'send') {
     $text = trim((string)($b['text'] ?? '')); if ($text === '') fail('Nhập nội dung');
     $r = inbox_send($CFG, $t, $text, $me);

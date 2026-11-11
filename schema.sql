@@ -265,6 +265,7 @@ CREATE TABLE IF NOT EXISTS reply_templates (
   title TEXT NOT NULL,
   body TEXT NOT NULL,                        -- có thể dùng {ten}, {sdt_hotline}, {link}
   intent TEXT,
+  shortcut TEXT,                             -- ký tự tắt trong ô chat: gõ /shortcut, f1–f4 dùng được với phím F1–F4
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -504,7 +505,8 @@ CREATE TABLE IF NOT EXISTS care_records (
   subtotal REAL, discount REAL, total REAL, coupon TEXT,
   web_status TEXT,                           -- trạng thái trên web (Chưa phản hồi / Mới / Thành công / Hủy…)
   ext_created_at TEXT,                       -- giờ tạo trên web (giờ VN)
-  care_status TEXT NOT NULL DEFAULT 'new',   -- new | contacting | callback | consulted | won | lost | invalid
+  care_status TEXT NOT NULL DEFAULT 'new',   -- new | contacting | consulted | potential | callback | interested | transferred | won | lost | invalid
+  -- v25 (thêm bằng migration): need_level hot|learning|none, company, thread_id (hội thoại chat), recycled_at (thu hồi về kho), assigned_at, follow_notified_at, custom JSON (cột tuỳ chỉnh)
   assignee_id TEXT,
   branch_id TEXT,                            -- chi nhánh xử lý (bảng branches)
   next_follow_at TEXT,                       -- hẹn gọi lại (YYYY-MM-DD HH:MM)
@@ -541,3 +543,83 @@ CREATE TABLE IF NOT EXISTS project_roles (
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(project_id, name)
 );
+
+-- 11/11/2026: thẻ khách hàng trong Cửa sổ chat (dùng chung mọi dự án)
+CREATE TABLE IF NOT EXISTS inbox_tags (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  color TEXT NOT NULL DEFAULT '#3b82f6',
+  is_system INTEGER NOT NULL DEFAULT 0,      -- thẻ hệ thống: không xoá, không đổi tên
+  sort INTEGER NOT NULL DEFAULT 100,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS inbox_thread_tags (
+  thread_id TEXT NOT NULL REFERENCES inbox_threads(id) ON DELETE CASCADE,
+  tag_id TEXT NOT NULL REFERENCES inbox_tags(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (thread_id, tag_id)
+);
+CREATE INDEX IF NOT EXISTS idx_inbox_thread_tags_tag ON inbox_thread_tags(tag_id);
+
+-- 11/11/2026: Tự động hoá Cửa sổ chat — Từ khoá · Kịch bản chăm sóc · Quy luật (theo hội thoại, dùng chung mọi dự án; channels = JSON id kênh, [] = mọi kênh)
+CREATE TABLE IF NOT EXISTS ca_keywords (
+  id TEXT PRIMARY KEY,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  keywords TEXT NOT NULL,                    -- JSON ["giá","báo giá"]
+  match_mode TEXT NOT NULL DEFAULT 'contains', -- contains (chứa từ khoá, không phân biệt dấu) | exact (khớp chính xác cả tin)
+  reply TEXT,                                -- tin trả lời ngay; {ten} {sdt_hotline}
+  channels TEXT NOT NULL DEFAULT '[]',
+  sequence_id TEXT,                          -- kịch bản chăm sóc tiếp nối
+  sort INTEGER NOT NULL DEFAULT 100,
+  created_by TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS ca_sequences (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  channels TEXT NOT NULL DEFAULT '[]',
+  steps TEXT NOT NULL DEFAULT '[]',          -- JSON [{delay_min (tính từ lúc vào kịch bản), text}]
+  created_by TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS ca_rules (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  channels TEXT NOT NULL DEFAULT '[]',
+  trigger_type TEXT NOT NULL,                -- first_message | tag_added | order_created | order_done
+  trigger_tag TEXT,                          -- tag_added: thẻ cụ thể ('' = thẻ bất kỳ)
+  actions TEXT NOT NULL DEFAULT '[]',        -- JSON [{type: enroll|unenroll|send, sequence_id?, text?}]
+  created_by TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS ca_enrollments (
+  id TEXT PRIMARY KEY,
+  sequence_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  step_idx INTEGER NOT NULL DEFAULT 0,       -- bước sẽ gửi tiếp theo
+  started_at TEXT NOT NULL,                  -- UTC
+  next_at TEXT NOT NULL,                     -- UTC
+  status TEXT NOT NULL DEFAULT 'active',     -- active | done | stopped | failed
+  last_error TEXT, source TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (sequence_id, thread_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ca_enroll_due ON ca_enrollments(status, next_at);
+CREATE TABLE IF NOT EXISTS ca_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL, ref_id TEXT, thread_id TEXT, status TEXT NOT NULL, detail TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_ca_log_ref ON ca_log(kind, ref_id, thread_id, created_at);
+
+-- 11/11/2026: CRM trong Chat — cơ hội bán hàng (Kanban). branches thêm staff JSON (nhân viên chia vòng), keywords (từ khoá định tuyến), rr_idx bằng migration.
+CREATE TABLE IF NOT EXISTS crm_deals (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  care_id TEXT,                              -- khách (care_records.id)
+  title TEXT NOT NULL,
+  value REAL NOT NULL DEFAULT 0,             -- giá trị dự kiến (₫)
+  stage TEXT NOT NULL DEFAULT 'new',         -- new | contacted | interested | quoted | negotiating | won
+  assignee_id TEXT, note TEXT, created_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_crm_deals_project ON crm_deals(project_id, stage);

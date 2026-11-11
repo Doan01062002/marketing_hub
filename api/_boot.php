@@ -38,7 +38,7 @@ const PROJECT_TABLES = ['campaigns', 'content_items', 'tasks', 'leads', 'connect
     'trends', 'competitors', 'okrs', 'brand_items', 'automations', 'sequences', 'bot_jobs', 'reply_templates'];
 
 // Nâng cấp CSDL đã có mà không mất dữ liệu. Tăng SCHEMA_VERSION mỗi khi đổi schema.sql.
-const SCHEMA_VERSION = 22; // v22 (22/10/2026): gộp competitors.teardowns (phiếu học hỏi đối thủ, nhánh nhóm v17) vào bản Chung Auto · v21 (16/10/2026): care_records.interest* (sản phẩm khách quan tâm) · v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
+const SCHEMA_VERSION = 25; // v25 (11/11/2026): CRM trong Chat — care_records (nhu cầu, công ty, hội thoại, thu hồi, cột tuỳ chỉnh), branches (chia vòng), crm_deals · v24: tự động hoá chat (ca_*) · v23: thẻ khách hàng chat + reply_templates.shortcut · // v22 (22/10/2026): gộp competitors.teardowns (phiếu học hỏi đối thủ, nhánh nhóm v17) vào bản Chung Auto · v21 (16/10/2026): care_records.interest* (sản phẩm khách quan tâm) · v20 (16/10/2026): project_roles (vai trò tuỳ chỉnh) · v19 (16/10/2026): branches + care_records.branch_id · v18 (16/10/2026): care_records (khách web chungauto.vn cho CSKH) · v17 (14/10/2026): meta_pages (Page token mã hoá) + connections.scopes_declined · v16 (12/10/2026): ref_channels + hl_jobs + kênh X · v15: inbox_threads.kind/post_id/permalink (bình luận trong Cửa sổ chat) · // v14: inbox_ai_jobs (AI chạy trên máy HL bằng Claude Max) · // v12: inbox_threads/inbox_messages · v13 (12/10/2026): AI chăm sóc (ai_mode, needs_human)
 if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols = function (string $table, array $cols) use ($pdo): void {
         $have = array_column($pdo->query("PRAGMA table_info($table)")->fetchAll(), 'name');
@@ -60,6 +60,11 @@ if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() < SCHEMA_VERSION) {
     $addCols('connections', ['scopes_declined' => 'TEXT']);
     $addCols('care_records', ['branch_id' => 'TEXT']); // v19: chi nhánh xử lý khách
     $addCols('care_records', ['interest' => 'TEXT', 'interest_url' => 'TEXT', 'interest_type' => 'TEXT']); // v21: sản phẩm / bài viết khách quan tâm // v17: quyền Meta người dùng đã bỏ chọn
+    $addCols('reply_templates', ['shortcut' => 'TEXT']);
+    // v25: CRM trong Chat
+    $addCols('care_records', ['need_level' => 'TEXT', 'company' => 'TEXT', 'thread_id' => 'TEXT', 'recycled_at' => 'TEXT', 'assigned_at' => 'TEXT', 'follow_notified_at' => 'TEXT', 'custom' => 'TEXT']);
+    $addCols('branches', ['staff' => 'TEXT', 'keywords' => 'TEXT', 'rr_idx' => 'INTEGER NOT NULL DEFAULT 0']);
+    if ($pdo->query('PRAGMA table_info(care_records)')->fetchAll()) { $pdo->exec('CREATE INDEX IF NOT EXISTS idx_care_thread ON care_records(thread_id)'); $pdo->exec('CREATE INDEX IF NOT EXISTS idx_care_follow ON care_records(next_follow_at)'); }
     $addCols('inbox_threads', ['ai_mode' => "TEXT NOT NULL DEFAULT 'on'", 'needs_human' => 'INTEGER NOT NULL DEFAULT 0', 'kind' => "TEXT NOT NULL DEFAULT 'message'", 'post_id' => 'TEXT', 'permalink' => 'TEXT']);
 
     /* v8 (11/10/2026) — lớp DỰ ÁN: mọi bản ghi nghiệp vụ thuộc một project_id; backend lọc theo dự án. */
@@ -718,7 +723,7 @@ const ROLE_MODULES = ['inbox' => 'Cửa sổ chat (Messenger, Zalo)', 'leadsmenu
     'utilities' => 'Tiện ích', 'aiplan' => 'Trợ lý dự án (AI)', 'settings' => 'Cài đặt dự án (thông tin, thành viên, kết nối)'];
 const API_MODULES = [
     'inbox.php' => ['inbox'], 'zalo_user.php' => ['inbox'],
-    'leads.php' => ['leadsmenu'], 'care.php' => ['leadsmenu'], 'sequences.php' => ['automation', 'leadsmenu'],
+    'leads.php' => ['leadsmenu'], 'care.php' => ['leadsmenu'], 'chat_crm.php' => ['leadsmenu'], 'sequences.php' => ['automation', 'leadsmenu'],
     'campaigns.php' => ['ads', 'planmenu', 'overview', 'reports'], 'meta_ads.php' => ['ads'], 'ads_report.php' => ['ads'],
     'connections.php' => ['channels', 'ads'], 'metrics.php' => ['channels', 'ads', 'reports', 'overview'], 'meta.php' => ['channels'], 'tiktok.php' => ['channels'], 'x.php' => ['channels'],
     'posts.php' => ['channels', 'caremenu'], 'comments.php' => ['channels', 'caremenu'], 'content.php' => ['caremenu'], 'tasks.php' => ['caremenu', 'planmenu'],

@@ -23,6 +23,7 @@ if ($ev === 'message') {
     $conn = zu_connection($proj);
     if (!$conn || empty($in['uid'])) respond(['ok' => false]);
     $new = zu_store_message($conn, $in);
+    $caDone = chauto_run_pending($CFG); // từ khoá / quy luật (tin trả lời tự động thì AI không trả lời chồng)
     $nk = 'zalo_user.notified.' . preg_replace('/\D/', '', (string)$in['uid']);
     if ($new > 0 && ($in['dir'] ?? 'in') === 'in' && time() - (int)setting_get($nk, 0) > 600) {
         setting_set($nk, (string)time(), ['id' => null]);
@@ -32,7 +33,7 @@ if ($ev === 'message') {
     // AI Chat: trả lời bridge ngay, xử lý AI sau (chờ gộp tin rồi gọi API AI)
     if ($new > 0 && ($in['dir'] ?? 'in') === 'in') {
         require_once __DIR__ . '/_zalo_ai_lib.php';
-        if (zu_ai_person_allowed((string)$in['uid'])) {
+        if (zu_ai_person_allowed((string)$in['uid']) && empty($caDone['zalo_user:' . $in['uid']])) {
             ignore_user_abort(true); @set_time_limit(180);
             echo json_encode(['ok' => true, 'new' => $new, 'ai' => 'queued']);
             if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();

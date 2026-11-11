@@ -12,6 +12,7 @@
    Không hỗ trợ Zalo cá nhân (không có API chính thức, dễ bị khoá tài khoản). */
 require_once __DIR__ . '/_publish_lib.php'; // meta_page_token()
 require_once __DIR__ . '/_inbox_ai_lib.php';  // AI chăm sóc tự động
+require_once __DIR__ . '/_chat_auto_lib.php'; // Từ khoá · Kịch bản chăm sóc · Quy luật
 
 class InboxError extends RuntimeException {}
 const INBOX_PROVIDERS = ['facebook_page', 'zalo_oa'];
@@ -34,7 +35,7 @@ function ib_store(array $conn, string $extThread, array $cust, array $msgs, arra
     foreach ($msgs as $m) {
         $mid = $conn['provider'] . ':' . $m['id'];
         $ins->execute([$mid, $tid, $m['dir'], (string)($m['text'] ?? ''), !empty($m['attach']) ? json_encode($m['attach'], JSON_UNESCAPED_UNICODE) : null, $m['at'] ?? gmdate('Y-m-d H:i:s'), $m['sender'] ?? null, (string)$m['id']]);
-        if ($ins->rowCount() > 0 && $m['dir'] === 'in') $new++;
+        if ($ins->rowCount() > 0 && $m['dir'] === 'in') { $new++; $caTexts[] = ['text' => (string)($m['text'] ?? ''), 'at' => $m['at'] ?? gmdate('Y-m-d H:i:s')]; }
     }
     // Tin cuối + số chưa đọc (tin khách sau lần mở gần nhất) + mở lại nếu khách nhắn tiếp
     $last = $pdo->prepare('SELECT direction,text,attachments,sent_at FROM inbox_messages WHERE thread_id=? ORDER BY sent_at DESC, id DESC LIMIT 1'); $last->execute([$tid]); $l = $last->fetch();
@@ -47,11 +48,13 @@ function ib_store(array $conn, string $extThread, array $cust, array $msgs, arra
         $pdo->prepare("UPDATE inbox_threads SET last_message=?, last_direction=?, last_time=?, unread=?, status=CASE WHEN ?>0 AND status='done' THEN 'open' ELSE status END, updated_at=datetime('now') WHERE id=?")
             ->execute([mb_substr($txt, 0, 200), $l['direction'], $l['sent_at'], $unread, $new, $tid]);
     }
-    if ($new > 0) { ib_touch(); $GLOBALS['ib_new_threads'][$tid] = true; }
+    if ($new > 0) { ib_touch(); $GLOBALS['ib_new_threads'][$tid] = true; chauto_queue_inbound($tid, !$th, $caTexts ?? []); }
     return $new;
 }
 /** Chạy AI cho các hội thoại vừa có tin khách mới trong lượt đồng bộ/webhook này. */
 function ib_ai_run_pending(array $CFG): array {
+    // Tự động hoá chạy trước; hội thoại đã được tự động trả lời thì AI không trả lời chồng
+    foreach (array_keys(chauto_run_pending($CFG)) as $tid) unset($GLOBALS['ib_new_threads'][$tid]);
     $out = []; foreach (array_keys($GLOBALS['ib_new_threads'] ?? []) as $tid) { try { $out[$tid] = ib_ai_auto_reply($CFG, $tid); } catch (Throwable $e) { $out[$tid] = 'AI lỗi: ' . $e->getMessage(); } }
     $GLOBALS['ib_new_threads'] = []; return $out;
 }

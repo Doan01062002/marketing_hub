@@ -11,7 +11,7 @@ require __DIR__ . '/_boot.php';
 $me = require_login();
 $PID = pid();
 
-const CARE_ST = ['new' => 'Chưa chăm sóc', 'contacting' => 'Đang liên hệ', 'callback' => 'Hẹn gọi lại', 'consulted' => 'Đã tư vấn', 'transferred' => 'Chuyển chi nhánh / cơ sở', 'won' => 'Đã chốt / đã mua', 'lost' => 'Không nhu cầu / huỷ', 'invalid' => 'Sai số / trùng'];
+const CARE_ST = ['new' => 'Chưa chăm sóc', 'contacting' => 'Đang liên hệ', 'callback' => 'Hẹn gọi lại', 'consulted' => 'Đã tư vấn', 'potential' => 'Tiềm năng', 'interested' => 'Quan tâm', 'transferred' => 'Chuyển chi nhánh / cơ sở', 'won' => 'Đã chốt / đã mua', 'lost' => 'Không nhu cầu / huỷ', 'invalid' => 'Sai số / trùng'];
 
 function care_staff(string $pid): array {
     global $pdo;
